@@ -8,7 +8,7 @@ class-member = method-decl | variable-decl | constructor-decl
 modifier = "static" | "public" | "private" | "protected" | "open" | "final" | "abstract" ;
 
 # Types
-type = identifier
+type = identifier ["<" type { "," type } ">"]
 
 variable-decl = { modifier } variable-decl
 function-decl = { modifier } function-decl
