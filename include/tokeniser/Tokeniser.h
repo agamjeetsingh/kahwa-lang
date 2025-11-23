@@ -53,6 +53,7 @@ private:
         {"open", TokenType::OPEN},
         {"final", TokenType::FINAL},
         {"abstract", TokenType::ABSTRACT},
+        {"interface", TokenType::INTERFACE},
         {"typedef", TokenType::TYPEDEF},
         {"return", TokenType::RETURN},
         {"if", TokenType::IF},

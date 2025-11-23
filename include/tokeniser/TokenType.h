@@ -61,6 +61,7 @@ enum class TokenType {
     OPEN, // "open"
     FINAL, // "final"
     ABSTRACT, // "abstract"
+    INTERFACE, // "interface"
     TYPEDEF, // "typedef"
 
     RETURN, // "return"

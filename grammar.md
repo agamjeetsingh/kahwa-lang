@@ -2,7 +2,7 @@ file = { declaration }
 declaration = class-decl | function-decl | variable-decl | typedef-decl ;
 
 # Class
-class = { modifier } "class" identifier [":" type { "," type }] "{" { class-member } "}"
+class-decl = { modifier } "class" identifier [":" type { "," type }] "{" { class-member } "}"
 class-member = method-decl | variable-decl | constructor-decl
 
 modifier = "static" | "public" | "private" | "protected" | "open" | "final" | "abstract" ;
@@ -10,8 +10,8 @@ modifier = "static" | "public" | "private" | "protected" | "open" | "final" | "a
 # Types
 type = identifier ["<" type { "," type } ">"]
 
-variable-decl = { modifier } variable-decl
-function-decl = { modifier } function-decl
+variable-decl = { modifier } type identifier [= expression] ";"
+function-decl = { modifier } type identifier "(" param-list ")" block
 param-list = param { "," param } ;
 param = type identifier ;
 
