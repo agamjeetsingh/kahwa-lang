@@ -112,7 +112,21 @@ std::optional<std::vector<Token> > Tokeniser::tokenise() {
                 }
                 break;
             case '/' :
-                if (next_is("=")) {
+                if (next_is("/")) {
+                    idx++;
+                    // `idx < str.length()` to avoid infinite looping
+                    while (idx < str.length() && !next_is("\n")) { idx++; }
+                } else if (next_is("*")) {
+                    idx++;
+                    // `idx + 1 < str.length()` to avoid infinite looping
+                    while (idx + 1 < str.length()) {
+                        if (next_is("*/")) {
+                            idx += 2;
+                            break;
+                        }
+                        idx++;
+                    }
+                } else if (next_is("=")) {
                     tokens.emplace_back(TokenType::SLASH_EQUALS);
                     idx++;
                 } else {
