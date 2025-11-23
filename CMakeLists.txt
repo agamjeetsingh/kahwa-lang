@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 20)
 
 add_executable(kahwa_lang main.cpp
         src/tokeniser/Token.cpp
-        include/Token.h
-        include/TokenType.h
+        include/tokeniser/Token.h
+        include/tokeniser/TokenType.h
         src/tokeniser/Tokeniser.cpp
-        include/Tokeniser.h)
+        include/tokeniser/Tokeniser.h)

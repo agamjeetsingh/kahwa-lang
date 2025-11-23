@@ -2,7 +2,7 @@
 // Created by Agamjeet Singh on 22/11/25.
 //
 
-#include "../../include/Tokeniser.h"
+#include "../../include/tokeniser/Tokeniser.h"
 
 std::optional<std::vector<Token> > Tokeniser::tokenise() {
     while (idx < str.length()) {
