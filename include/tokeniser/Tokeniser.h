@@ -28,9 +28,9 @@ public:
 private:
     std::size_t idx = 0;
 
-    std::optional<Token> tokeniseString();
+    std::optional<Token> tokeniseString(std::size_t curr_idx);
 
-    Token tokeniseNumber();
+    Token tokeniseNumber(std::size_t curr_idx);
 
     std::string extractIdentifierLike();
 
