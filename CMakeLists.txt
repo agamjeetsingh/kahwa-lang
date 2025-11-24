@@ -16,4 +16,7 @@ add_executable(kahwa_lang main.cpp
         include/parser/ExtensibilityModifier.h
         src/parser/exceptions/CompilationError.cpp
         include/parser/exceptions/CompilationError.h
-        include/parser/exceptions/semantic/SemanticError.h)
+        include/parser/exceptions/semantic/SemanticError.h
+        include/parser/exceptions/lexical/LexicalError.h
+        include/parser/exceptions/lexical/UnterminatedStringLiteralError.h
+        include/parser/exceptions/lexical/UnrecognisedTokenError.h)

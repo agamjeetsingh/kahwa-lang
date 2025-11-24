@@ -4,6 +4,9 @@
 
 #include "../../include/tokeniser/Tokeniser.h"
 
+#include "../../include/parser/exceptions/lexical/UnrecognisedTokenError.h"
+#include "../../include/parser/exceptions/lexical/UnterminatedStringLiteralError.h"
+
 std::optional<std::vector<Token> > Tokeniser::tokenise() {
     while (idx < str.length()) {
         std::size_t curr_idx = idx;
@@ -182,7 +185,7 @@ std::optional<std::vector<Token> > Tokeniser::tokenise() {
                 if (auto maybeToken = tokeniseString(curr_idx)) {
                     tokens.push_back(maybeToken.value());
                 } else {
-                    return std::nullopt;
+                    throw UnterminatedStringLiteralError();
                 }
                 break;
             }
@@ -214,7 +217,7 @@ std::optional<std::vector<Token> > Tokeniser::tokenise() {
                         tokens.emplace_back(TokenType::IDENTIFIER, identifier_like, curr_idx, identifier_like.length());
                     }
                 } else {
-                    return std::nullopt;
+                    throw UnrecognisedTokenError();
                 }
         }
     }
