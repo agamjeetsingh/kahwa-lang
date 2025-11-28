@@ -281,5 +281,26 @@ std::string Tokeniser::next(std::size_t count, const std::function<bool(char)> &
     return res;
 }
 
-
-
+const std::unordered_set<char> Tokeniser::DELIMITERS{' ', '\t', '\r', '\n', '\f'};
+const std::unordered_map<std::string, TokenType> Tokeniser::TOKEN_MAP{
+            {"class", TokenType::CLASS},
+            {"static", TokenType::STATIC},
+            {"public", TokenType::PUBLIC},
+            {"private", TokenType::PRIVATE},
+            {"protected", TokenType::PROTECTED},
+            {"open", TokenType::OPEN},
+            {"final", TokenType::FINAL},
+            {"abstract", TokenType::ABSTRACT},
+            {"interface", TokenType::INTERFACE},
+            {"typedef", TokenType::TYPEDEF},
+            {"return", TokenType::RETURN},
+            {"if", TokenType::IF},
+            {"else", TokenType::ELSE},
+            {"for", TokenType::FOR},
+            {"while", TokenType::WHILE},
+            {"break", TokenType::BREAK},
+            {"continue", TokenType::CONTINUE},
+            {"true", TokenType::TRUE},
+            {"false", TokenType::FALSE},
+            {"null", TokenType::NULL_LITERAL}
+};
