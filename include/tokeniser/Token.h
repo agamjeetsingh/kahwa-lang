@@ -12,7 +12,7 @@
 std::string tokenTypeToString(TokenType type);
 class Token;
 
-std::string tokenToString(const Token& token);
+std::string toString(const Token& token);
 
 class Token {
 public:
