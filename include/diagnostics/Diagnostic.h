@@ -6,13 +6,16 @@
 #define DIAGNOSTIC_H
 #include <string>
 
+#include "DiagnosticKind.h"
 #include "DiagnosticSeverity.h"
 #include "../source/SourceLocation.h"
+#include "../source/SourceRange.h"
 
 
 struct Diagnostic {
-    const DiagnosticSeverity kind;
-    const SourceLocation source_location;
+    const DiagnosticSeverity severity;
+    const DiagnosticKind kind;
+    const SourceRange source_range;
     const std::string msg;
 };
 

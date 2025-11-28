@@ -6,7 +6,7 @@
 #define SOURCELOCATION_H
 
 struct SourceLocation {
-    const int file_id;
+    const std::size_t file_id;
     const int pos;
 };
 

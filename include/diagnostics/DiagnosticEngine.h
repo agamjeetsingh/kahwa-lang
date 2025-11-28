@@ -13,8 +13,12 @@
 
 class DiagnosticEngine {
 public:
-    void reportProblem(DiagnosticSeverity kind, SourceLocation location, const std::string& msg) {
-        diagnostics.emplace_back(kind, location, msg);
+    void reportProblem(DiagnosticSeverity severity, DiagnosticKind kind, const SourceLocation location, const std::string& msg) {
+        diagnostics.emplace_back(severity, kind, SourceRange{location}, msg);
+    }
+
+    void reportProblem(DiagnosticSeverity severity, DiagnosticKind kind, SourceRange range, const std::string& msg) {
+        diagnostics.emplace_back(severity, kind, range, msg);
     }
 
     const std::vector<Diagnostic>& getAll() { return diagnostics; }
