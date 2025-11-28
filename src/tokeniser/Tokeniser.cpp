@@ -4,115 +4,114 @@
 
 #include "../../include/tokeniser/Tokeniser.h"
 
-#include "../../include/parser/exceptions/lexical/UnrecognisedTokenError.h"
-#include "../../include/parser/exceptions/lexical/UnterminatedStringLiteralError.h"
+#include <cassert>
 
 std::optional<std::vector<Token> > Tokeniser::tokenise() {
     while (idx < str.length()) {
         std::size_t curr_idx = idx;
         char c = str[idx++];
-        if (delimiters.contains(c)) continue;
+        if (DELIMITERS.contains(c)) continue;
 
         switch (c) {
             case ':' :
-                tokens.emplace_back(TokenType::COLON, curr_idx);
+                tokens.emplace_back(TokenType::COLON, SourceRange{file_id, curr_idx});
                 break;
             case ';' :
-                tokens.emplace_back(TokenType::SEMI_COLON, curr_idx);
+                tokens.emplace_back(TokenType::SEMI_COLON, SourceRange{file_id, curr_idx});
                 break;
             case ',' :
-                tokens.emplace_back(TokenType::COMMA, curr_idx);
+                tokens.emplace_back(TokenType::COMMA, SourceRange{file_id, curr_idx});
                 break;
             case '{' :
-                tokens.emplace_back(TokenType::LEFT_CURLY_BRACE, curr_idx);
+                tokens.emplace_back(TokenType::LEFT_CURLY_BRACE, SourceRange{file_id, curr_idx});
                 break;
             case '}' :
-                tokens.emplace_back(TokenType::RIGHT_CURLY_BRACE, curr_idx);
+                tokens.emplace_back(TokenType::RIGHT_CURLY_BRACE, SourceRange{file_id, curr_idx});
                 break;
             case '(' :
-                tokens.emplace_back(TokenType::LEFT_PAREN, curr_idx);
+                tokens.emplace_back(TokenType::LEFT_PAREN, SourceRange{file_id, curr_idx});
                 break;
             case ')' :
-                tokens.emplace_back(TokenType::RIGHT_PAREN, curr_idx);
+                tokens.emplace_back(TokenType::RIGHT_PAREN, SourceRange{file_id, curr_idx});
                 break;
             case '[' :
-                tokens.emplace_back(TokenType::LEFT_BRACKET, curr_idx);
+                tokens.emplace_back(TokenType::LEFT_BRACKET, SourceRange{file_id, curr_idx});
                 break;
             case ']' :
-                tokens.emplace_back(TokenType::RIGHT_BRACKET, curr_idx);
+                tokens.emplace_back(TokenType::RIGHT_BRACKET, SourceRange{file_id, curr_idx});
                 break;
             case '=' :
                 if (next_is("=")) {
-                    tokens.emplace_back(TokenType::DOUBLE_EQUALS, curr_idx, 2);
+                    tokens.emplace_back(TokenType::DOUBLE_EQUALS, SourceRange{file_id, curr_idx, 2});
                     idx++;
                 } else {
-                    tokens.emplace_back(TokenType::EQUALS, curr_idx);
+                    tokens.emplace_back(TokenType::EQUALS, SourceRange{file_id, curr_idx});
                 }
                 break;
             case '<' :
                 if (next_is("<=")) {
-                    tokens.emplace_back(TokenType::LEFT_SHIFT_EQUALS, curr_idx, 3);
+                    tokens.emplace_back(TokenType::LEFT_SHIFT_EQUALS, SourceRange{file_id, curr_idx, 3});
                     idx += 2;
                 } else if (next_is("<")) {
-                    tokens.emplace_back(TokenType::LEFT_SHIFT, curr_idx, 2);
+                    tokens.emplace_back(TokenType::LEFT_SHIFT, SourceRange{file_id, curr_idx, 2});
                     idx++;
                 } else if (next_is("=")) {
-                    tokens.emplace_back(TokenType::LESS_EQUALS, curr_idx, 2);
+                    tokens.emplace_back(TokenType::LESS_EQUALS, SourceRange{file_id, curr_idx, 2});
                     idx++;
                 } else {
-                    tokens.emplace_back(TokenType::LESS, curr_idx);
+                    tokens.emplace_back(TokenType::LESS, SourceRange{file_id, curr_idx});
                 }
                 break;
             case '>' :
                 if (next_is(">=")) {
-                    tokens.emplace_back(TokenType::RIGHT_SHIFT_EQUALS, curr_idx, 3);
+                    tokens.emplace_back(TokenType::RIGHT_SHIFT_EQUALS, SourceRange{file_id, curr_idx, 3});
                     idx += 2;
                 } else if (next_is(">")) {
-                    tokens.emplace_back(TokenType::RIGHT_SHIFT, curr_idx, 2);
+                    tokens.emplace_back(TokenType::RIGHT_SHIFT, SourceRange{file_id, curr_idx, 2});
                     idx++;
                 } else if (next_is("=")) {
-                    tokens.emplace_back(TokenType::GREATER_EQUALS, curr_idx, 2);
+                    tokens.emplace_back(TokenType::GREATER_EQUALS, SourceRange{file_id, curr_idx, 2});
                     idx++;
                 } else {
-                    tokens.emplace_back(TokenType::GREATER, curr_idx);
+                    tokens.emplace_back(TokenType::GREATER, SourceRange{file_id, curr_idx});
                 }
                 break;
             case '!' :
                 if (next_is("=")) {
-                    tokens.emplace_back(TokenType::NOT_EQUALS, curr_idx, 2);
+                    tokens.emplace_back(TokenType::NOT_EQUALS, SourceRange{file_id, curr_idx, 2});
                     idx++;
                 } else {
-                    tokens.emplace_back(TokenType::NOT, curr_idx);
+                    tokens.emplace_back(TokenType::NOT, SourceRange{file_id, curr_idx});
                 }
                 break;
             case '+' :
                 if (next_is("+")) {
-                    tokens.emplace_back(TokenType::INCREMENT, curr_idx, 2);
+                    tokens.emplace_back(TokenType::INCREMENT, SourceRange{file_id, curr_idx, 2});
                     idx++;
                 } else if (next_is("=")) {
-                    tokens.emplace_back(TokenType::PLUS_EQUALS, curr_idx, 2);
+                    tokens.emplace_back(TokenType::PLUS_EQUALS, SourceRange{file_id, curr_idx, 2});
                     idx++;
                 } else {
-                    tokens.emplace_back(TokenType::PLUS, curr_idx, 1);
+                    tokens.emplace_back(TokenType::PLUS, SourceRange{file_id, curr_idx});
                 }
                 break;
             case '-' :
                 if (next_is("-")) {
-                    tokens.emplace_back(TokenType::DECREMENT, curr_idx, 2);
+                    tokens.emplace_back(TokenType::DECREMENT, SourceRange{file_id, curr_idx, 2});
                     idx++;
                 } else if (next_is("=")) {
-                    tokens.emplace_back(TokenType::MINUS_EQUALS, curr_idx, 2);
+                    tokens.emplace_back(TokenType::MINUS_EQUALS, SourceRange{file_id, curr_idx, 2});
                     idx++;
                 } else {
-                    tokens.emplace_back(TokenType::MINUS, curr_idx);
+                    tokens.emplace_back(TokenType::MINUS, SourceRange{file_id, curr_idx});
                 }
                 break;
             case '*' :
                 if (next_is("=")) {
-                    tokens.emplace_back(TokenType::STAR_EQUALS, curr_idx, 2);
+                    tokens.emplace_back(TokenType::STAR_EQUALS, SourceRange{file_id, curr_idx, 2});
                     idx++;
                 } else {
-                    tokens.emplace_back(TokenType::STAR, curr_idx);
+                    tokens.emplace_back(TokenType::STAR, SourceRange{file_id, curr_idx});
                 }
                 break;
             case '/' :
@@ -131,61 +130,62 @@ std::optional<std::vector<Token> > Tokeniser::tokenise() {
                         idx++;
                     }
                 } else if (next_is("=")) {
-                    tokens.emplace_back(TokenType::SLASH_EQUALS, curr_idx, 2);
+                    tokens.emplace_back(TokenType::SLASH_EQUALS, SourceRange{file_id, curr_idx, 2});
                     idx++;
                 } else {
-                    tokens.emplace_back(TokenType::SLASH, curr_idx);
+                    tokens.emplace_back(TokenType::SLASH, SourceRange{file_id, curr_idx});
                 }
                 break;
             case '%' :
                 if (next_is("=")) {
-                    tokens.emplace_back(TokenType::MODULO_EQUALS, curr_idx, 2);
+                    tokens.emplace_back(TokenType::MODULO_EQUALS, SourceRange{file_id, curr_idx, 2});
                     idx++;
                 } else {
-                    tokens.emplace_back(TokenType::MODULO, curr_idx);
+                    tokens.emplace_back(TokenType::MODULO, SourceRange{file_id, curr_idx});
                 }
                 break;
             case '&' :
                 if (next_is("&")) {
-                    tokens.emplace_back(TokenType::LOGICAL_AND, curr_idx, 2);
+                    tokens.emplace_back(TokenType::LOGICAL_AND, SourceRange{file_id, curr_idx, 2});
                     idx++;
                 } else if (next_is("=")) {
-                    tokens.emplace_back(TokenType::BITWISE_AND_EQUALS, curr_idx, 2);
+                    tokens.emplace_back(TokenType::BITWISE_AND_EQUALS, SourceRange{file_id, curr_idx, 2});
                     idx++;
                 } else {
-                    tokens.emplace_back(TokenType::BITWISE_AND, curr_idx);
+                    tokens.emplace_back(TokenType::BITWISE_AND, SourceRange{file_id, curr_idx});
                 }
                 break;
             case '|' :
                 if (next_is("|")) {
-                    tokens.emplace_back(TokenType::LOGICAL_OR, curr_idx, 2);
+                    tokens.emplace_back(TokenType::LOGICAL_OR, SourceRange{file_id, curr_idx, 2});
                     idx++;
                 } else if (next_is("=")) {
-                    tokens.emplace_back(TokenType::BITWISE_OR_EQUALS, curr_idx, 2);
+                    tokens.emplace_back(TokenType::BITWISE_OR_EQUALS, SourceRange{file_id, curr_idx, 2});
                     idx++;
                 } else {
-                    tokens.emplace_back(TokenType::BITWISE_OR, curr_idx);
+                    tokens.emplace_back(TokenType::BITWISE_OR, SourceRange{file_id, curr_idx});
                 }
                 break;
             case '^' :
                 if (next_is("=")) {
-                    tokens.emplace_back(TokenType::BITWISE_XOR_EQUALS, curr_idx, 2);
+                    tokens.emplace_back(TokenType::BITWISE_XOR_EQUALS, SourceRange{file_id, curr_idx, 2});
                     idx++;
                 } else {
-                    tokens.emplace_back(TokenType::BITWISE_XOR, curr_idx);
+                    tokens.emplace_back(TokenType::BITWISE_XOR, SourceRange{file_id, curr_idx});
                 }
                 break;
             case '?' :
-                tokens.emplace_back(TokenType::QUESTION, curr_idx);
+                tokens.emplace_back(TokenType::QUESTION, SourceRange{file_id, curr_idx});
                 break;
             case '.' :
-                tokens.emplace_back(TokenType::DOT, curr_idx);
+                tokens.emplace_back(TokenType::DOT, SourceRange{file_id, curr_idx});
                 break;
             case '\"': {
                 if (auto maybeToken = tokeniseString(curr_idx)) {
                     tokens.push_back(maybeToken.value());
                 } else {
-                    throw UnterminatedStringLiteralError();
+                    diagnostic_engine->reportProblem(DiagnosticSeverity::ERROR, DiagnosticKind::UNTERMINATED_STRING_LITERAL, SourceLocation{file_id, curr_idx}, toMsg(DiagnosticKind::UNTERMINATED_STRING_LITERAL));
+                    return tokens;
                 }
                 break;
             }
@@ -203,21 +203,21 @@ std::optional<std::vector<Token> > Tokeniser::tokenise() {
                             int digits = std::to_string(decimal).size();
                             decimal /= std::pow(10.0f, digits);
                         }
-                        tokens.emplace_back(TokenType::FLOAT, num + decimal, curr_idx, std::to_string(num + decimal).length());
+                        tokens.emplace_back(TokenType::FLOAT, num + decimal, SourceRange{file_id, curr_idx, std::to_string(num + decimal).length()});
                     } else {
                         int num = *token1.getIf<int>();
-                        tokens.emplace_back(TokenType::INTEGER, num, curr_idx, std::to_string(num).length());
+                        tokens.emplace_back(TokenType::INTEGER, num, SourceRange{file_id, curr_idx, std::to_string(num).length()});
                     }
                 } else if (std::isalpha(c) || c == '_') {
                     idx--;
                     std::string identifier_like = extractIdentifierLike();
-                    if (tokenMap.contains(identifier_like)) {
-                        tokens.emplace_back(tokenMap.at(identifier_like), curr_idx, identifier_like.length());
+                    if (TOKEN_MAP.contains(identifier_like)) {
+                        tokens.emplace_back(TOKEN_MAP.at(identifier_like), SourceRange{file_id, curr_idx, identifier_like.length()});
                     } else {
-                        tokens.emplace_back(TokenType::IDENTIFIER, identifier_like, curr_idx, identifier_like.length());
+                        tokens.emplace_back(TokenType::IDENTIFIER, identifier_like, SourceRange{file_id, curr_idx, identifier_like.length()});
                     }
                 } else {
-                    throw UnrecognisedTokenError();
+                    diagnostic_engine->reportProblem(DiagnosticSeverity::ERROR, DiagnosticKind::UNRECOGNISED_TOKEN, SourceRange{file_id, curr_idx}, toMsg(DiagnosticKind::UNRECOGNISED_TOKEN));
                 }
         }
     }
@@ -231,7 +231,7 @@ std::optional<Token> Tokeniser::tokeniseString(std::size_t curr_idx) {
     while (idx < str.length()) {
         char c = str[idx++];
         if (c == '\"') {
-            return Token{TokenType::STRING_LITERAL, s, curr_idx, s.length() + 2};
+            return Token{TokenType::STRING_LITERAL, s, SourceRange{file_id, curr_idx, s.length() + 2}};
         }
         s += c;
     }
@@ -244,7 +244,7 @@ Token Tokeniser::tokeniseNumber(std::size_t curr_idx) {
             return !isdigit(c);
         });
     idx += s.length();
-    return Token{TokenType::INTEGER, std::stoi(s), curr_idx, s.length()};
+    return Token{TokenType::INTEGER, std::stoi(s), SourceRange{file_id, curr_idx, s.length()}};
 }
 
 std::string Tokeniser::extractIdentifierLike() {
@@ -279,5 +279,26 @@ std::string Tokeniser::next(std::size_t count, const std::function<bool(char)> &
     return res;
 }
 
-
-
+const std::unordered_set<char> Tokeniser::DELIMITERS{' ', '\t', '\r', '\n', '\f'};
+const std::unordered_map<std::string, TokenType> Tokeniser::TOKEN_MAP{
+            {"class", TokenType::CLASS},
+            {"static", TokenType::STATIC},
+            {"public", TokenType::PUBLIC},
+            {"private", TokenType::PRIVATE},
+            {"protected", TokenType::PROTECTED},
+            {"open", TokenType::OPEN},
+            {"final", TokenType::FINAL},
+            {"abstract", TokenType::ABSTRACT},
+            {"interface", TokenType::INTERFACE},
+            {"typedef", TokenType::TYPEDEF},
+            {"return", TokenType::RETURN},
+            {"if", TokenType::IF},
+            {"else", TokenType::ELSE},
+            {"for", TokenType::FOR},
+            {"while", TokenType::WHILE},
+            {"break", TokenType::BREAK},
+            {"continue", TokenType::CONTINUE},
+            {"true", TokenType::TRUE},
+            {"false", TokenType::FALSE},
+            {"null", TokenType::NULL_LITERAL}
+};
