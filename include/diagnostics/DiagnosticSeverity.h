@@ -2,8 +2,8 @@
 // Created by Agamjeet Singh on 27/11/25.
 //
 
-#ifndef DIAGNOSTICKIND_H
-#define DIAGNOSTICKIND_H
+#ifndef DIAGNOSTICSEVERITY_H
+#define DIAGNOSTICSEVERITY_H
 
 
 
@@ -15,4 +15,4 @@ enum class DiagnosticSeverity {
 
 
 
-#endif //DIAGNOSTICKIND_H
+#endif //DIAGNOSTICSEVERITY_H
