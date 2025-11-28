@@ -13,7 +13,7 @@
 
 class DiagnosticEngine {
 public:
-    void reportProblem(DiagnosticKind kind, SourceLocation location, const std::string& msg) {
+    void reportProblem(DiagnosticSeverity kind, SourceLocation location, const std::string& msg) {
         diagnostics.emplace_back(kind, location, msg);
     }
 

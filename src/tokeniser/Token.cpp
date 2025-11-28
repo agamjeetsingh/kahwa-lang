@@ -81,7 +81,7 @@ std::string tokenTypeToString(TokenType type) {
     return it != tokenMap.end() ? it->second : "UNKNOWN";
 }
 
-std::string tokenToString(const Token& token) {
+std::string toString(const Token& token) {
     if (const auto* str = token.getIf<std::string>()) {
         return "\"" + *str + "\"";
     }

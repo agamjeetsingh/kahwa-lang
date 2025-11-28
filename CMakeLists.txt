@@ -21,7 +21,7 @@ add_executable(kahwa_lang main.cpp
         include/diagnostics/lexical/UnterminatedStringLiteralError.h
         include/diagnostics/lexical/UnrecognisedTokenError.h
         include/diagnostics/DiagnosticEngine.h
-        include/diagnostics/DiagnosticKind.h
+        include/diagnostics/DiagnosticSeverity.h
         include/diagnostics/Diagnostic.h
         src/source/SourceManager.cpp
         include/source/SourceManager.h

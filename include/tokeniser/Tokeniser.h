@@ -12,10 +12,11 @@
 #include <vector>
 
 #include "Token.h"
+#include "../diagnostics/DiagnosticEngine.h"
 
 class Tokeniser {
 public:
-    explicit Tokeniser(std::string str): str(std::move(str)) {}
+    Tokeniser(std::string str, std::shared_ptr<DiagnosticEngine> diagnostic_engine): str(std::move(str)), diagnostic_engine(diagnostic_engine) {}
 
     std::optional<std::vector<Token>> tokenise();
 private:
@@ -24,6 +25,7 @@ private:
     std::vector<Token> tokens;
 
     const std::string str;
+    const std::shared_ptr<DiagnosticEngine>& diagnostic_engine;
 
     std::optional<Token> tokeniseString(std::size_t curr_idx);
 

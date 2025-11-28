@@ -7,7 +7,7 @@
 
 
 
-enum class DiagnosticKind {
+enum class DiagnosticSeverity {
     ERROR,
     WARNING,
     WEAK_WARNING

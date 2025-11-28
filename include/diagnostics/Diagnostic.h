@@ -6,12 +6,12 @@
 #define DIAGNOSTIC_H
 #include <string>
 
-#include "DiagnosticKind.h"
+#include "DiagnosticSeverity.h"
 #include "../source/SourceLocation.h"
 
 
 struct Diagnostic {
-    const DiagnosticKind kind;
+    const DiagnosticSeverity kind;
     const SourceLocation source_location;
     const std::string msg;
 };
