@@ -3,6 +3,16 @@ project(kahwa_lang)
 
 set(CMAKE_CXX_STANDARD 20)
 
+include(FetchContent)
+
+FetchContent_Declare(
+        magic_enum
+        GIT_REPOSITORY https://github.com/Neargye/magic_enum.git
+        GIT_TAG        v0.9.5   # or latest release
+)
+
+FetchContent_MakeAvailable(magic_enum)
+
 add_executable(kahwa_lang main.cpp
         src/tokeniser/Token.cpp
         include/tokeniser/Token.h
@@ -26,3 +36,5 @@ add_executable(kahwa_lang main.cpp
         include/diagnostics/DiagnosticKind.h
         include/source/SourceRange.h
         include/parser/Modifier.h)
+
+target_link_libraries(kahwa_lang PRIVATE magic_enum::magic_enum)
