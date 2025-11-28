@@ -10,11 +10,11 @@
 
 
 struct SourceRange {
-    const int file_id;
-    const int pos;
+    const std::size_t file_id;
+    const std::size_t pos;
     const int length;
 
-    SourceRange(int file_id, int pos, int length = 1): file_id(file_id), pos(pos), length(length) {}
+    SourceRange(std::size_t file_id, std::size_t pos, int length = 1): file_id(file_id), pos(pos), length(length) {}
 
     explicit SourceRange(const SourceLocation source_location): file_id(source_location.file_id), pos(source_location.pos), length(1) {}
 

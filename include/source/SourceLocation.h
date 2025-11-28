@@ -7,7 +7,7 @@
 
 struct SourceLocation {
     const std::size_t file_id;
-    const int pos;
+    const std::size_t pos;
 };
 
 

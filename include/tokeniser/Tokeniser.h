@@ -13,10 +13,11 @@
 
 #include "Token.h"
 #include "../diagnostics/DiagnosticEngine.h"
+#include "../source/SourceManager.h"
 
 class Tokeniser {
 public:
-    Tokeniser(std::string str, std::shared_ptr<DiagnosticEngine> diagnostic_engine): str(std::move(str)), diagnostic_engine(diagnostic_engine) {}
+    Tokeniser(const std::size_t file_id, const std::shared_ptr<SourceManager>& source_manager, const std::shared_ptr<DiagnosticEngine>& diagnostic_engine): file_id(file_id), str(source_manager->getSource(file_id)), diagnostic_engine(diagnostic_engine) {}
 
     std::optional<std::vector<Token>> tokenise();
 private:
@@ -24,8 +25,9 @@ private:
 
     std::vector<Token> tokens;
 
+    const std::size_t file_id;
     const std::string str;
-    const std::shared_ptr<DiagnosticEngine>& diagnostic_engine;
+    const std::shared_ptr<DiagnosticEngine> diagnostic_engine;
 
     std::optional<Token> tokeniseString(std::size_t curr_idx);
 

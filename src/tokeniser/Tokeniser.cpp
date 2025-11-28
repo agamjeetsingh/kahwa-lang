@@ -187,7 +187,8 @@ std::optional<std::vector<Token> > Tokeniser::tokenise() {
                 if (auto maybeToken = tokeniseString(curr_idx)) {
                     tokens.push_back(maybeToken.value());
                 } else {
-                    throw UnterminatedStringLiteralError();
+                    diagnostic_engine->reportProblem(DiagnosticSeverity::ERROR, DiagnosticKind::UNTERMINATED_STRING_LITERAL, SourceLocation{file_id, curr_idx}, toMsg(DiagnosticKind::UNTERMINATED_STRING_LITERAL));
+                    return tokens;
                 }
                 break;
             }
@@ -219,7 +220,7 @@ std::optional<std::vector<Token> > Tokeniser::tokenise() {
                         tokens.emplace_back(TokenType::IDENTIFIER, identifier_like, curr_idx, identifier_like.length());
                     }
                 } else {
-                    throw UnrecognisedTokenError();
+                    diagnostic_engine->reportProblem(DiagnosticSeverity::ERROR, DiagnosticKind::UNRECOGNISED_TOKEN, SourceRange{file_id, curr_idx}, toMsg(DiagnosticKind::UNRECOGNISED_TOKEN));
                 }
         }
     }
