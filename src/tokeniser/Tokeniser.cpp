@@ -6,9 +6,6 @@
 
 #include <cassert>
 
-#include "../../include/diagnostics/lexical/UnrecognisedTokenError.h"
-#include "../../include/diagnostics/lexical/UnterminatedStringLiteralError.h"
-
 std::optional<std::vector<Token> > Tokeniser::tokenise() {
     while (idx < str.length()) {
         std::size_t curr_idx = idx;

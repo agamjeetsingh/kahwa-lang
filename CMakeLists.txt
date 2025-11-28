@@ -21,11 +21,6 @@ add_executable(kahwa_lang main.cpp
         include/tokeniser/Tokeniser.h
         src/parser/ClassDecl.cpp
         include/parser/ClassDecl.h
-        src/parser/exceptions/CompilationError.cpp
-        include/diagnostics/CompilationError.h
-        include/diagnostics/lexical/LexicalError.h
-        include/diagnostics/lexical/UnterminatedStringLiteralError.h
-        include/diagnostics/lexical/UnrecognisedTokenError.h
         include/diagnostics/DiagnosticEngine.h
         include/diagnostics/DiagnosticSeverity.h
         include/diagnostics/Diagnostic.h
