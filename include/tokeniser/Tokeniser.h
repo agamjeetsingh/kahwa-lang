@@ -4,8 +4,7 @@
 
 #ifndef TOKENISER_H
 #define TOKENISER_H
-#include <assert.h>
-#include <iostream>
+
 #include <ostream>
 #include <string>
 #include <unordered_set>
@@ -19,14 +18,12 @@ public:
     explicit Tokeniser(std::string str): str(std::move(str)) {}
 
     std::optional<std::vector<Token>> tokenise();
-
-    const std::string str;
+private:
+    std::size_t idx = 0;
 
     std::vector<Token> tokens;
 
-    std::unordered_set<char> delimiters = {' ', '\t', '\r', '\n', '\f'};
-private:
-    std::size_t idx = 0;
+    const std::string str;
 
     std::optional<Token> tokeniseString(std::size_t curr_idx);
 
@@ -39,6 +36,8 @@ private:
     std::string next(const std::function<bool(char)>& until) const;
 
     std::string next(std::size_t count = 1, const std::function<bool(char)>& until = [](char c){ return false; }) const;
+
+    static constexpr std::unordered_set<char> DELIMITERS = {' ', '\t', '\r', '\n', '\f'};
 
     static constexpr std::unordered_map<std::string, TokenType> TOKEN_MAP = {
         {"class", TokenType::CLASS},

@@ -4,6 +4,8 @@
 
 #include "../../include/tokeniser/Tokeniser.h"
 
+#include <cassert>
+
 #include "../../include/diagnostics/lexical/UnrecognisedTokenError.h"
 #include "../../include/diagnostics/lexical/UnterminatedStringLiteralError.h"
 
@@ -11,7 +13,7 @@ std::optional<std::vector<Token> > Tokeniser::tokenise() {
     while (idx < str.length()) {
         std::size_t curr_idx = idx;
         char c = str[idx++];
-        if (delimiters.contains(c)) continue;
+        if (DELIMITERS.contains(c)) continue;
 
         switch (c) {
             case ':' :
