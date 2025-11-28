@@ -9,7 +9,7 @@
 
 #include "ExtensibilityModifier.h"
 #include "VisibilityModifier.h"
-#include "exceptions/semantic/ModifierError.h"
+#include "../diagnostics/semantic/ModifierError.h"
 
 class Class {
 public:

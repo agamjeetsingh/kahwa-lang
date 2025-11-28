@@ -4,8 +4,8 @@
 
 #include "../../include/tokeniser/Tokeniser.h"
 
-#include "../../include/parser/exceptions/lexical/UnrecognisedTokenError.h"
-#include "../../include/parser/exceptions/lexical/UnterminatedStringLiteralError.h"
+#include "../../include/diagnostics/lexical/UnrecognisedTokenError.h"
+#include "../../include/diagnostics/lexical/UnterminatedStringLiteralError.h"
 
 std::optional<std::vector<Token> > Tokeniser::tokenise() {
     while (idx < str.length()) {
