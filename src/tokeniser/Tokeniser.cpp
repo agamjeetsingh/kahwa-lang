@@ -211,8 +211,8 @@ std::optional<std::vector<Token> > Tokeniser::tokenise() {
                 } else if (std::isalpha(c) || c == '_') {
                     idx--;
                     std::string identifier_like = extractIdentifierLike();
-                    if (tokenMap.contains(identifier_like)) {
-                        tokens.emplace_back(tokenMap.at(identifier_like), curr_idx, identifier_like.length());
+                    if (TOKEN_MAP.contains(identifier_like)) {
+                        tokens.emplace_back(TOKEN_MAP.at(identifier_like), curr_idx, identifier_like.length());
                     } else {
                         tokens.emplace_back(TokenType::IDENTIFIER, identifier_like, curr_idx, identifier_like.length());
                     }

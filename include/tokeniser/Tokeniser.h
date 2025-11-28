@@ -34,17 +34,13 @@ private:
 
     std::string extractIdentifierLike();
 
-    static bool isStartOfIdentifier(char c) {
-        return std::isalpha(c) || c == '_';
-    }
-
     bool next_is(const std::string& expected, const std::function<bool(char)>& until = [](char c){ return false; }) const;
 
     std::string next(const std::function<bool(char)>& until) const;
 
     std::string next(std::size_t count = 1, const std::function<bool(char)>& until = [](char c){ return false; }) const;
 
-    const std::unordered_map<std::string, TokenType> tokenMap{
+    static constexpr std::unordered_map<std::string, TokenType> TOKEN_MAP = {
         {"class", TokenType::CLASS},
         {"static", TokenType::STATIC},
         {"public", TokenType::PUBLIC},
