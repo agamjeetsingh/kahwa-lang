@@ -8,6 +8,7 @@
 #include <typeindex>
 
 #include "TokenType.h"
+#include "../source/SourceRange.h"
 
 std::string tokenTypeToString(TokenType type);
 class Token;
@@ -16,13 +17,13 @@ std::string toString(const Token& token);
 
 class Token {
 public:
-    explicit Token(const TokenType type, const std::size_t start, const std::size_t length = 1): type(type), start(start) , end(start + length), type_index(typeid(nullptr)) {}
+    Token(const TokenType type, const SourceRange &source_range): type(type), source_range(source_range), type_index(typeid(nullptr)) {}
 
-    Token(const TokenType type, std::string data, const std::size_t start, const std::size_t length = 1) : type(type), start(start) , end(start + length), type_index(typeid(data)), data(std::make_shared<AuxData<std::string>>(std::move(data))) {}
+    Token(const TokenType type, std::string data, const SourceRange &source_range) : type(type), source_range(source_range), type_index(typeid(data)), data(std::make_shared<AuxData<std::string>>(std::move(data))) {}
 
     template <typename T>
     requires (std::is_same_v<T, int> || std::is_same_v<T, float>)
-    Token(const TokenType type, T data, const std::size_t start, const std::size_t length = 1) : type(type), start(start) , end(start + length), type_index(typeid(data)), data(std::make_shared<AuxData<T>>(data)) {}
+    Token(const TokenType type, T data, const SourceRange &source_range) : type(type), source_range(source_range), type_index(typeid(data)), data(std::make_shared<AuxData<T>>(data)) {}
 
     const TokenType type;
 
@@ -33,8 +34,7 @@ public:
         return derived ? &derived->data : nullptr;
     }
 
-    const std::size_t start;
-    const std::size_t end; // exclusive
+    const SourceRange source_range;
 
 private:
     struct AuxDataBase {
