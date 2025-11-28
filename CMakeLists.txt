@@ -12,7 +12,7 @@ add_executable(kahwa_lang main.cpp
         src/parser/Class.cpp
         include/parser/Class.h
         include/parser/VisibilityModifier.h
-        include/parser/exceptions/semantic/ModifierError.h
+        include/diagnostics/semantic/ModifierError.h
         include/parser/ExtensibilityModifier.h
         src/parser/exceptions/CompilationError.cpp
         include/parser/exceptions/CompilationError.h
@@ -20,3 +20,8 @@ add_executable(kahwa_lang main.cpp
         include/parser/exceptions/lexical/LexicalError.h
         include/parser/exceptions/lexical/UnterminatedStringLiteralError.h
         include/parser/exceptions/lexical/UnrecognisedTokenError.h)
+        include/diagnostics/CompilationError.h
+        include/diagnostics/semantic/SemanticError.h
+        include/diagnostics/lexical/LexicalError.h
+        include/diagnostics/lexical/UnterminatedStringLiteralError.h
+        include/diagnostics/lexical/UnrecognisedTokenError.h
