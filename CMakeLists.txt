@@ -9,14 +9,10 @@ add_executable(kahwa_lang main.cpp
         include/tokeniser/TokenType.h
         src/tokeniser/Tokeniser.cpp
         include/tokeniser/Tokeniser.h
-        src/parser/Class.cpp
-        include/parser/Class.h
-        include/parser/VisibilityModifier.h
-        include/diagnostics/semantic/ModifierError.h
-        include/parser/ExtensibilityModifier.h
+        src/parser/ClassDecl.cpp
+        include/parser/ClassDecl.h
         src/parser/exceptions/CompilationError.cpp
         include/diagnostics/CompilationError.h
-        include/diagnostics/semantic/SemanticError.h
         include/diagnostics/lexical/LexicalError.h
         include/diagnostics/lexical/UnterminatedStringLiteralError.h
         include/diagnostics/lexical/UnrecognisedTokenError.h
@@ -28,6 +24,5 @@ add_executable(kahwa_lang main.cpp
         include/source/SourceFile.h
         include/source/SourceLocation.h
         include/diagnostics/DiagnosticKind.h
-        include/source/SourceRange.h)
         include/source/SourceRange.h
         include/parser/Modifier.h)
