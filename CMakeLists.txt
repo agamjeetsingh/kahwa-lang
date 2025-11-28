@@ -15,13 +15,15 @@ add_executable(kahwa_lang main.cpp
         include/diagnostics/semantic/ModifierError.h
         include/parser/ExtensibilityModifier.h
         src/parser/exceptions/CompilationError.cpp
-        include/parser/exceptions/CompilationError.h
-        include/parser/exceptions/semantic/SemanticError.h
-        include/parser/exceptions/lexical/LexicalError.h
-        include/parser/exceptions/lexical/UnterminatedStringLiteralError.h
-        include/parser/exceptions/lexical/UnrecognisedTokenError.h)
         include/diagnostics/CompilationError.h
         include/diagnostics/semantic/SemanticError.h
         include/diagnostics/lexical/LexicalError.h
         include/diagnostics/lexical/UnterminatedStringLiteralError.h
         include/diagnostics/lexical/UnrecognisedTokenError.h
+        include/diagnostics/DiagnosticEngine.h
+        include/diagnostics/DiagnosticKind.h
+        include/diagnostics/Diagnostic.h
+        src/source/SourceManager.cpp
+        include/source/SourceManager.h
+        include/source/SourceFile.h
+        include/source/SourceLocation.h)
