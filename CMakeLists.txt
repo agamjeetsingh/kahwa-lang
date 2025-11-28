@@ -29,3 +29,5 @@ add_executable(kahwa_lang main.cpp
         include/source/SourceLocation.h
         include/diagnostics/DiagnosticKind.h
         include/source/SourceRange.h)
+        include/source/SourceRange.h
+        include/parser/Modifier.h)
