@@ -13,6 +13,13 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(magic_enum)
 
+FetchContent_Declare(
+        googletest
+        GIT_REPOSITORY https://github.com/google/googletest.git
+        GIT_TAG        release-1.12.1
+)
+FetchContent_MakeAvailable(googletest)
+
 add_executable(kahwa_lang main.cpp
         src/tokeniser/Token.cpp
         include/tokeniser/Token.h
@@ -33,3 +40,24 @@ add_executable(kahwa_lang main.cpp
         include/parser/Modifier.h)
 
 target_link_libraries(kahwa_lang PRIVATE magic_enum::magic_enum)
+
+enable_testing()
+
+add_executable(
+    tests
+    tests/TokenTest.cpp
+    src/tokeniser/Token.cpp
+    include/tokeniser/Token.h
+    include/tokeniser/TokenType.h
+    include/source/SourceRange.h
+    include/source/SourceLocation.h
+)
+
+target_link_libraries(
+    tests
+    gtest_main
+    magic_enum::magic_enum
+)
+
+include(GoogleTest)
+gtest_discover_tests(tests)
