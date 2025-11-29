@@ -8,7 +8,7 @@
 
 std::vector<Token> Tokeniser::tokenise() {
     while (idx < str.length()) {
-        std::size_t curr_idx = idx;
+        const std::size_t curr_idx = idx;
         char c = str[idx++];
         if (DELIMITERS.contains(c)) continue;
 
