@@ -6,7 +6,7 @@
 
 #include <cassert>
 
-std::optional<std::vector<Token> > Tokeniser::tokenise() {
+std::vector<Token> Tokeniser::tokenise() {
     while (idx < str.length()) {
         std::size_t curr_idx = idx;
         char c = str[idx++];
