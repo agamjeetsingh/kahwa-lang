@@ -17,7 +17,9 @@
 
 class Tokeniser {
 public:
-    Tokeniser(const std::size_t file_id, const std::shared_ptr<SourceManager>& source_manager, const std::shared_ptr<DiagnosticEngine>& diagnostic_engine): file_id(file_id), str(source_manager->getSource(file_id)), diagnostic_engine(diagnostic_engine) {}
+    Tokeniser(const std::size_t file_id, const SourceManager& source_manager, DiagnosticEngine& diagnostic_engine): file_id(file_id), str(source_manager.getSource(file_id)), diagnostic_engine(diagnostic_engine) {}
+
+    Tokeniser(const std::size_t file_id, std::string str, DiagnosticEngine& diagnostic_engine): file_id(file_id), str(std::move(str)), diagnostic_engine(diagnostic_engine) {}
 
     std::vector<Token> tokenise();
 private:
@@ -27,7 +29,7 @@ private:
 
     const std::size_t file_id;
     const std::string str;
-    const std::shared_ptr<DiagnosticEngine> diagnostic_engine;
+    DiagnosticEngine& diagnostic_engine;
 
     std::optional<Token> tokeniseString(std::size_t curr_idx);
 
