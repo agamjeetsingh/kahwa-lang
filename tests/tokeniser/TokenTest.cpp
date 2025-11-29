@@ -5,9 +5,6 @@
 class TokenTest : public testing::Test {
 protected:
     SourceRange source_range = {0, 10, 5};
-    static SourceRange getTestSourceRange() {
-        return {0, 10, 5};
-    }
 };
 
 TEST_F(TokenTest, CreateTokenWithoutData_ShouldHaveCorrectTypeAndSourceRange) {
