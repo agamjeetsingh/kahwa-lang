@@ -17,6 +17,13 @@ struct Diagnostic {
     const DiagnosticKind kind;
     const SourceRange source_range;
     const std::string msg;
+
+    bool operator==(const Diagnostic& other) const {
+        return severity == other.severity &&
+               kind == other.kind &&
+               source_range == other.source_range &&
+                   msg == other.msg;
+    }
 };
 
 

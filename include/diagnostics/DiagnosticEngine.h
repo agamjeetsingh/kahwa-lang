@@ -21,7 +21,7 @@ public:
         diagnostics.emplace_back(severity, kind, range, msg);
     }
 
-    const std::vector<Diagnostic>& getAll() { return diagnostics; }
+    [[nodiscard]] const std::vector<Diagnostic>& getAll() const { return diagnostics; }
 
 private:
     std::vector<Diagnostic> diagnostics;
