@@ -17,35 +17,45 @@
 
 class Tokeniser {
 public:
-    Tokeniser(const std::size_t file_id, const SourceManager& source_manager, DiagnosticEngine& diagnostic_engine): file_id(file_id), str(source_manager.getSource(file_id)), diagnostic_engine(diagnostic_engine) {}
+    explicit Tokeniser(DiagnosticEngine& diagnostic_engine): diagnostic_engine(diagnostic_engine) {}
 
-    Tokeniser(const std::size_t file_id, std::string str, DiagnosticEngine& diagnostic_engine): file_id(file_id), str(std::move(str)), diagnostic_engine(diagnostic_engine) {}
+    [[nodiscard]] std::vector<Token> tokenise(const std::size_t file_id, const std::string_view str) const {
+        return TokeniserWorker(file_id, str, diagnostic_engine).tokenise();
+    }
 
-    std::vector<Token> tokenise();
+    class TokeniserWorker {
+    public:
+        TokeniserWorker(const std::size_t file_id, const std::string_view str, DiagnosticEngine& diagnostic_engine): file_id(file_id), str(str), diagnostic_engine(diagnostic_engine) {}
+
+        std::vector<Token> tokenise();
+    private:
+        std::size_t idx = 0;
+
+        std::vector<Token> tokens;
+
+        const std::size_t file_id;
+        const std::string_view str;
+        DiagnosticEngine& diagnostic_engine;
+
+        std::optional<Token> tokeniseString(std::size_t curr_idx);
+
+        Token tokeniseNumber(std::size_t curr_idx);
+
+        std::string extractIdentifierLike();
+
+        bool next_is(const std::string& expected, const std::function<bool(char)>& until = [](char c){ return false; }) const;
+
+        std::string next(const std::function<bool(char)>& until) const;
+
+        std::string next(std::size_t count = 1, const std::function<bool(char)>& until = [](char c){ return false; }) const;
+
+        static const std::unordered_set<char> DELIMITERS;
+
+        static const std::unordered_map<std::string, TokenType> TOKEN_MAP;
+    };
+
 private:
-    std::size_t idx = 0;
-
-    std::vector<Token> tokens;
-
-    const std::size_t file_id;
-    const std::string str;
     DiagnosticEngine& diagnostic_engine;
-
-    std::optional<Token> tokeniseString(std::size_t curr_idx);
-
-    Token tokeniseNumber(std::size_t curr_idx);
-
-    std::string extractIdentifierLike();
-
-    bool next_is(const std::string& expected, const std::function<bool(char)>& until = [](char c){ return false; }) const;
-
-    std::string next(const std::function<bool(char)>& until) const;
-
-    std::string next(std::size_t count = 1, const std::function<bool(char)>& until = [](char c){ return false; }) const;
-
-    static const std::unordered_set<char> DELIMITERS;
-
-    static const std::unordered_map<std::string, TokenType> TOKEN_MAP;
 };
 
 

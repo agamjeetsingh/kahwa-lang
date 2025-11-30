@@ -6,7 +6,7 @@
 
 #include <cassert>
 
-std::vector<Token> Tokeniser::tokenise() {
+std::vector<Token> Tokeniser::TokeniserWorker::tokenise() {
     while (idx < str.length()) {
         const std::size_t curr_idx = idx;
         char c = str[idx++];
@@ -226,7 +226,7 @@ std::vector<Token> Tokeniser::tokenise() {
 }
 
 
-std::optional<Token> Tokeniser::tokeniseString(std::size_t curr_idx) {
+std::optional<Token> Tokeniser::TokeniserWorker::tokeniseString(std::size_t curr_idx) {
     std::string s;
     while (idx < str.length()) {
         char c = str[idx++];
@@ -239,7 +239,7 @@ std::optional<Token> Tokeniser::tokeniseString(std::size_t curr_idx) {
     return std::nullopt;
 }
 
-Token Tokeniser::tokeniseNumber(std::size_t curr_idx) {
+Token Tokeniser::TokeniserWorker::tokeniseNumber(std::size_t curr_idx) {
     std::string s = next([](char c) {
             return !isdigit(c);
         });
@@ -247,7 +247,7 @@ Token Tokeniser::tokeniseNumber(std::size_t curr_idx) {
     return Token{TokenType::INTEGER, std::stoi(s), SourceRange{file_id, curr_idx, s.length()}};
 }
 
-std::string Tokeniser::extractIdentifierLike() {
+std::string Tokeniser::TokeniserWorker::extractIdentifierLike() {
     std::string s = std::string{str[idx++]};
     const std::string rest_of_s = next([](char c){ return !(isalnum(c) || c == '_'); });
     idx += rest_of_s.length();
@@ -255,16 +255,16 @@ std::string Tokeniser::extractIdentifierLike() {
     return s;
 }
 
-bool Tokeniser::next_is(const std::string &expected, const std::function<bool(char)> &until) const {
+bool Tokeniser::TokeniserWorker::next_is(const std::string &expected, const std::function<bool(char)> &until) const {
     const auto nextString = next(expected.length(), until);
     return nextString.size() == expected.length() && nextString == expected;
 }
 
-std::string Tokeniser::next(const std::function<bool(char)> &until) const {
+std::string Tokeniser::TokeniserWorker::next(const std::function<bool(char)> &until) const {
     return next(str.length(), until);
 }
 
-std::string Tokeniser::next(std::size_t count, const std::function<bool(char)> &until) const {
+std::string Tokeniser::TokeniserWorker::next(std::size_t count, const std::function<bool(char)> &until) const {
     std::string res;
     std::size_t i = idx;
     while (i < str.length() && count-- > 0) {
@@ -279,8 +279,8 @@ std::string Tokeniser::next(std::size_t count, const std::function<bool(char)> &
     return res;
 }
 
-const std::unordered_set<char> Tokeniser::DELIMITERS{' ', '\t', '\r', '\n', '\f'};
-const std::unordered_map<std::string, TokenType> Tokeniser::TOKEN_MAP{
+const std::unordered_set<char> Tokeniser::TokeniserWorker::DELIMITERS{' ', '\t', '\r', '\n', '\f'};
+const std::unordered_map<std::string, TokenType> Tokeniser::TokeniserWorker::TOKEN_MAP{
             {"class", TokenType::CLASS},
             {"static", TokenType::STATIC},
             {"public", TokenType::PUBLIC},
