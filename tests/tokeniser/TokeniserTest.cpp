@@ -235,6 +235,108 @@ TEST_F(TokeniserTest, ReportsDiagnosticForUnrecognisedToken) {
     EXPECT_EQ (tokens.size(), 3);
 
     EXPECT_EQ (tokens[0].type, TokenType::BAD);
+    EXPECT_EQ (*tokens[1].getIf<std::string>(), "Weird");
+    EXPECT_EQ (*tokens[2].getIf<std::string>(), "char");
 
     expectDiagnostics({Diagnostic{DiagnosticSeverity::ERROR, DiagnosticKind::UNRECOGNISED_TOKEN, SourceRange{0, 0}, toMsg(DiagnosticKind::UNRECOGNISED_TOKEN)}});
+}
+
+TEST_F(TokeniserTest, TokeniserIdentifiesIdentifierCorrectly) {
+    expectTokenSequence("abc123 234 abc _123 123_", {
+        TokenType::IDENTIFIER,
+        TokenType::INTEGER,
+        TokenType::IDENTIFIER,
+        TokenType::IDENTIFIER,
+        TokenType::INTEGER, // 123
+        TokenType::IDENTIFIER, // _
+    });
+
+    expectTokenSequence("class MyClass : SomeOtherClass {\n void foo() { } \n}", {
+        TokenType::CLASS,
+        TokenType::IDENTIFIER,
+        TokenType::COLON,
+        TokenType::IDENTIFIER,
+        TokenType::LEFT_CURLY_BRACE,
+        TokenType::IDENTIFIER,
+        TokenType::IDENTIFIER,
+        TokenType::LEFT_PAREN,
+        TokenType::RIGHT_PAREN,
+        TokenType::LEFT_CURLY_BRACE,
+        TokenType::RIGHT_CURLY_BRACE,
+        TokenType::RIGHT_CURLY_BRACE
+    });
+
+    expectNoDiagnostics();
+}
+
+TEST_F(TokeniserTest, TokeniserIdentifiesKeywordsSeparatelyFromIdentifiers) {
+    std::string str;
+    for (const auto keywordType: KEYWORD_TYPES) {
+        str.append(keywordToString(keywordType));
+        str.append(" ");
+    }
+
+    expectTokenSequence(str, {KEYWORD_TYPES.begin(), KEYWORD_TYPES.end()});
+
+    expectTokenSequence("class _class for for-who for() if", {
+        TokenType::CLASS,
+        TokenType::IDENTIFIER,
+        TokenType::FOR,
+        TokenType::FOR,
+        TokenType::MINUS, // -
+        TokenType::IDENTIFIER, // who
+        TokenType::FOR,
+        TokenType::LEFT_PAREN,
+        TokenType::RIGHT_PAREN,
+        TokenType::IF,
+    });
+
+    expectNoDiagnostics();
+}
+
+TEST_F(TokeniserTest, TokeniserSkipsSingleLineComments) {
+    expectTokenSequence("// This is a comment", {});
+
+    expectTokenSequence("// This is a comment \n tokenise normally", {
+        TokenType::IDENTIFIER,
+        TokenType::IDENTIFIER
+    });
+
+    expectTokenSequence("// This is a comment \t This too is part of the comment \n"
+    "123456 // Comment can begin after something too", {
+        TokenType::INTEGER
+    });
+
+    expectTokenSequence("/ / This is not a comment", {
+        TokenType::SLASH,
+        TokenType::SLASH,
+        TokenType::IDENTIFIER,
+        TokenType::IDENTIFIER,
+        TokenType::IDENTIFIER,
+        TokenType::IDENTIFIER,
+        TokenType::IDENTIFIER,
+    });
+}
+
+TEST_F(TokeniserTest, TokeniserSkipsMultiLineCommentsCorrectly) {
+    expectTokenSequence("/* This is a multi-line comment \n \n Part of comment \n */ tokenise normally", {
+        TokenType::IDENTIFIER,
+        TokenType::IDENTIFIER
+    });
+
+    expectTokenSequence("/*/ Doesn't close comment", {});
+
+    // Unclosed multiline should also work
+    expectTokenSequence("class A /* Multi-line comments can begin after // \n \n // \n /* 123.456", {
+        TokenType::CLASS,
+        TokenType::IDENTIFIER,
+    });
+
+    expectTokenSequence("/* Comment /* */ comment ended", {
+        TokenType::IDENTIFIER,
+        TokenType::IDENTIFIER
+    });
+
+    expectTokenSequence("/**/", {});
+    expectTokenSequence("//**/ A single line comment", {});
 }
