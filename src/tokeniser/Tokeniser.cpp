@@ -215,6 +215,7 @@ std::vector<Token> Tokeniser::TokeniserWorker::tokenise() {
                         tokens.emplace_back(TokenType::IDENTIFIER, identifier_like, SourceRange{file_id, curr_idx, identifier_like.length()});
                     }
                 } else {
+                    tokens.emplace_back(TokenType::BAD, std::to_string(c), SourceRange{file_id, curr_idx});
                     diagnostic_engine.reportProblem(DiagnosticSeverity::ERROR, DiagnosticKind::UNRECOGNISED_TOKEN, SourceRange{file_id, curr_idx}, toMsg(DiagnosticKind::UNRECOGNISED_TOKEN));
                 }
         }

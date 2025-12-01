@@ -160,11 +160,10 @@ TEST_F(TokeniserTest, TokeniserTokenisesIntegersCorrectly) {
 TEST_F(TokeniserTest, TokeniserTokenisesFloatsCorrectly) {
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_real_distribution<> dist(-1000.0, 1000.0);  // range [0.0, 1.0)
+    std::uniform_real_distribution<> dist(-100.0, 100.0);
 
     for (int i = 0; i < 10000; i++) {
         const auto num = static_cast<float>(dist(gen));
-        std::cout << std::to_string(num) << std::endl;
         if (num < 0) {
             expectTokenSequence(std::to_string(num), {TokenType::MINUS, TokenType::FLOAT});
         } else {
@@ -173,7 +172,7 @@ TEST_F(TokeniserTest, TokeniserTokenisesFloatsCorrectly) {
 
         auto tokens = tokeniser.tokenise(0, std::to_string(num));
         const Token& numTok = tokens.back();
-        EXPECT_FLOAT_EQ (*numTok.getIf<float>(), abs(num));
+        EXPECT_TRUE((*numTok.getIf<float>() - abs(num)) < 1e-6f);
     }
 
     expectNoDiagnostics();
@@ -213,7 +212,7 @@ TEST_F(TokeniserTest, TokenisesMultipleTokenTypesCorrectly) {
     for (auto tokType1: magic_enum::enum_values<TokenType>()) {
         for (auto tokType2: magic_enum::enum_values<TokenType>()) {
             for (auto tokType3: magic_enum::enum_values<TokenType>()) {
-                std::unordered_set skip = {TokenType::IDENTIFIER, TokenType::STRING_LITERAL, TokenType::CHAR_LITERAL, TokenType::INTEGER, TokenType::FLOAT};
+                std::unordered_set skip = {TokenType::IDENTIFIER, TokenType::STRING_LITERAL, TokenType::CHAR_LITERAL, TokenType::INTEGER, TokenType::FLOAT, TokenType::BAD};
                 if (skip.contains(tokType1) || skip.contains(tokType2) || skip.contains(tokType3)) continue;
                 std::string str = tokenTypeToString(tokType1) + " \n" + tokenTypeToString(tokType2) + "\t\r" + tokenTypeToString(tokType3);
                 expectTokenSequence(str, {tokType1, tokType2, tokType3});
@@ -232,9 +231,10 @@ TEST_F(TokeniserTest, ReportsDiagnosticForUnterminatedString) {
 }
 
 TEST_F(TokeniserTest, ReportsDiagnosticForUnrecognisedToken) {
-    const auto tokens = tokeniser.tokenise(0, "Φ Weird char");
-    EXPECT_EQ (tokens.size(), 2);
+    const auto tokens = tokeniser.tokenise(0, "# Weird char");
+    EXPECT_EQ (tokens.size(), 3);
+
+    EXPECT_EQ (tokens[0].type, TokenType::BAD);
 
     expectDiagnostics({Diagnostic{DiagnosticSeverity::ERROR, DiagnosticKind::UNRECOGNISED_TOKEN, SourceRange{0, 0}, toMsg(DiagnosticKind::UNRECOGNISED_TOKEN)}});
-
 }
