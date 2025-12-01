@@ -121,8 +121,8 @@ std::vector<Token> Tokeniser::TokeniserWorker::tokenise() {
                     while (idx < str.length() && !next_is("\n")) { idx++; }
                 } else if (next_is("*")) {
                     idx++;
-                    // `idx + 1 < str.length()` to avoid infinite looping
-                    while (idx + 1 < str.length()) {
+                    // `idx < str.length()` to avoid infinite looping
+                    while (idx < str.length()) {
                         if (next_is("*/")) {
                             idx += 2;
                             break;
