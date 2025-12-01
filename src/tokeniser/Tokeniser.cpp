@@ -192,21 +192,19 @@ std::vector<Token> Tokeniser::TokeniserWorker::tokenise() {
             default:
                 if (std::isdigit(c)) {
                     idx--;
-                    Token token1 = tokeniseNumber(curr_idx);
+                    std::string num_string_1 = getNumberString(curr_idx);
                     if (next_is(".")) {
                         idx++;
-                        Token token2 = tokeniseNumber(curr_idx);
-                        float num = *token1.getIf<int>();
-                        float decimal = *token2.getIf<int>();
-                        assert(decimal >= 0);
-                        if (decimal > 0) {
-                            int digits = std::to_string(decimal).size();
-                            decimal /= std::pow(10.0f, digits);
-                        }
-                        tokens.emplace_back(TokenType::FLOAT, num + decimal, SourceRange{file_id, curr_idx, std::to_string(num + decimal).length()});
+                        std::string num_string_2 = getNumberString(curr_idx);
+                        std::string s = num_string_1;
+                        s.append(".");
+                        s.append(num_string_2);
+                        float num = std::stof(s);
+
+                        tokens.emplace_back(TokenType::FLOAT, num, SourceRange{file_id, curr_idx, s.length()});
                     } else {
-                        int num = *token1.getIf<int>();
-                        tokens.emplace_back(TokenType::INTEGER, num, SourceRange{file_id, curr_idx, std::to_string(num).length()});
+                        int num = std::stoi(num_string_1);
+                        tokens.emplace_back(TokenType::INTEGER, num, SourceRange{file_id, curr_idx, num_string_1.length()});
                     }
                 } else if (std::isalpha(c) || c == '_') {
                     idx--;
@@ -239,12 +237,12 @@ std::optional<Token> Tokeniser::TokeniserWorker::tokeniseString(std::size_t curr
     return std::nullopt;
 }
 
-Token Tokeniser::TokeniserWorker::tokeniseNumber(std::size_t curr_idx) {
+std::string Tokeniser::TokeniserWorker::getNumberString(std::size_t curr_idx) {
     std::string s = next([](char c) {
             return !isdigit(c);
         });
     idx += s.length();
-    return Token{TokenType::INTEGER, std::stoi(s), SourceRange{file_id, curr_idx, s.length()}};
+    return s;
 }
 
 std::string Tokeniser::TokeniserWorker::extractIdentifierLike() {

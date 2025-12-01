@@ -39,7 +39,7 @@ public:
 
         std::optional<Token> tokeniseString(std::size_t curr_idx);
 
-        Token tokeniseNumber(std::size_t curr_idx);
+        std::string getNumberString(std::size_t curr_idx);
 
         std::string extractIdentifierLike();
 
