@@ -45,12 +45,15 @@ enable_testing()
 
 add_executable(
     tests
-    tests/TokenTest.cpp
+        tests/tokeniser/TokenTest.cpp
     src/tokeniser/Token.cpp
     include/tokeniser/Token.h
     include/tokeniser/TokenType.h
     include/source/SourceRange.h
     include/source/SourceLocation.h
+        src/tokeniser/Tokeniser.cpp
+        include/tokeniser/Tokeniser.h
+        tests/tokeniser/TokeniserTest.cpp
 )
 
 target_link_libraries(
