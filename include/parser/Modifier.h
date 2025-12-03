@@ -4,6 +4,8 @@
 
 #ifndef MODIFIER_H
 #define MODIFIER_H
+#include "../tokeniser/TokenType.h"
+#include <stdexcept>
 
 enum class Modifier {
     OPEN,
