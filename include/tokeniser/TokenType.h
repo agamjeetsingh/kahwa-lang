@@ -5,7 +5,8 @@
 #ifndef TOKENTYPE_H
 #define TOKENTYPE_H
 
-#endif //TOKENTYPE_H
+#include <magic_enum.hpp>
+#include <unordered_set>
 
 enum class TokenType {
     COLON, // ":"
@@ -78,6 +79,56 @@ enum class TokenType {
 
     IDENTIFIER,
     STRING_LITERAL,
+    CHAR_LITERAL, // TODO()
     INTEGER,
     FLOAT,
+
+    BAD,
 };
+
+inline const auto KEYWORD_TYPES = std::unordered_set{
+    TokenType::CLASS, // "class"
+    TokenType::STATIC, // "static"
+    TokenType::PUBLIC, // "public"
+    TokenType::PRIVATE, // "private"
+    TokenType::PROTECTED, // "protected"
+    TokenType::OPEN, // "open"
+    TokenType::FINAL, // "final"
+    TokenType::ABSTRACT, // "abstract"
+    TokenType::INTERFACE, // "interface"
+    TokenType::TYPEDEF, // "typedef"
+
+    TokenType::RETURN, // "return"
+    TokenType::IF, // "if"
+    TokenType::ELSE, // "else"
+    TokenType::FOR, // "for"
+    TokenType::WHILE, // "while"
+    TokenType::BREAK, // "break"
+    TokenType::CONTINUE, // "continue"
+
+    TokenType::TRUE, // "true"
+    TokenType::FALSE, // "false"
+    TokenType::NULL_LITERAL, // "null"
+};
+
+inline const auto MODIFIER_TYPES = std::unordered_set{
+    TokenType::STATIC, // "static"
+    TokenType::PUBLIC, // "public"
+    TokenType::PRIVATE, // "private"
+    TokenType::PROTECTED, // "protected"
+    TokenType::OPEN, // "open"
+    TokenType::FINAL, // "final"
+    TokenType::ABSTRACT, // "abstract"
+};
+
+inline std::string keywordToString(TokenType tokenType) {
+    if (!KEYWORD_TYPES.contains(tokenType)) return "Not a keyword";
+    if (tokenType == TokenType::NULL_LITERAL) return "null";
+    std::string s = std::string{magic_enum::enum_name(tokenType)};
+    std::ranges::transform(s, s.begin(),
+                           [](unsigned char c){ return std::tolower(c); });
+    return s;
+}
+
+
+#endif //TOKENTYPE_H
