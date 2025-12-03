@@ -39,6 +39,8 @@ add_executable(kahwa_lang main.cpp
         include/source/SourceRange.h
         include/parser/Modifier.h)
         include/arena/Arena.h
+        src/source/SourceLocation.cpp
+        src/source/SourceRange.cpp
 )
 
 target_link_libraries(kahwa_lang PRIVATE magic_enum::magic_enum)
