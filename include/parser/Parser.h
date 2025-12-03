@@ -1,0 +1,52 @@
+//
+// Created by Agamjeet Singh on 03/12/25.
+//
+
+#ifndef PARSER_H
+#define PARSER_H
+#include "KahwaFile.h"
+#include "TypedefDecl.h"
+#include "../tokeniser/Token.h"
+#include "../arena/Arena.h"
+#include "../diagnostics/DiagnosticEngine.h"
+
+class Parser {
+public:
+    explicit Parser(Arena& astArena, DiagnosticEngine& diagnostic_engine): astArena(astArena), diagnostic_engine(diagnostic_engine) {}
+
+    [[nodiscard]] KahwaFile* parseFile(const std::vector<Token> &tokens) const;
+
+    [[nodiscard]] TypedefDecl* parseTypedef(const std::vector<Token> &tokens) const;
+
+    class ParserWorker {
+    public:
+        explicit ParserWorker(const std::vector<Token> &tokens, Arena& astArena, DiagnosticEngine& diagnostic_engine): tokens(tokens), astArena(astArena), diagnostic_engine(diagnostic_engine) {}
+
+        KahwaFile* parseFile();
+
+        TypedefDecl* parseTypedef();
+
+    private:
+        const std::vector<Token> tokens;
+        std::size_t idx = 0;
+
+        Arena& astArena;
+        DiagnosticEngine& diagnostic_engine;
+
+        [[nodiscard]] bool next_is(TokenType expected) const;
+
+        [[nodiscard]] bool next_is(const std::vector<TokenType>& expected) const;
+
+        std::vector<Token> next(const std::function<bool(const Token&)> &until) const;
+
+        std::vector<Token> next(std::size_t count, const std::function<bool(const Token&)> &until = [](const Token& token){ return false; }) const;
+    };
+
+private:
+    Arena& astArena;
+    DiagnosticEngine& diagnostic_engine;
+};
+
+
+
+#endif //PARSER_H

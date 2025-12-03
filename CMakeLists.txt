@@ -38,7 +38,14 @@ add_executable(kahwa_lang main.cpp
         include/diagnostics/DiagnosticKind.h
         include/source/SourceRange.h
         include/parser/Modifier.h)
+        include/parser/Modifier.h
+        include/parser/TypeRef.h
+        src/arena/Arena.cpp
         include/arena/Arena.h
+        src/parser/Parser.cpp
+        include/parser/Parser.h
+        include/parser/TypedefDecl.h
+        include/parser/KahwaFile.h
         src/source/SourceLocation.cpp
         src/source/SourceRange.cpp
 )
@@ -58,6 +65,7 @@ add_executable(
         src/tokeniser/Tokeniser.cpp
         include/tokeniser/Tokeniser.h
         tests/tokeniser/TokeniserTest.cpp
+        tests/diagnostics/DiagnosticEngineTest.cpp
 )
 
 target_link_libraries(
