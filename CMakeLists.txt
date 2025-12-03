@@ -38,6 +38,8 @@ add_executable(kahwa_lang main.cpp
         include/diagnostics/DiagnosticKind.h
         include/source/SourceRange.h
         include/parser/Modifier.h)
+        include/arena/Arena.h
+)
 
 target_link_libraries(kahwa_lang PRIVATE magic_enum::magic_enum)
 
