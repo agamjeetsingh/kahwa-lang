@@ -18,6 +18,7 @@ public:
     void* allocate(size_t size, size_t alignment = alignof(std::max_align_t));
 
     template <typename T, typename... Args>
+    requires std::constructible_from<T, Args...>
     T* make(Args&&... args) {
         void* mem = allocate(sizeof(T), alignof(T));
         return new (mem) T(std::forward<Args>(args)...);
