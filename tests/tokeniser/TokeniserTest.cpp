@@ -175,6 +175,15 @@ TEST_F(TokeniserTest, TokeniserTokenisesFloatsCorrectly) {
         EXPECT_TRUE((*numTok.getIf<float>() - abs(num)) < 1e-6f);
     }
 
+    expectTokenSequence("1.0", {TokenType::FLOAT});
+    expectTokenSequence("1.", {TokenType::INTEGER, TokenType::DOT});
+    expectTokenSequence("1.a abc", {
+        TokenType::INTEGER,
+        TokenType::DOT,
+        TokenType::IDENTIFIER,
+        TokenType::IDENTIFIER
+    });
+
     expectNoDiagnostics();
 }
 

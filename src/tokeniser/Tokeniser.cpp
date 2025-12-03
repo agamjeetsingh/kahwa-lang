@@ -196,12 +196,18 @@ std::vector<Token> Tokeniser::TokeniserWorker::tokenise() {
                     if (next_is(".")) {
                         idx++;
                         std::string num_string_2 = getNumberString(curr_idx);
-                        std::string s = num_string_1;
-                        s.append(".");
-                        s.append(num_string_2);
-                        float num = std::stof(s);
+                        if (num_string_2.empty()) {
+                            int num = std::stoi(num_string_1);
+                            tokens.emplace_back(TokenType::INTEGER, num, SourceRange{file_id, curr_idx, num_string_1.length()});
+                            idx--;
+                        } else {
+                            std::string s = num_string_1;
+                            s.append(".");
+                            s.append(num_string_2);
+                            float num = std::stof(s);
 
-                        tokens.emplace_back(TokenType::FLOAT, num, SourceRange{file_id, curr_idx, s.length()});
+                            tokens.emplace_back(TokenType::FLOAT, num, SourceRange{file_id, curr_idx, s.length()});
+                        }
                     } else {
                         int num = std::stoi(num_string_1);
                         tokens.emplace_back(TokenType::INTEGER, num, SourceRange{file_id, curr_idx, num_string_1.length()});
