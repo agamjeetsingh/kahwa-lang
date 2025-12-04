@@ -76,3 +76,29 @@ TEST_F(TokenTest, TokenWithoutData_GetIfShouldReturnNull) {
     const float* retrieved_float = token.getIf<float>();
     EXPECT_EQ(retrieved_float, nullptr);
 }
+
+TEST_F(TokenTest, TokenCannotBeCreatedWithWrongType) {
+    EXPECT_THROW((Token{TokenType::CHAR_LITERAL, "A string.", SourceRange{0, 0}}), std::invalid_argument);
+
+    EXPECT_THROW((Token{TokenType::FLOAT, "Another string.", SourceRange{0, 0}}), std::invalid_argument);
+
+    EXPECT_THROW((Token{TokenType::EQUALS, "Yet string.", SourceRange{0, 0}}), std::invalid_argument);
+
+    EXPECT_THROW((Token{TokenType::FLOAT, 1, SourceRange{0, 0}}), std::invalid_argument);
+
+    EXPECT_THROW((Token{TokenType::INTEGER, 1.0f, SourceRange{0, 0}}), std::invalid_argument);
+
+    EXPECT_THROW((Token{TokenType::STRING_LITERAL, 1, SourceRange{0, 0}}), std::invalid_argument);
+
+    EXPECT_THROW((Token{TokenType::DOUBLE_EQUALS, 1, SourceRange{0, 0}}), std::invalid_argument);
+
+    for (auto type: std::unordered_set{TokenType::IDENTIFIER, TokenType::STRING_LITERAL, TokenType::CHAR_LITERAL, TokenType::INTEGER, TokenType::FLOAT}) {
+        EXPECT_THROW((Token{type, SourceRange{0, 0}}), std::invalid_argument);
+    }
+
+    for (auto type: KEYWORD_TYPES) {
+        EXPECT_THROW((Token{type, "Yet Yet string.", SourceRange{0, 0}}), std::invalid_argument);
+        EXPECT_THROW((Token{type, 1, SourceRange{0, 0}}), std::invalid_argument);
+        EXPECT_THROW((Token{type, 1.0f, SourceRange{0, 0}}), std::invalid_argument);
+    }
+}
