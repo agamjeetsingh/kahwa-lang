@@ -9,13 +9,11 @@
 #include "TypeRef.h"
 
 
-class TypedefDecl {
-public:
+struct TypedefDecl {
     TypedefDecl(std::string typeDef, TypeRef* refferedType): typeDef(std::move(typeDef)), referredType(refferedType) {}
 
-private:
-    std::string typeDef;
-    TypeRef* referredType;
+    const std::string typeDef;
+    TypeRef* const referredType;
 };
 
 

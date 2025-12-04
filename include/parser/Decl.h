@@ -10,8 +10,7 @@
 #include "../source/SourceRange.h"
 
 
-class Decl {
-public:
+struct Decl {
     Decl(std::string name,
     const std::vector<Modifier> &modifiers,
     const SourceRange &nameSourceRange,
@@ -21,7 +20,6 @@ public:
     nameSourceRange(nameSourceRange),
     bodyRange(bodyRange) {}
 
-private:
     const std::string name;
     const std::vector<Modifier> modifiers;
 

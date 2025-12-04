@@ -13,8 +13,7 @@
 #include "../source/SourceRange.h"
 
 
-class FieldDecl : public Decl {
-public:
+struct FieldDecl : Decl {
     FieldDecl(
     std::string name,
     const std::vector<Modifier> &modifiers,
@@ -26,7 +25,6 @@ public:
     type(type),
     typeSourceRange(typeSourceRange) {}
 
-private:
     TypeRef* const type;
     // TODO - Initialiser expression (optional)
 

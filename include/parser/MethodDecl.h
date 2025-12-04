@@ -13,8 +13,7 @@
 #include "../source/SourceRange.h"
 
 
-class MethodDecl : public Decl {
-public:
+struct MethodDecl : Decl {
     MethodDecl(std::string name,
     const std::vector<Modifier> &modifiers,
     TypeRef* returnType,
@@ -29,7 +28,6 @@ public:
     block(block),
     returnTypeSourceRange(returnTypeSourceRange) {}
 
-private:
     TypeRef* const returnType;
     const std::vector<std::pair<TypeRef*, std::string>> parameters;
     Block* const block;

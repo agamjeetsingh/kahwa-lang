@@ -7,11 +7,9 @@
 #include <vector>
 
 
-class TypeRef {
-public:
+struct TypeRef {
     explicit TypeRef(std::string identifier, const std::vector<TypeRef*> &args = {}): identifier(std::move(identifier)), args(args) {}
 
-private:
     const std::string identifier;
     const std::vector<TypeRef*> args;
 };

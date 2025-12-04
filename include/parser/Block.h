@@ -9,11 +9,9 @@
 #include "Stmt.h"
 
 
-class Block {
-public:
+struct Block {
     explicit Block(const std::vector<Stmt>& stmts): stmts(stmts) {}
-private:
-    std::vector<Stmt> stmts;
+    const std::vector<Stmt> stmts;
 };
 
 

@@ -9,14 +9,12 @@
 #include "TypedefDecl.h"
 
 
-class KahwaFile {
-public:
+struct KahwaFile {
     explicit KahwaFile(const std::vector<TypedefDecl*> &typedefDecls = {},
         const std::vector<ClassDecl*> &classDecls = {}
         ): typedefDecls(typedefDecls),
            classDecls(classDecls) {}
 
-private:
     const std::vector<TypedefDecl*> typedefDecls;
     const std::vector<ClassDecl*> classDecls;
 };

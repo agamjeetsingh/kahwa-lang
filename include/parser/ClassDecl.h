@@ -14,8 +14,7 @@
 #include "TypeRef.h"
 #include "../tokeniser/Token.h"
 
-class ClassDecl : public Decl {
-public:
+struct ClassDecl : Decl {
     ClassDecl(std::string name,
         const SourceRange &classSourceRange,
         const SourceRange &nameSourceRange,
@@ -33,7 +32,6 @@ public:
     nestedClasses(nestedClasses),
     classSourceRange(classSourceRange) {}
 
-private:
     const std::vector<TypeRef*> superClasses;
     const std::vector<FieldDecl*> fields;
     const std::vector<MethodDecl*> methods;

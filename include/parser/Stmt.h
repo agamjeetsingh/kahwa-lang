@@ -7,7 +7,7 @@
 
 
 
-class Stmt {
+struct Stmt {
 
 };
 
