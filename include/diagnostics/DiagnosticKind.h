@@ -5,6 +5,10 @@
 #ifndef DIAGNOSTICKIND_H
 #define DIAGNOSTICKIND_H
 
+#include <magic_enum.hpp>
+#include <optional>
+#include "../tokeniser/Token.h"
+
 
 
 enum class DiagnosticKind {
@@ -12,8 +16,46 @@ enum class DiagnosticKind {
     UNRECOGNISED_TOKEN,
     EXPECTED_DECLARATION,
     EXPECTED_CLASS_NAME,
-    EXPECTED_SOMETHING
+    EXPECTED_SOMETHING,
+    EXPECTED_IDENTIFIER,
+    EXPECTED_SEMI_COLON,
 };
+
+inline std::string toMsg(const DiagnosticKind kind, const std::string& aux) {
+    switch (kind) {
+        case DiagnosticKind::EXPECTED_SOMETHING:
+            return "Expected '" + aux + "'";
+        default:
+            throw std::runtime_error("Kind cannot be converted to msg with aux.");
+    }
+}
+
+inline std::optional<std::string> expectedDiagnostictoMsg(const DiagnosticKind kind) {
+    std::string kindName = std::string{magic_enum::enum_name(kind)};
+    
+    if (!kindName.starts_with("EXPECTED_")) {
+        return std::nullopt;
+    }
+    
+    std::string tokenPart = kindName.substr(9);
+    
+    auto tokenType = magic_enum::enum_cast<TokenType>(tokenPart);
+    if (!tokenType.has_value()) {
+        return std::nullopt;
+    }
+    
+    std::string tokenStr = tokenTypeToString(tokenType.value());
+    
+    if (tokenType.value() == TokenType::IDENTIFIER) {
+        return "Expected identifier";
+    }
+    
+    if (tokenStr.size() == 1 || (tokenStr.size() > 1 && !std::isalpha(tokenStr[0]))) {
+        return "Expected '" + tokenStr + "'";
+    }
+    
+    return "Expected " + tokenStr;
+}
 
 inline std::string toMsg(const DiagnosticKind kind) {
     switch (kind) {
@@ -25,17 +67,14 @@ inline std::string toMsg(const DiagnosticKind kind) {
             return "Expected a declaration.";
         case DiagnosticKind::EXPECTED_CLASS_NAME:
             return "Expected a class name.";
+        case DiagnosticKind::EXPECTED_IDENTIFIER:
+            return "Expected an identifier.";
         default:
-            throw std::runtime_error("Kind cannot be converted to msg.");
-    }
-}
+            if (auto msg = expectedDiagnostictoMsg(kind)) {
+                return msg.value();
+            }
 
-inline std::string toMsg(const DiagnosticKind kind, const std::string& aux) {
-    switch (kind) {
-        case DiagnosticKind::EXPECTED_SOMETHING:
-            return "Expected '" + aux + "'";
-        default:
-            throw std::runtime_error("Kind cannot be converted to msg with aux.");
+            throw std::runtime_error("Kind cannot be converted to msg.");
     }
 }
 
