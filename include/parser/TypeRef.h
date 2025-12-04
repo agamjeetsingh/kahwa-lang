@@ -10,8 +10,10 @@
 class TypeRef {
 public:
     explicit TypeRef(std::string identifier, const std::vector<TypeRef*> &args = {}): identifier(std::move(identifier)), args(args) {}
-    std::string identifier;
-    std::vector<TypeRef*> args;
+
+private:
+    const std::string identifier;
+    const std::vector<TypeRef*> args;
 };
 
 
