@@ -37,8 +37,11 @@ add_executable(kahwa_lang main.cpp
         include/source/SourceLocation.h
         include/diagnostics/DiagnosticKind.h
         include/source/SourceRange.h
-        include/parser/Modifier.h)
         include/parser/Modifier.h
+        src/parser/FieldDecl.cpp
+        include/parser/FieldDecl.h
+        src/parser/MethodDecl.cpp
+        include/parser/MethodDecl.h
         include/parser/TypeRef.h
         src/arena/Arena.cpp
         include/arena/Arena.h
@@ -48,6 +51,10 @@ add_executable(kahwa_lang main.cpp
         include/parser/KahwaFile.h
         src/source/SourceLocation.cpp
         src/source/SourceRange.cpp
+        src/parser/Block.cpp
+        include/parser/Block.h
+        src/parser/Stmt.cpp
+        include/parser/Stmt.h
 )
 
 target_link_libraries(kahwa_lang PRIVATE magic_enum::magic_enum)
@@ -57,11 +64,11 @@ enable_testing()
 add_executable(
     tests
         tests/tokeniser/TokenTest.cpp
-    src/tokeniser/Token.cpp
-    include/tokeniser/Token.h
-    include/tokeniser/TokenType.h
-    include/source/SourceRange.h
-    include/source/SourceLocation.h
+        tests/tokeniser/TokeniserTest.cpp
+        tests/diagnostics/DiagnosticEngineTest.cpp
+        src/tokeniser/Token.cpp
+        include/tokeniser/Token.h
+        include/tokeniser/TokenType.h
         src/tokeniser/Tokeniser.cpp
         include/tokeniser/Tokeniser.h
         tests/tokeniser/TokeniserTest.cpp
