@@ -1,0 +1,34 @@
+//
+// Created by Agamjeet Singh on 04/12/25.
+//
+
+#ifndef DECL_H
+#define DECL_H
+#include <utility>
+
+#include "Modifier.h"
+#include "../source/SourceRange.h"
+
+
+class Decl {
+public:
+    Decl(std::string name,
+    const std::vector<Modifier> &modifiers,
+    const SourceRange &nameSourceRange,
+    const SourceRange &bodyRange):
+    name(std::move(name)),
+    modifiers(modifiers),
+    nameSourceRange(nameSourceRange),
+    bodyRange(bodyRange) {}
+
+private:
+    std::string name;
+    std::vector<Modifier> modifiers;
+
+    SourceRange nameSourceRange;
+    SourceRange bodyRange;
+};
+
+
+
+#endif //DECL_H

@@ -7,12 +7,13 @@
 #include <string>
 #include <utility>
 
+#include "Decl.h"
 #include "Modifier.h"
 #include "TypeRef.h"
 #include "../source/SourceRange.h"
 
 
-class FieldDecl {
+class FieldDecl : public Decl {
 public:
     FieldDecl(
     std::string name,
@@ -21,22 +22,15 @@ public:
     const SourceRange &typeSourceRange,
     const SourceRange &nameSourceRange,
     const SourceRange &bodyRange):
-    name(std::move(name)),
-    modifiers(modifiers),
+    Decl(std::move(name), modifiers, nameSourceRange, bodyRange),
     type(type),
-    typeSourceRange(typeSourceRange),
-    nameSourceRange(nameSourceRange),
-    bodyRange(bodyRange) {}
+    typeSourceRange(typeSourceRange) {}
 
 private:
-    std::string name;
-    std::vector<Modifier> modifiers;
     TypeRef* type;
     // TODO - Initialiser expression (optional)
 
     SourceRange typeSourceRange;
-    SourceRange nameSourceRange;
-    SourceRange bodyRange;
 };
 
 

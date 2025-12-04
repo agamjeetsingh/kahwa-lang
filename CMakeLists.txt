@@ -55,6 +55,8 @@ add_executable(kahwa_lang main.cpp
         include/parser/Block.h
         src/parser/Stmt.cpp
         include/parser/Stmt.h
+        src/parser/Decl.cpp
+        include/parser/Decl.h
 )
 
 target_link_libraries(kahwa_lang PRIVATE magic_enum::magic_enum)

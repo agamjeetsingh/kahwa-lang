@@ -7,12 +7,13 @@
 #include <utility>
 
 #include "Block.h"
+#include "Decl.h"
 #include "Modifier.h"
 #include "TypeRef.h"
 #include "../source/SourceRange.h"
 
 
-class MethodDecl {
+class MethodDecl : public Decl {
 public:
     MethodDecl(std::string name,
     const std::vector<Modifier> &modifiers,
@@ -22,25 +23,18 @@ public:
     const SourceRange &returnTypeSourceRange,
     const SourceRange &nameSourceRange,
     const SourceRange &bodyRange):
-    name(std::move(name)),
-    modifiers(modifiers),
+    Decl(std::move(name), modifiers, nameSourceRange, bodyRange),
     returnType(returnType),
     parameters(parameters),
     block(block),
-    returnTypeSourceRange(returnTypeSourceRange),
-    nameSourceRange(nameSourceRange),
-    bodyRange(bodyRange) {}
+    returnTypeSourceRange(returnTypeSourceRange) {}
 
 private:
-    std::string name;
-    std::vector<Modifier> modifiers;
     TypeRef* returnType;
     std::vector<std::pair<TypeRef*, std::string>> parameters;
     Block* block;
 
     SourceRange returnTypeSourceRange;
-    SourceRange nameSourceRange;
-    SourceRange bodyRange;
 };
 
 

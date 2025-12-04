@@ -7,13 +7,14 @@
 
 #include <utility>
 
+#include "Decl.h"
 #include "FieldDecl.h"
 #include "MethodDecl.h"
 #include "Modifier.h"
 #include "TypeRef.h"
 #include "../tokeniser/Token.h"
 
-class ClassDecl {
+class ClassDecl : public Decl {
 public:
     ClassDecl(std::string name,
         const SourceRange &classSourceRange,
@@ -25,27 +26,20 @@ public:
         const std::vector<MethodDecl*> &methods = {},
         const std::vector<ClassDecl*> &nestedClasses = {}
         ):
-    name(std::move(name)),
-    modifiers(modifiers),
+    Decl(std::move(name), modifiers, nameSourceRange, bodyRange),
     superClasses(superClasses),
     fields(fields),
     methods(methods),
     nestedClasses(nestedClasses),
-    classSourceRange(classSourceRange),
-    nameSourceRange(nameSourceRange),
-    bodyRange(bodyRange) {}
+    classSourceRange(classSourceRange) {}
 
 private:
-    std::string name;
-    std::vector<Modifier> modifiers;
     std::vector<TypeRef*> superClasses;
     std::vector<FieldDecl*> fields;
     std::vector<MethodDecl*> methods;
     std::vector<ClassDecl*> nestedClasses;
 
     SourceRange classSourceRange;
-    SourceRange nameSourceRange;
-    SourceRange bodyRange;
 };
 
 
