@@ -5,6 +5,7 @@
 #ifndef FIELDDECL_H
 #define FIELDDECL_H
 #include <string>
+#include <utility>
 
 #include "Modifier.h"
 #include "TypeRef.h"
@@ -13,7 +14,19 @@
 
 class FieldDecl {
 public:
-    FieldDecl() {}
+    FieldDecl(
+    std::string name,
+    const std::vector<Modifier> &modifiers,
+    TypeRef* type,
+    const SourceRange &typeSourceRange,
+    const SourceRange &nameSourceRange,
+    const SourceRange &bodyRange):
+    name(std::move(name)),
+    modifiers(modifiers),
+    type(type),
+    typeSourceRange(typeSourceRange),
+    nameSourceRange(nameSourceRange),
+    bodyRange(bodyRange) {}
 
 private:
     std::string name;
