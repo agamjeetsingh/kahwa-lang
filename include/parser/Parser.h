@@ -4,6 +4,7 @@
 
 #ifndef PARSER_H
 #define PARSER_H
+#include "ClassDecl.h"
 #include "KahwaFile.h"
 #include "TypedefDecl.h"
 #include "../tokeniser/Token.h"
@@ -22,9 +23,17 @@ public:
     public:
         explicit ParserWorker(const std::vector<Token> &tokens, Arena& astArena, DiagnosticEngine& diagnostic_engine): tokens(tokens), astArena(astArena), diagnostic_engine(diagnostic_engine) {}
 
+        std::vector<Modifier> getModifierList();
+
         KahwaFile* parseFile();
 
         TypedefDecl* parseTypedef();
+
+        ClassDecl* parseClass();
+
+        MethodDecl* parseMethod();
+
+        Block* parseBlock();
 
     private:
         const std::vector<Token> tokens;
@@ -40,6 +49,26 @@ public:
         std::vector<Token> next(const std::function<bool(const Token&)> &until) const;
 
         std::vector<Token> next(std::size_t count, const std::function<bool(const Token&)> &until = [](const Token& token){ return false; }) const;
+
+        [[nodiscard]] Token next() const;
+
+        void syncTo(const std::function<bool(const Token&)> &isSafePoint);
+
+        std::optional<Token> expect(TokenType tokenType, DiagnosticKind kind, const std::function<bool(const Token&)> &isSafePoint);
+
+        std::optional<std::vector<Token>> expect(const std::vector<TokenType>& tokenTypes, const std::vector<DiagnosticKind>& kinds, const std::vector<std::function<bool(const Token&)>>& isSafePoints);
+
+        [[nodiscard]] SourceRange getPrevTokSourceRange() const;
+
+        const std::function<bool(const Token&)> isSafePointForFile = [](const Token& token) {
+            return token.type == TokenType::IDENTIFIER || token.type == TokenType::TYPEDEF || MODIFIER_TYPES.contains(token.type);
+        };
+
+        const std::function<bool(const Token&)> isSafePointForClass = [](const Token& token) {
+            return token.type == TokenType::IDENTIFIER || MODIFIER_TYPES.contains(token.type);
+        };
+
+        void assertTokenSequence(std::size_t count, const std::vector<TokenType> &expectedTypes) const;
     };
 
 private:
