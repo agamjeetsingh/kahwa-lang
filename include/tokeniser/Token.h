@@ -25,7 +25,7 @@ public:
     }
 
     Token(const TokenType type, std::string data, const SourceRange &source_range) : type(type), source_range(source_range), type_index(typeid(data)), data(std::make_shared<AuxData<std::string>>(std::move(data))) {
-        if (type != TokenType::IDENTIFIER && type != TokenType::STRING_LITERAL) {
+        if (type != TokenType::IDENTIFIER && type != TokenType::STRING_LITERAL && type != TokenType::BAD) {
             throw std::invalid_argument("Token of type " + std::string(magic_enum::enum_name<TokenType>(type)) + " cannot have string data.");
         }
     }
@@ -33,7 +33,7 @@ public:
     template <typename T>
     requires (std::is_same_v<T, int> || std::is_same_v<T, float>)
     Token(const TokenType type, T data, const SourceRange &source_range) : type(type), source_range(source_range), type_index(typeid(data)), data(std::make_shared<AuxData<T>>(data)) {
-        if (!(std::is_same_v<T, int> ? type == TokenType::INTEGER : type == TokenType::FLOAT)) {
+        if (!(std::is_same_v<T, int> ? type == TokenType::INTEGER : type == TokenType::FLOAT) && type != TokenType::BAD) {
             throw std::invalid_argument("Token of type " + std::string(magic_enum::enum_name<TokenType>(type)) + " cannot store integers or floats.");
         }
     }
