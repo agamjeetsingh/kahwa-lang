@@ -27,10 +27,10 @@ public:
     typeSourceRange(typeSourceRange) {}
 
 private:
-    TypeRef* type;
+    TypeRef* const type;
     // TODO - Initialiser expression (optional)
 
-    SourceRange typeSourceRange;
+    const SourceRange typeSourceRange;
 };
 
 

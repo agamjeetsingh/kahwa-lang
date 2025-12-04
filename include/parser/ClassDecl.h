@@ -34,12 +34,12 @@ public:
     classSourceRange(classSourceRange) {}
 
 private:
-    std::vector<TypeRef*> superClasses;
-    std::vector<FieldDecl*> fields;
-    std::vector<MethodDecl*> methods;
-    std::vector<ClassDecl*> nestedClasses;
+    const std::vector<TypeRef*> superClasses;
+    const std::vector<FieldDecl*> fields;
+    const std::vector<MethodDecl*> methods;
+    const std::vector<ClassDecl*> nestedClasses;
 
-    SourceRange classSourceRange;
+    const SourceRange classSourceRange;
 };
 
 

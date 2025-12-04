@@ -30,11 +30,11 @@ public:
     returnTypeSourceRange(returnTypeSourceRange) {}
 
 private:
-    TypeRef* returnType;
-    std::vector<std::pair<TypeRef*, std::string>> parameters;
-    Block* block;
+    TypeRef* const returnType;
+    const std::vector<std::pair<TypeRef*, std::string>> parameters;
+    Block* const block;
 
-    SourceRange returnTypeSourceRange;
+    const SourceRange returnTypeSourceRange;
 };
 
 

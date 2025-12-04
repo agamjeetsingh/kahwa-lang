@@ -22,11 +22,11 @@ public:
     bodyRange(bodyRange) {}
 
 private:
-    std::string name;
-    std::vector<Modifier> modifiers;
+    const std::string name;
+    const std::vector<Modifier> modifiers;
 
-    SourceRange nameSourceRange;
-    SourceRange bodyRange;
+    const SourceRange nameSourceRange;
+    const SourceRange bodyRange;
 };
 
 

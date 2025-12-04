@@ -11,10 +11,14 @@
 
 class KahwaFile {
 public:
-    explicit KahwaFile(const std::vector<TypedefDecl*> &typedefDecls = {}): typedefDecls(typedefDecls) {}
+    explicit KahwaFile(const std::vector<TypedefDecl*> &typedefDecls = {},
+        const std::vector<ClassDecl*> &classDecls = {}
+        ): typedefDecls(typedefDecls),
+           classDecls(classDecls) {}
 
 private:
-    std::vector<TypedefDecl*> typedefDecls;
+    const std::vector<TypedefDecl*> typedefDecls;
+    const std::vector<ClassDecl*> classDecls;
 };
 
 
