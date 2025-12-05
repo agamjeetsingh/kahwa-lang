@@ -6,11 +6,6 @@
 
 #include "../../include/parser/Modifier.h"
 
-enum class Modifier;
-class FieldDecl;
-class MethodDecl;
-class ClassDecl;
-
 KahwaFile *Parser::parseFile(const std::vector<Token> &tokens) const {
     return ParserWorker(tokens, astArena, diagnostic_engine).parseFile();
 }
@@ -64,7 +59,6 @@ TypedefDecl *Parser::ParserWorker::parseTypedef() {
 
     if (const auto nextTokens = expect(
         std::vector{TokenType::IDENTIFIER, TokenType::IDENTIFIER, TokenType::SEMI_COLON},
-        std::vector{DiagnosticKind::EXPECTED_IDENTIFIER, DiagnosticKind::EXPECTED_IDENTIFIER, DiagnosticKind::EXPECTED_SEMI_COLON},
         std::vector(3, isSafePointForFile)
         )) {
         auto* referredType = astArena.make<TypeRef>(*nextTokens.value()[0].getIf<std::string>());
@@ -82,7 +76,7 @@ ClassDecl *Parser::ParserWorker::parseClass() {
 
     SourceRange classSourceRange = tokens[idx++].source_range;
 
-    auto nameToken = expect(TokenType::IDENTIFIER, DiagnosticKind::EXPECTED_IDENTIFIER, isSafePointForFile);
+    auto nameToken = expect(TokenType::IDENTIFIER, isSafePointForFile);
     if (!nameToken) {
         return nullptr;
     }
@@ -92,7 +86,7 @@ ClassDecl *Parser::ParserWorker::parseClass() {
 
     // TODO - Parse optional super classes
 
-    if (!expect(TokenType::LEFT_CURLY_BRACE, DiagnosticKind::EXPECTED_LEFT_CURLY_BRACE, isSafePointForFile)) {
+    if (!expect(TokenType::LEFT_CURLY_BRACE, isSafePointForFile)) {
         return nullptr;
     }
 
@@ -104,7 +98,7 @@ ClassDecl *Parser::ParserWorker::parseClass() {
         std::size_t save_idx = idx;
         getModifierList();
 
-        if (auto nextToken1 = expect(TokenType::IDENTIFIER, DiagnosticKind::EXPECTED_IDENTIFIER, isSafePointForClass)) {
+        if (auto nextToken1 = expect(TokenType::IDENTIFIER, isSafePointForClass)) {
             // Could be type of variable or return type of method or name of constructor
 
             if (next_is(TokenType::LEFT_PAREN)) {
@@ -116,7 +110,7 @@ ClassDecl *Parser::ParserWorker::parseClass() {
                 continue;
             }
 
-            if (auto nextToken2 = expect(TokenType::IDENTIFIER, DiagnosticKind::EXPECTED_IDENTIFIER, isSafePointForClass)) {
+            if (auto nextToken2 = expect(TokenType::IDENTIFIER, isSafePointForClass)) {
 
                 // left parenthesis -> method, otherwise field declaration
                 if (next_is(TokenType::LEFT_PAREN)) {
@@ -136,7 +130,7 @@ ClassDecl *Parser::ParserWorker::parseClass() {
         }
     }
 
-    expect(TokenType::RIGHT_CURLY_BRACE, DiagnosticKind::EXPECTED_RIGHT_CURLY_BRACE, isSafePointForFile);
+    expect(TokenType::RIGHT_CURLY_BRACE, isSafePointForFile);
 
     const std::size_t file_id = nameToken->source_range.file_id;
     const std::size_t length = 1; // TODO
@@ -164,7 +158,6 @@ MethodDecl *Parser::ParserWorker::parseMethod() {
     while (next_is(TokenType::RIGHT_PAREN)) {
         auto tokens = expect(
             {TokenType::IDENTIFIER, TokenType::IDENTIFIER},
-            {DiagnosticKind::EXPECTED_IDENTIFIER, DiagnosticKind::EXPECTED_IDENTIFIER},
             std::vector(3, isSafePointForClass));
         if (!tokens) {
             return nullptr;
@@ -176,7 +169,7 @@ MethodDecl *Parser::ParserWorker::parseMethod() {
         parameters.emplace_back(paramType, paramName);
     }
 
-    if (expect(TokenType::LEFT_CURLY_BRACE, DiagnosticKind::EXPECTED_LEFT_CURLY_BRACE, isSafePointForClass)) {
+    if (expect(TokenType::LEFT_CURLY_BRACE, isSafePointForClass)) {
         idx--;
         block = parseBlock();
         if (!block) {
@@ -190,6 +183,11 @@ MethodDecl *Parser::ParserWorker::parseMethod() {
 
     return astArena.make<MethodDecl>(name, modifiers, returnType, parameters, block, returnTypeSourceRange, nameSourceRange, bodyRange);
 }
+
+Block *Parser::ParserWorker::parseBlock() {
+
+}
+
 
 void Parser::ParserWorker::assertTokenSequence(const std::size_t count, const std::vector<TokenType> &expectedTypes) const {
     std::vector<TokenType> actualTypes;
@@ -251,6 +249,11 @@ std::optional<Token> Parser::ParserWorker::expect(const TokenType tokenType, con
     return std::nullopt;
 }
 
+std::optional<Token> Parser::ParserWorker::expect(TokenType tokenType, const std::function<bool(const Token &)> &isSafePoint) {
+    return expect(tokenType, expectedTokenTypeToDiagnosticKind(tokenType), isSafePoint);
+}
+
+
 std::optional<std::vector<Token>> Parser::ParserWorker::expect(const std::vector<TokenType>& tokenTypes, const std::vector<DiagnosticKind>& kinds, const std::vector<std::function<bool(const Token&)>>& isSafePoints) {
     assert(tokenTypes.size() == kinds.size() && kinds.size() == isSafePoints.size());
     std::vector<Token> res;
@@ -262,6 +265,12 @@ std::optional<std::vector<Token>> Parser::ParserWorker::expect(const std::vector
         }
     }
     return res;
+}
+
+std::optional<std::vector<Token>> Parser::ParserWorker::expect(const std::vector<TokenType> &tokenTypes, const std::vector<std::function<bool(const Token &)> > &isSafePoints) {
+    std::vector<DiagnosticKind> kinds;
+    std::ranges::transform(tokenTypes, kinds.begin(), [](const TokenType type){ return expectedTokenTypeToDiagnosticKind(type); });
+    return expect(tokenTypes, kinds, isSafePoints);
 }
 
 SourceRange Parser::ParserWorker::getPrevTokSourceRange() const {

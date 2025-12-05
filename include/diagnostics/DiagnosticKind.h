@@ -32,6 +32,25 @@ inline std::string toMsg(const DiagnosticKind kind, const std::string& aux) {
     }
 }
 
+inline DiagnosticKind expectedTokenTypeToDiagnosticKind(const TokenType tokenType) {
+    const auto typeName = std::string{magic_enum::enum_name(tokenType)};
+
+    // TODO - Ensure each token type has one, or throw error on failure
+    return magic_enum::enum_cast<DiagnosticKind>("EXPECTED_" + typeName).value();
+}
+
+inline std::optional<TokenType> expectedDiagnosticToTokenType(const DiagnosticKind kind) {
+    std::string kindName = std::string{magic_enum::enum_name(kind)};
+
+    if (!kindName.starts_with("EXPECTED_")) {
+        return std::nullopt;
+    }
+
+    std::string tokenPart = kindName.substr(9);
+
+    return magic_enum::enum_cast<TokenType>(tokenPart);
+}
+
 inline std::optional<std::string> expectedDiagnostictoMsg(const DiagnosticKind kind) {
     std::string kindName = std::string{magic_enum::enum_name(kind)};
     

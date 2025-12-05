@@ -56,7 +56,11 @@ public:
 
         std::optional<Token> expect(TokenType tokenType, DiagnosticKind kind, const std::function<bool(const Token&)> &isSafePoint);
 
+        std::optional<Token> expect(TokenType tokenType, const std::function<bool(const Token&)> &isSafePoint);
+
         std::optional<std::vector<Token>> expect(const std::vector<TokenType>& tokenTypes, const std::vector<DiagnosticKind>& kinds, const std::vector<std::function<bool(const Token&)>>& isSafePoints);
+
+        std::optional<std::vector<Token>> expect(const std::vector<TokenType>& tokenTypes, const std::vector<std::function<bool(const Token&)>>& isSafePoints);
 
         [[nodiscard]] SourceRange getPrevTokSourceRange() const;
 
