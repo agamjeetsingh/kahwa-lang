@@ -24,6 +24,8 @@ KahwaFile *Parser::ParserWorker::parseFile() {
         std::size_t save_idx = idx;
         const Token& token = tokens[idx++];
 
+        getModifierList();
+
         if (token.type == TokenType::TYPEDEF) {
             idx = save_idx;
             if (auto typedefDecl = parseTypedef()) {
@@ -32,8 +34,6 @@ KahwaFile *Parser::ParserWorker::parseFile() {
                 continue;
             }
         } else {
-            getModifierList();
-
             if (next_is(TokenType::CLASS)) {
                 // class-decl
                 idx = save_idx;
@@ -41,6 +41,7 @@ KahwaFile *Parser::ParserWorker::parseFile() {
                     classDecls.push_back(class_decl);
                 }
             } else {
+                continue; // TODO
                 // variable-decl or function-decl
 
                 idx = save_idx;
@@ -67,12 +68,22 @@ TypedefDecl *Parser::ParserWorker::parseTypedef() {
     // idx is pointing to token right after "typedef"
     // Assuming no generics
 
+    SourceRange firstTokenSourceRange = tokens[idx].source_range;
+
+    auto modifiers = getModifierList();
+
     if (const auto nextTokens = expect(
         std::vector{TokenType::TYPEDEF, TokenType::IDENTIFIER, TokenType::IDENTIFIER, TokenType::SEMI_COLON},
         std::vector(4, isSafePointForFile)
         )) {
         auto* referredType = astArena.make<TypeRef>(*nextTokens.value()[1].getIf<std::string>());
-        return astArena.make<TypedefDecl>(*nextTokens.value()[2].getIf<std::string>(), referredType);
+        return astArena.make<TypedefDecl>(
+            *nextTokens.value()[2].getIf<std::string>(),
+            modifiers,
+            referredType,
+            nextTokens.value()[0].source_range,
+            nextTokens.value()[1].source_range,
+            SourceRange{firstTokenSourceRange, nextTokens->back().source_range});
     }
     return nullptr;
 }
