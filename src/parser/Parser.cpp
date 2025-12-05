@@ -68,11 +68,11 @@ TypedefDecl *Parser::ParserWorker::parseTypedef() {
     // Assuming no generics
 
     if (const auto nextTokens = expect(
-        std::vector{TokenType::IDENTIFIER, TokenType::IDENTIFIER, TokenType::SEMI_COLON},
-        std::vector(3, isSafePointForFile)
+        std::vector{TokenType::TYPEDEF, TokenType::IDENTIFIER, TokenType::IDENTIFIER, TokenType::SEMI_COLON},
+        std::vector(4, isSafePointForFile)
         )) {
-        auto* referredType = astArena.make<TypeRef>(*nextTokens.value()[0].getIf<std::string>());
-        return astArena.make<TypedefDecl>(*nextTokens.value()[1].getIf<std::string>(), referredType);
+        auto* referredType = astArena.make<TypeRef>(*nextTokens.value()[1].getIf<std::string>());
+        return astArena.make<TypedefDecl>(*nextTokens.value()[2].getIf<std::string>(), referredType);
     }
     return nullptr;
 }
@@ -278,7 +278,7 @@ std::optional<std::vector<Token>> Parser::ParserWorker::expect(const std::vector
 }
 
 std::optional<std::vector<Token>> Parser::ParserWorker::expect(const std::vector<TokenType> &tokenTypes, const std::vector<std::function<bool(const Token &)> > &isSafePoints) {
-    std::vector<DiagnosticKind> kinds;
+    std::vector<DiagnosticKind> kinds{tokenTypes.size()};
     std::ranges::transform(tokenTypes, kinds.begin(), [](const TokenType type){ return expectedTokenTypeToDiagnosticKind(type); });
     return expect(tokenTypes, kinds, isSafePoints);
 }
