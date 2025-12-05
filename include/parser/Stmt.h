@@ -8,7 +8,9 @@
 
 
 struct Stmt {
-
+    bool operator==(const Stmt &other) const {
+        return true; // Empty struct, all instances are equal
+    }
 };
 
 

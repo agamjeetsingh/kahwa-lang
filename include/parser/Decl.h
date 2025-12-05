@@ -25,6 +25,13 @@ struct Decl {
 
     const SourceRange nameSourceRange;
     const SourceRange bodyRange;
+
+    bool operator==(const Decl &other) const {
+        return name == other.name &&
+               modifiers == other.modifiers &&
+               nameSourceRange == other.nameSourceRange &&
+               bodyRange == other.bodyRange;
+    }
 };
 
 

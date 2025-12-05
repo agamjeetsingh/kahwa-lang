@@ -12,6 +12,20 @@ struct TypeRef {
 
     const std::string identifier;
     const std::vector<TypeRef*> args;
+
+    bool operator==(const TypeRef &other) const {
+        if (identifier != other.identifier || args.size() != other.args.size()) {
+            return false;
+        }
+        
+        for (size_t i = 0; i < args.size(); ++i) {
+            if (args[i] == nullptr && other.args[i] == nullptr) continue;
+            if (args[i] == nullptr || other.args[i] == nullptr) return false;
+            if (!(*args[i] == *other.args[i])) return false;
+        }
+        
+        return true;
+    }
 };
 
 

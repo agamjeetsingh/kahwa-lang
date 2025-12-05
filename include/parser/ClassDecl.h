@@ -38,6 +38,43 @@ struct ClassDecl : Decl {
     const std::vector<ClassDecl*> nestedClasses;
 
     const SourceRange classSourceRange;
+
+    bool operator==(const ClassDecl &other) const {
+        if (!Decl::operator==(other)) return false;
+        
+        if (superClasses.size() != other.superClasses.size() ||
+            fields.size() != other.fields.size() ||
+            methods.size() != other.methods.size() ||
+            nestedClasses.size() != other.nestedClasses.size()) {
+            return false;
+        }
+        
+        for (size_t i = 0; i < superClasses.size(); ++i) {
+            if (superClasses[i] == nullptr && other.superClasses[i] == nullptr) continue;
+            if (superClasses[i] == nullptr || other.superClasses[i] == nullptr) return false;
+            if (!(*superClasses[i] == *other.superClasses[i])) return false;
+        }
+        
+        for (size_t i = 0; i < fields.size(); ++i) {
+            if (fields[i] == nullptr && other.fields[i] == nullptr) continue;
+            if (fields[i] == nullptr || other.fields[i] == nullptr) return false;
+            if (!(*fields[i] == *other.fields[i])) return false;
+        }
+        
+        for (size_t i = 0; i < methods.size(); ++i) {
+            if (methods[i] == nullptr && other.methods[i] == nullptr) continue;
+            if (methods[i] == nullptr || other.methods[i] == nullptr) return false;
+            if (!(*methods[i] == *other.methods[i])) return false;
+        }
+        
+        for (size_t i = 0; i < nestedClasses.size(); ++i) {
+            if (nestedClasses[i] == nullptr && other.nestedClasses[i] == nullptr) continue;
+            if (nestedClasses[i] == nullptr || other.nestedClasses[i] == nullptr) return false;
+            if (!(*nestedClasses[i] == *other.nestedClasses[i])) return false;
+        }
+        
+        return classSourceRange == other.classSourceRange;
+    }
 };
 
 

@@ -29,6 +29,18 @@ struct FieldDecl : Decl {
     // TODO - Initialiser expression (optional)
 
     const SourceRange typeSourceRange;
+
+    bool operator==(const FieldDecl &other) const {
+        if (!Decl::operator==(other)) return false;
+        
+        if (type == nullptr && other.type == nullptr) {
+            return typeSourceRange == other.typeSourceRange;
+        }
+        if (type == nullptr || other.type == nullptr) {
+            return false;
+        }
+        return *type == *other.type && typeSourceRange == other.typeSourceRange;
+    }
 };
 
 

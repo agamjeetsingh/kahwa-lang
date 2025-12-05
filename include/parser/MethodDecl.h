@@ -33,6 +33,39 @@ struct MethodDecl : Decl {
     Block* const block;
 
     const SourceRange returnTypeSourceRange;
+
+    bool operator==(const MethodDecl &other) const {
+        if (!Decl::operator==(other)) return false;
+        
+        if (returnType == nullptr && other.returnType == nullptr) {
+            // Both null, compare other fields
+        } else if (returnType == nullptr || other.returnType == nullptr) {
+            return false;
+        } else if (!(*returnType == *other.returnType)) {
+            return false;
+        }
+        
+        if (parameters.size() != other.parameters.size()) return false;
+        for (size_t i = 0; i < parameters.size(); ++i) {
+            if (parameters[i].second != other.parameters[i].second) return false;
+            
+            auto &typeA = parameters[i].first;
+            auto &typeB = other.parameters[i].first;
+            if (typeA == nullptr && typeB == nullptr) continue;
+            if (typeA == nullptr || typeB == nullptr) return false;
+            if (!(*typeA == *typeB)) return false;
+        }
+        
+        if (block == nullptr && other.block == nullptr) {
+            // Both null, continue
+        } else if (block == nullptr || other.block == nullptr) {
+            return false;
+        } else if (!(*block == *other.block)) {
+            return false;
+        }
+        
+        return returnTypeSourceRange == other.returnTypeSourceRange;
+    }
 };
 
 

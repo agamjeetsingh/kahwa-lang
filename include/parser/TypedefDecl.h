@@ -14,6 +14,16 @@ struct TypedefDecl {
 
     const std::string typeDef;
     TypeRef* const referredType;
+
+    bool operator==(const TypedefDecl &other) const {
+        if (referredType == nullptr && other.referredType == nullptr) {
+            return typeDef == other.typeDef;
+        }
+        if (referredType == nullptr || other.referredType == nullptr) {
+            return false;
+        }
+        return typeDef == other.typeDef && *referredType == *other.referredType;
+    }
 };
 
 
