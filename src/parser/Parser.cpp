@@ -17,6 +17,9 @@ TypedefDecl *Parser::parseTypedef(const std::vector<Token> &tokens) const {
 KahwaFile *Parser::ParserWorker::parseFile() {
     std::vector<TypedefDecl*> typedefDecls;
     std::vector<ClassDecl*> classDecls;
+    std::vector<MethodDecl*> functionDecls;
+    std::vector<FieldDecl*> variableDecls;
+
     while (idx < tokens.size()) {
         std::size_t save_idx = idx;
         const Token& token = tokens[idx++];
@@ -26,7 +29,7 @@ KahwaFile *Parser::ParserWorker::parseFile() {
             if (auto typedefDecl = parseTypedef()) {
                 typedefDecls.push_back(typedefDecl);
             } else {
-                // TODO - Report some error
+                continue;
             }
         } else {
             getModifierList();
@@ -41,7 +44,14 @@ KahwaFile *Parser::ParserWorker::parseFile() {
                 // variable-decl or function-decl
 
                 idx = save_idx;
-                // TODO
+
+                // TODO - Distinguish between the two first
+
+                // TODO - But with recovery being file-level and not class-level
+                if (auto function = parseMethod()) {
+                    functionDecls.push_back(function);
+                }
+
                 continue;
             }
 
@@ -50,7 +60,7 @@ KahwaFile *Parser::ParserWorker::parseFile() {
         }
     }
 
-    return astArena.make<KahwaFile>(typedefDecls, classDecls);
+    return astArena.make<KahwaFile>(typedefDecls, classDecls, functionDecls, variableDecls);
 }
 
 TypedefDecl *Parser::ParserWorker::parseTypedef() {

@@ -11,12 +11,18 @@
 
 struct KahwaFile {
     explicit KahwaFile(const std::vector<TypedefDecl*> &typedefDecls = {},
-        const std::vector<ClassDecl*> &classDecls = {}
-        ): typedefDecls(typedefDecls),
-           classDecls(classDecls) {}
+        const std::vector<ClassDecl*> &classDecls = {},
+        const std::vector<MethodDecl*> &functionDecls = {},
+        const std::vector<FieldDecl*> &variableDecls = {}):
+    typedefDecls(typedefDecls),
+    classDecls(classDecls),
+    functionDecls(functionDecls),
+    variableDecls(variableDecls) {}
 
     const std::vector<TypedefDecl*> typedefDecls;
     const std::vector<ClassDecl*> classDecls;
+    const std::vector<MethodDecl*> functionDecls;
+    const std::vector<FieldDecl*> variableDecls;
 };
 
 
