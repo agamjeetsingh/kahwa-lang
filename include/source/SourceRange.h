@@ -6,6 +6,7 @@
 #define SOURCERANGE_H
 #include <cstddef>
 
+class Token;
 struct SourceLocation;
 
 struct SourceRange {
@@ -17,7 +18,9 @@ struct SourceRange {
 
     explicit SourceRange(SourceLocation source_location);
 
-    SourceRange(SourceLocation start_source_location, const SourceLocation end_source_location);
+    SourceRange(SourceLocation start_source_location, SourceLocation end_source_location);
+
+    SourceRange(const Token& first, const Token& last);
 
     bool operator==(const SourceRange &other) const;
 };
