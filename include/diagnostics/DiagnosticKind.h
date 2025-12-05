@@ -20,7 +20,8 @@ enum class DiagnosticKind {
     EXPECTED_IDENTIFIER,
     EXPECTED_SEMI_COLON,
     EXPECTED_LEFT_CURLY_BRACE,
-    EXPECTED_RIGHT_CURLY_BRACE
+    EXPECTED_RIGHT_CURLY_BRACE,
+    EXPECTED_TYPEDEF,
 };
 
 inline std::string toMsg(const DiagnosticKind kind, const std::string& aux) {
