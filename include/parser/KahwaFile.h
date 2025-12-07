@@ -35,22 +35,22 @@ struct KahwaFile {
         for (size_t i = 0; i < typedefDecls.size(); ++i) {
             if (typedefDecls[i] == nullptr && other.typedefDecls[i] == nullptr) continue;
             if (typedefDecls[i] == nullptr || other.typedefDecls[i] == nullptr) return false;
-            if (!(*typedefDecls[i] == *other.typedefDecls[i])) return false;
+            if (*typedefDecls[i] != *other.typedefDecls[i]) return false;
         }
         for (size_t i = 0; i < classDecls.size(); ++i) {
             if (classDecls[i] == nullptr && other.classDecls[i] == nullptr) continue;
             if (classDecls[i] == nullptr || other.classDecls[i] == nullptr) return false;
-            if (!(*classDecls[i] == *other.classDecls[i])) return false;
+            if (*classDecls[i] != *other.classDecls[i]) return false;
         }
         for (size_t i = 0; i < functionDecls.size(); ++i) {
             if (functionDecls[i] == nullptr && other.functionDecls[i] == nullptr) continue;
             if (functionDecls[i] == nullptr || other.functionDecls[i] == nullptr) return false;
-            if (!(*functionDecls[i] == *other.functionDecls[i])) return false;
+            if (*functionDecls[i] != *other.functionDecls[i]) return false;
         }
         for (size_t i = 0; i < variableDecls.size(); ++i) {
             if (variableDecls[i] == nullptr && other.variableDecls[i] == nullptr) continue;
             if (variableDecls[i] == nullptr || other.variableDecls[i] == nullptr) return false;
-            if (!(*variableDecls[i] == *other.variableDecls[i])) return false;
+            if (*variableDecls[i] != *other.variableDecls[i]) return false;
         }
         
         return true;

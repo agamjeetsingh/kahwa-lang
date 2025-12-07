@@ -41,7 +41,7 @@ struct MethodDecl : Decl {
             // Both null, compare other fields
         } else if (returnType == nullptr || other.returnType == nullptr) {
             return false;
-        } else if (!(*returnType == *other.returnType)) {
+        } else if (*returnType != *other.returnType) {
             return false;
         }
         
@@ -53,14 +53,14 @@ struct MethodDecl : Decl {
             auto &typeB = other.parameters[i].first;
             if (typeA == nullptr && typeB == nullptr) continue;
             if (typeA == nullptr || typeB == nullptr) return false;
-            if (!(*typeA == *typeB)) return false;
+            if (*typeA != *typeB) return false;
         }
         
         if (block == nullptr && other.block == nullptr) {
             // Both null, continue
         } else if (block == nullptr || other.block == nullptr) {
             return false;
-        } else if (!(*block == *other.block)) {
+        } else if (*block != *other.block) {
             return false;
         }
         

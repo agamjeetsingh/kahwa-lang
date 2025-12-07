@@ -19,7 +19,7 @@ struct Block {
         for (size_t i = 0; i < stmts.size(); ++i) {
             if (stmts[i] == nullptr && other.stmts[i] == nullptr) continue;
             if (stmts[i] == nullptr || other.stmts[i] == nullptr) return false;
-            if (!(*stmts[i] == *other.stmts[i])) return false;
+            if (*stmts[i] != *other.stmts[i]) return false;
         }
         
         return true;
