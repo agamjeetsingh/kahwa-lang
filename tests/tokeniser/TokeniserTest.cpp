@@ -66,6 +66,24 @@ protected:
     void expectNoDiagnostics() const {
         expectDiagnostics({});
     }
+
+    static std::string unTokenise(const std::vector<Token> &tokens) {
+        if (tokens.empty()) return "";
+        std::string res;
+        std::size_t file_id = tokens[0].source_range.file_id;
+        for (const auto& token : tokens) {
+            EXPECT_LE(res.length(), token.source_range.pos);
+            res.append(std::string(token.source_range.pos - res.length(), ' '));
+            std::string str = toString(token);
+            if (token.type == TokenType::FLOAT) {
+                str = str.substr(0, token.source_range.length);
+            }
+            EXPECT_EQ(str.length(), token.source_range.length);
+            EXPECT_EQ(file_id, token.source_range.file_id);
+            res.append(str);
+        }
+        return res;
+    }
 };
 
 TEST_F(TokeniserTest, TokenisesSingleLengthTokensCorrectly) {
@@ -348,4 +366,109 @@ TEST_F(TokeniserTest, TokeniserSkipsMultiLineCommentsCorrectly) {
 
     expectTokenSequence("/**/", {});
     expectTokenSequence("//**/ A single line comment", {});
+}
+
+TEST_F(TokeniserTest, TokeniserOutputsCorrectSourceRange) {
+    std::vector<std::string> strs = {
+        // Basic tokens
+        "( ) { } [ ]",
+        ": ; ,",
+        "+ - * / %",
+        "< > = !",
+        "| ^ ? .",
+        
+        // Multi-character operators
+        "== != <= >=",
+        "+= -= *= /= %=",
+        "&= |= ^= <<= >>=",
+        "++ -- && ||",
+        "<< >>",
+        
+        // Keywords
+        "class interface",
+        "if else for while",
+        "return",
+        "true false null",
+        "public private protected",
+        "static final open abstract",
+
+        // Identifiers and literals
+        "abc _var var123 _123",
+        "MyClass someFunction CONSTANT",
+        "123 456 789",
+        "12.34 0.0 999.999",
+        R"("hello" "world with spaces")",
+
+        // Mixed expressions
+        "x = 42",
+        "array[index]",
+        "obj.method()",
+        "a + b * c",
+        "if (x > 0) return true",
+        "class MyClass : BaseClass",
+        "function foo() { return 42 }",
+        "var x = \"hello world\"",
+        "a += b++",
+        "x << 2 | y",
+        "!valid && ready",
+        
+        // Numeric edge cases
+        "0 1 999",
+        // "0.0 1.5 123.456",
+        "-42 +17",
+        // "1 + 2.0",
+
+        // String and character literals
+        R"("" "a" "longer string")",
+        R"("string")",
+        
+        // Operator combinations
+        "x++ + ++y",
+        "a-- - --b",
+        "x && y || z",
+        "a << b >> c",
+        "x ? y : z",
+        
+        // Function and class syntax
+        "class A { }",
+        "function f() { return 0 }",
+        "var arr = [ 1 , 2 , 3 ]",
+        "obj . prop = value",
+        "func ( arg1 , arg2 )",
+        
+        // Control flow
+        "if ( condition ) { }",
+        "for ( i = 0 ; i < 10 ; i++ )",
+        "while ( running ) continue",
+        "switch ( value ) { case 1 : break }",
+        
+        // Single characters that could be confused
+        "a b c",
+        "1 2 3",
+        ". , ;",
+        "( ) { } [ ]",
+        
+        // Empty and minimal cases
+        "x",
+        "42",
+        "\"\"",
+        "true",
+        
+        // Boundary cases
+        "+ +",
+        "- -",
+        "< <",
+        "> >",
+        "= =",
+        "! !",
+        "& &",
+        "| |",
+
+        // Multi space
+        "a   b",
+        "a   b  c d  e"
+    };
+    for (const auto& str: strs) {
+        EXPECT_EQ(str, (unTokenise(tokeniser.tokenise(0, str))));
+    }
 }
