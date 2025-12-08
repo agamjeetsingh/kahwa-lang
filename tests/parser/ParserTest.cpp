@@ -23,7 +23,7 @@ protected:
         expectDiagnostics({});
     }
 
-    KahwaFile* parseFile(const std::string &str) const {
+    [[nodiscard]] KahwaFile* parseFile(const std::string &str) const {
         return parser.parseFile(tokeniser.tokenise(0, str));
     }
 
@@ -201,11 +201,46 @@ protected:
         
         return true;
     }
+
+    static std::string modifiersToString(const std::vector<Modifier>& modifiers) {
+        std::string str;
+        for (int i = 0; i < modifiers.size(); i++) {
+            str += toString(modifiers[i]);
+            if (i != modifiers.size() - 1) str += " ";
+        }
+
+        return str;
+    }
+
+    std::pair<std::string, TypedefDecl*> createSimpleTypeDef(const std::string& name, const std::vector<Modifier>& modifiers, const std::string& typeName) {
+        auto decl = createTypedefDecl(name, modifiers, createTypeRef(typeName));
+        std::string str = modifiersToString(modifiers);
+        if (!modifiers.empty()) str += " ";
+        str += "typedef " + typeName + " " + name + ";";
+        return {str, decl};
+    }
 };
 
 TEST_F(ParserTest, ParsesSingleTypedefCorrectly) {
-    auto file = parseFile("typedef int myInt;");
-    EXPECT_PRED2 (kahwaFileEqualIgnoreSourceRange, file, createKahwaFile({createTypedefDecl("myInt", {}, createTypeRef("int"))}));
+    auto [str1, typedefDecl1] = createSimpleTypeDef("myInt", {}, "int");
+    EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str1), createKahwaFile({typedefDecl1}));
+
+    auto [str2, typedefDecl2] = createSimpleTypeDef("SomeType", {Modifier::PRIVATE}, "someOtherType");
+    EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str2), createKahwaFile({typedefDecl2}));
+
+    auto [str3, typedefDecl3] = createSimpleTypeDef("SomeTypeAgain", {Modifier::PUBLIC, Modifier::OPEN, Modifier::STATIC}, "double_t20");
+    EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str3), createKahwaFile({typedefDecl3}));
 
     expectNoDiagnostics();
+}
+
+TEST_F(ParserTest, ParsesMultipleTypedefsCorrectly) {
+    auto [str1, typedefDecl1] = createSimpleTypeDef("myInt", {}, "int");
+    auto [str2, typedefDecl2] = createSimpleTypeDef("SomeType", {Modifier::PRIVATE}, "someOtherType");
+    auto [str3, typedefDecl3] = createSimpleTypeDef("SomeTypeAgain", {Modifier::PUBLIC, Modifier::OPEN, Modifier::STATIC}, "double_t20");
+
+    EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str1 + str2), createKahwaFile({typedefDecl1, typedefDecl2}));
+    EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str1 + str3), createKahwaFile({typedefDecl1, typedefDecl3}));
+    EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str2 + str3), createKahwaFile({typedefDecl2, typedefDecl3}));
+    EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str1 + str2 + str3), createKahwaFile({typedefDecl1, typedefDecl2, typedefDecl3}));
 }

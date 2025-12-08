@@ -22,9 +22,10 @@ KahwaFile *Parser::ParserWorker::parseFile() {
 
     while (idx < tokens.size()) {
         std::size_t save_idx = idx;
-        const Token& token = tokens[idx++];
 
         getModifierList();
+
+        const Token& token = tokens[idx++];
 
         if (token.type == TokenType::TYPEDEF) {
             idx = save_idx;
