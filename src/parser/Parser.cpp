@@ -224,7 +224,7 @@ bool Parser::ParserWorker::next_is(TokenType expected) const {
 
 bool Parser::ParserWorker::next_is(const std::vector<TokenType> &expected) const {
     std::vector<Token> nextTokens = next(expected.size());
-    std::vector<TokenType> nextTokenTypes;
+    std::vector<TokenType> nextTokenTypes{nextTokens.size()};
     std::ranges::transform(nextTokens, nextTokenTypes.begin(), [](const Token& token){ return token.type; });
     return nextTokenTypes == expected;
 }
