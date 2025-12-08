@@ -6,6 +6,7 @@
 #define MODIFIER_H
 #include "../tokeniser/TokenType.h"
 #include <stdexcept>
+#include "../tokeniser/Token.h"
 
 enum class Modifier {
     OPEN,
@@ -28,6 +29,18 @@ inline Modifier tokenTypeToModifier(TokenType tokenType) {
         case TokenType::STATIC: return Modifier::STATIC;
         default:
             throw std::invalid_argument("TokenType is not a modifier");
+    }
+}
+
+inline std::string toString(Modifier modifier) {
+    switch (modifier) {
+        case Modifier::OPEN: return tokenTypeToString(TokenType::OPEN);
+        case Modifier::FINAL: return tokenTypeToString(TokenType::FINAL);
+        case Modifier::ABSTRACT: return tokenTypeToString(TokenType::ABSTRACT);
+        case Modifier::PUBLIC: return tokenTypeToString(TokenType::PUBLIC);
+        case Modifier::PRIVATE: return tokenTypeToString(TokenType::PRIVATE);
+        case Modifier::PROTECTED: return tokenTypeToString(TokenType::PROTECTED);
+        case Modifier::STATIC: return tokenTypeToString(TokenType::STATIC);
     }
 }
 
