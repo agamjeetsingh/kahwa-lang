@@ -302,7 +302,7 @@ std::vector<Modifier> Parser::ParserWorker::getModifierList() {
     std::vector<Token> modifierTokens = next([](const Token& tok){ return !MODIFIER_TYPES.contains(tok.type); });
     idx += modifierTokens.size();
 
-    std::vector<Modifier> modifiers;
+    std::vector<Modifier> modifiers{modifierTokens.size()};
     std::ranges::transform(modifierTokens, modifiers.begin(), [](const Token& token){ return tokenTypeToModifier(token.type); });
 
     return modifiers;
