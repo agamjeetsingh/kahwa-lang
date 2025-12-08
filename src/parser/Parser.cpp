@@ -68,7 +68,7 @@ TypedefDecl *Parser::ParserWorker::parseTypedef() {
     // idx is pointing to token right after "typedef"
     // Assuming no generics
 
-    SourceRange firstTokenSourceRange = tokens[idx].source_range;
+    const Token& firstToken = tokens[idx];
 
     auto modifiers = getModifierList();
 
@@ -83,7 +83,7 @@ TypedefDecl *Parser::ParserWorker::parseTypedef() {
             referredType,
             nextTokens.value()[0].source_range,
             nextTokens.value()[1].source_range,
-            SourceRange{firstTokenSourceRange, nextTokens->back().source_range});
+            SourceRange{firstToken, nextTokens->back()});
     }
     return nullptr;
 }

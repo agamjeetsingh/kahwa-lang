@@ -68,13 +68,37 @@ add_executable(
         tests/tokeniser/TokenTest.cpp
         tests/tokeniser/TokeniserTest.cpp
         tests/diagnostics/DiagnosticEngineTest.cpp
+        tests/parser/ParserTest.cpp
         src/tokeniser/Token.cpp
         include/tokeniser/Token.h
         include/tokeniser/TokenType.h
         src/tokeniser/Tokeniser.cpp
         include/tokeniser/Tokeniser.h
-        tests/tokeniser/TokeniserTest.cpp
-        tests/diagnostics/DiagnosticEngineTest.cpp
+        src/parser/ClassDecl.cpp
+        include/parser/ClassDecl.h
+        include/diagnostics/DiagnosticEngine.h
+        include/diagnostics/DiagnosticSeverity.h
+        include/diagnostics/Diagnostic.h
+        src/source/SourceManager.cpp
+        include/source/SourceManager.h
+        include/source/SourceFile.h
+        include/source/SourceLocation.h
+        include/diagnostics/DiagnosticKind.h
+        include/source/SourceRange.h
+        include/parser/Modifier.h
+        src/parser/FieldDecl.cpp
+        include/parser/FieldDecl.h
+        src/parser/MethodDecl.cpp
+        include/parser/MethodDecl.h
+        include/parser/TypeRef.h
+        src/arena/Arena.cpp
+        include/arena/Arena.h
+        src/parser/Parser.cpp
+        include/parser/Parser.h
+        include/parser/TypedefDecl.h
+        include/parser/KahwaFile.h
+        src/source/SourceLocation.cpp
+        src/source/SourceRange.cpp
 )
 
 target_link_libraries(
