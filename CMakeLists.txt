@@ -13,6 +13,13 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(magic_enum)
 
+FetchContent_Declare(
+        googletest
+        GIT_REPOSITORY https://github.com/google/googletest.git
+        GIT_TAG        release-1.12.1
+)
+FetchContent_MakeAvailable(googletest)
+
 add_executable(kahwa_lang main.cpp
         src/tokeniser/Token.cpp
         include/tokeniser/Token.h
@@ -30,6 +37,75 @@ add_executable(kahwa_lang main.cpp
         include/source/SourceLocation.h
         include/diagnostics/DiagnosticKind.h
         include/source/SourceRange.h
-        include/parser/Modifier.h)
+        include/parser/Modifier.h
+        src/parser/FieldDecl.cpp
+        include/parser/FieldDecl.h
+        src/parser/MethodDecl.cpp
+        include/parser/MethodDecl.h
+        include/parser/TypeRef.h
+        src/arena/Arena.cpp
+        include/arena/Arena.h
+        src/parser/Parser.cpp
+        include/parser/Parser.h
+        include/parser/TypedefDecl.h
+        include/parser/KahwaFile.h
+        src/source/SourceLocation.cpp
+        src/source/SourceRange.cpp
+        src/parser/Block.cpp
+        include/parser/Block.h
+        src/parser/Stmt.cpp
+        include/parser/Stmt.h
+        src/parser/Decl.cpp
+        include/parser/Decl.h
+)
 
 target_link_libraries(kahwa_lang PRIVATE magic_enum::magic_enum)
+
+enable_testing()
+
+add_executable(
+    tests
+        tests/tokeniser/TokenTest.cpp
+        tests/tokeniser/TokeniserTest.cpp
+        tests/diagnostics/DiagnosticEngineTest.cpp
+        tests/parser/ParserTest.cpp
+        src/tokeniser/Token.cpp
+        include/tokeniser/Token.h
+        include/tokeniser/TokenType.h
+        src/tokeniser/Tokeniser.cpp
+        include/tokeniser/Tokeniser.h
+        src/parser/ClassDecl.cpp
+        include/parser/ClassDecl.h
+        include/diagnostics/DiagnosticEngine.h
+        include/diagnostics/DiagnosticSeverity.h
+        include/diagnostics/Diagnostic.h
+        src/source/SourceManager.cpp
+        include/source/SourceManager.h
+        include/source/SourceFile.h
+        include/source/SourceLocation.h
+        include/diagnostics/DiagnosticKind.h
+        include/source/SourceRange.h
+        include/parser/Modifier.h
+        src/parser/FieldDecl.cpp
+        include/parser/FieldDecl.h
+        src/parser/MethodDecl.cpp
+        include/parser/MethodDecl.h
+        include/parser/TypeRef.h
+        src/arena/Arena.cpp
+        include/arena/Arena.h
+        src/parser/Parser.cpp
+        include/parser/Parser.h
+        include/parser/TypedefDecl.h
+        include/parser/KahwaFile.h
+        src/source/SourceLocation.cpp
+        src/source/SourceRange.cpp
+)
+
+target_link_libraries(
+    tests
+    gtest_main
+    magic_enum::magic_enum
+)
+
+include(GoogleTest)
+gtest_discover_tests(tests)

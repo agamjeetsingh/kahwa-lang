@@ -9,6 +9,7 @@
 
 #include "TokenType.h"
 #include "../source/SourceRange.h"
+#include <magic_enum.hpp>
 
 std::string tokenTypeToString(TokenType type);
 class Token;
@@ -17,13 +18,25 @@ std::string toString(const Token& token);
 
 class Token {
 public:
-    Token(const TokenType type, const SourceRange &source_range): type(type), source_range(source_range), type_index(typeid(nullptr)) {}
+    Token(const TokenType type, const SourceRange &source_range): type(type), source_range(source_range), type_index(typeid(nullptr)) {
+        if (std::unordered_set{TokenType::IDENTIFIER, TokenType::STRING_LITERAL, TokenType::CHAR_LITERAL, TokenType::INTEGER, TokenType::FLOAT}.contains(type)) {
+            throw std::invalid_argument("Token of type " + std::string(magic_enum::enum_name<TokenType>(type)) + " must have data associated with it.");
+        }
+    }
 
-    Token(const TokenType type, std::string data, const SourceRange &source_range) : type(type), source_range(source_range), type_index(typeid(data)), data(std::make_shared<AuxData<std::string>>(std::move(data))) {}
+    Token(const TokenType type, std::string data, const SourceRange &source_range) : type(type), source_range(source_range), type_index(typeid(data)), data(std::make_shared<AuxData<std::string>>(std::move(data))) {
+        if (type != TokenType::IDENTIFIER && type != TokenType::STRING_LITERAL && type != TokenType::BAD) {
+            throw std::invalid_argument("Token of type " + std::string(magic_enum::enum_name<TokenType>(type)) + " cannot have string data.");
+        }
+    }
 
     template <typename T>
     requires (std::is_same_v<T, int> || std::is_same_v<T, float>)
-    Token(const TokenType type, T data, const SourceRange &source_range) : type(type), source_range(source_range), type_index(typeid(data)), data(std::make_shared<AuxData<T>>(data)) {}
+    Token(const TokenType type, T data, const SourceRange &source_range) : type(type), source_range(source_range), type_index(typeid(data)), data(std::make_shared<AuxData<T>>(data)) {
+        if (!(std::is_same_v<T, int> ? type == TokenType::INTEGER : type == TokenType::FLOAT) && type != TokenType::BAD) {
+            throw std::invalid_argument("Token of type " + std::string(magic_enum::enum_name<TokenType>(type)) + " cannot store integers or floats.");
+        }
+    }
 
     const TokenType type;
 

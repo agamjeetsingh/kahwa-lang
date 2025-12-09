@@ -6,9 +6,9 @@
 
 #include <cassert>
 
-std::optional<std::vector<Token> > Tokeniser::tokenise() {
+std::vector<Token> Tokeniser::TokeniserWorker::tokenise() {
     while (idx < str.length()) {
-        std::size_t curr_idx = idx;
+        const std::size_t curr_idx = idx;
         char c = str[idx++];
         if (DELIMITERS.contains(c)) continue;
 
@@ -121,8 +121,8 @@ std::optional<std::vector<Token> > Tokeniser::tokenise() {
                     while (idx < str.length() && !next_is("\n")) { idx++; }
                 } else if (next_is("*")) {
                     idx++;
-                    // `idx + 1 < str.length()` to avoid infinite looping
-                    while (idx + 1 < str.length()) {
+                    // `idx < str.length()` to avoid infinite looping
+                    while (idx < str.length()) {
                         if (next_is("*/")) {
                             idx += 2;
                             break;
@@ -184,7 +184,7 @@ std::optional<std::vector<Token> > Tokeniser::tokenise() {
                 if (auto maybeToken = tokeniseString(curr_idx)) {
                     tokens.push_back(maybeToken.value());
                 } else {
-                    diagnostic_engine->reportProblem(DiagnosticSeverity::ERROR, DiagnosticKind::UNTERMINATED_STRING_LITERAL, SourceLocation{file_id, curr_idx}, toMsg(DiagnosticKind::UNTERMINATED_STRING_LITERAL));
+                    diagnostic_engine.reportProblem(DiagnosticSeverity::ERROR, DiagnosticKind::UNTERMINATED_STRING_LITERAL, SourceLocation{file_id, curr_idx}, toMsg(DiagnosticKind::UNTERMINATED_STRING_LITERAL));
                     return tokens;
                 }
                 break;
@@ -192,21 +192,25 @@ std::optional<std::vector<Token> > Tokeniser::tokenise() {
             default:
                 if (std::isdigit(c)) {
                     idx--;
-                    Token token1 = tokeniseNumber(curr_idx);
+                    std::string num_string_1 = getNumberString(curr_idx);
                     if (next_is(".")) {
                         idx++;
-                        Token token2 = tokeniseNumber(curr_idx);
-                        float num = *token1.getIf<int>();
-                        float decimal = *token2.getIf<int>();
-                        assert(decimal >= 0);
-                        if (decimal > 0) {
-                            int digits = std::to_string(decimal).size();
-                            decimal /= std::pow(10.0f, digits);
+                        std::string num_string_2 = getNumberString(curr_idx);
+                        if (num_string_2.empty()) {
+                            int num = std::stoi(num_string_1);
+                            tokens.emplace_back(TokenType::INTEGER, num, SourceRange{file_id, curr_idx, num_string_1.length()});
+                            idx--;
+                        } else {
+                            std::string s = num_string_1;
+                            s.append(".");
+                            s.append(num_string_2);
+                            float num = std::stof(s);
+
+                            tokens.emplace_back(TokenType::FLOAT, num, SourceRange{file_id, curr_idx, s.length()});
                         }
-                        tokens.emplace_back(TokenType::FLOAT, num + decimal, SourceRange{file_id, curr_idx, std::to_string(num + decimal).length()});
                     } else {
-                        int num = *token1.getIf<int>();
-                        tokens.emplace_back(TokenType::INTEGER, num, SourceRange{file_id, curr_idx, std::to_string(num).length()});
+                        int num = std::stoi(num_string_1);
+                        tokens.emplace_back(TokenType::INTEGER, num, SourceRange{file_id, curr_idx, num_string_1.length()});
                     }
                 } else if (std::isalpha(c) || c == '_') {
                     idx--;
@@ -217,7 +221,8 @@ std::optional<std::vector<Token> > Tokeniser::tokenise() {
                         tokens.emplace_back(TokenType::IDENTIFIER, identifier_like, SourceRange{file_id, curr_idx, identifier_like.length()});
                     }
                 } else {
-                    diagnostic_engine->reportProblem(DiagnosticSeverity::ERROR, DiagnosticKind::UNRECOGNISED_TOKEN, SourceRange{file_id, curr_idx}, toMsg(DiagnosticKind::UNRECOGNISED_TOKEN));
+                    tokens.emplace_back(TokenType::BAD, std::to_string(c), SourceRange{file_id, curr_idx});
+                    diagnostic_engine.reportProblem(DiagnosticSeverity::ERROR, DiagnosticKind::UNRECOGNISED_TOKEN, SourceRange{file_id, curr_idx}, toMsg(DiagnosticKind::UNRECOGNISED_TOKEN));
                 }
         }
     }
@@ -226,7 +231,7 @@ std::optional<std::vector<Token> > Tokeniser::tokenise() {
 }
 
 
-std::optional<Token> Tokeniser::tokeniseString(std::size_t curr_idx) {
+std::optional<Token> Tokeniser::TokeniserWorker::tokeniseString(std::size_t curr_idx) {
     std::string s;
     while (idx < str.length()) {
         char c = str[idx++];
@@ -239,15 +244,15 @@ std::optional<Token> Tokeniser::tokeniseString(std::size_t curr_idx) {
     return std::nullopt;
 }
 
-Token Tokeniser::tokeniseNumber(std::size_t curr_idx) {
+std::string Tokeniser::TokeniserWorker::getNumberString(std::size_t curr_idx) {
     std::string s = next([](char c) {
             return !isdigit(c);
         });
     idx += s.length();
-    return Token{TokenType::INTEGER, std::stoi(s), SourceRange{file_id, curr_idx, s.length()}};
+    return s;
 }
 
-std::string Tokeniser::extractIdentifierLike() {
+std::string Tokeniser::TokeniserWorker::extractIdentifierLike() {
     std::string s = std::string{str[idx++]};
     const std::string rest_of_s = next([](char c){ return !(isalnum(c) || c == '_'); });
     idx += rest_of_s.length();
@@ -255,16 +260,16 @@ std::string Tokeniser::extractIdentifierLike() {
     return s;
 }
 
-bool Tokeniser::next_is(const std::string &expected, const std::function<bool(char)> &until) const {
+bool Tokeniser::TokeniserWorker::next_is(const std::string &expected, const std::function<bool(char)> &until) const {
     const auto nextString = next(expected.length(), until);
     return nextString.size() == expected.length() && nextString == expected;
 }
 
-std::string Tokeniser::next(const std::function<bool(char)> &until) const {
+std::string Tokeniser::TokeniserWorker::next(const std::function<bool(char)> &until) const {
     return next(str.length(), until);
 }
 
-std::string Tokeniser::next(std::size_t count, const std::function<bool(char)> &until) const {
+std::string Tokeniser::TokeniserWorker::next(std::size_t count, const std::function<bool(char)> &until) const {
     std::string res;
     std::size_t i = idx;
     while (i < str.length() && count-- > 0) {
@@ -279,8 +284,8 @@ std::string Tokeniser::next(std::size_t count, const std::function<bool(char)> &
     return res;
 }
 
-const std::unordered_set<char> Tokeniser::DELIMITERS{' ', '\t', '\r', '\n', '\f'};
-const std::unordered_map<std::string, TokenType> Tokeniser::TOKEN_MAP{
+const std::unordered_set<char> Tokeniser::TokeniserWorker::DELIMITERS{' ', '\t', '\r', '\n', '\f'};
+const std::unordered_map<std::string, TokenType> Tokeniser::TokeniserWorker::TOKEN_MAP{
             {"class", TokenType::CLASS},
             {"static", TokenType::STATIC},
             {"public", TokenType::PUBLIC},

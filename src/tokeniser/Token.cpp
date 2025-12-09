@@ -83,7 +83,7 @@ std::string tokenTypeToString(TokenType type) {
 
 std::string toString(const Token& token) {
     if (const auto* str = token.getIf<std::string>()) {
-        return "\"" + *str + "\"";
+        return token.type == TokenType::STRING_LITERAL ? "\"" + *str + "\"" : *str;
     }
     if (const auto* intVal = token.getIf<int>()) {
         return std::to_string(*intVal);
