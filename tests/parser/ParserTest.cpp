@@ -11,7 +11,7 @@
 
 class ParserTest : public testing::Test {
 protected:
-    Arena astArena;
+    inline static Arena astArena;
     DiagnosticEngine diagnostic_engine;
     Parser parser{astArena, diagnostic_engine};
     Tokeniser tokeniser{diagnostic_engine};
@@ -28,50 +28,217 @@ protected:
         return parser.parseFile(tokeniser.tokenise(0, str));
     }
 
-    SourceRange dummy_source = {0, 0};
+    inline static SourceRange dummy_source = {0, 0};
 
-    KahwaFile* createKahwaFile(const std::vector<TypedefDecl*> &typedefDecls = {},
-        const std::vector<ClassDecl*> &classDecls = {},
-        const std::vector<MethodDecl*> &functionDecls = {},
-        const std::vector<FieldDecl*> &variableDecls = {}) {
+    static KahwaFile* createKahwaFile(const std::vector<TypedefDecl*> &typedefDecls = {},
+                                      const std::vector<ClassDecl*> &classDecls = {},
+                                      const std::vector<MethodDecl*> &functionDecls = {},
+                                      const std::vector<FieldDecl*> &variableDecls = {}) {
         return astArena.make<KahwaFile>(typedefDecls, classDecls, functionDecls, variableDecls);
     }
 
-    TypedefDecl* createTypedefDecl(const std::string &name,
-        const std::vector<Modifier>& modifiers = {},
-        TypeRef* referredType = nullptr) {
+    class KahwaFileBuilder {
+    public:
+        KahwaFileBuilder() = default;
+
+        KahwaFile* build() const {
+            return createKahwaFile(typedefDecls, classDecls, functionDecls, variableDecls);
+        }
+
+        KahwaFileBuilder with(TypedefDecl* typedefDecl) {
+            typedefDecls.push_back(typedefDecl);
+            return {typedefDecls, classDecls, functionDecls, variableDecls};
+        }
+
+        KahwaFileBuilder with(std::vector<TypedefDecl*> typedefDecls) {
+            this->typedefDecls.insert(this->typedefDecls.end(), typedefDecls.begin(), typedefDecls.end());
+            return {this->typedefDecls, classDecls, functionDecls, variableDecls};
+        }
+
+        KahwaFileBuilder with(ClassDecl* classDecl) {
+            classDecls.push_back(classDecl);
+            return {typedefDecls, classDecls, functionDecls, variableDecls};
+        }
+
+        KahwaFileBuilder with(std::vector<ClassDecl*> classDecls) {
+            this->classDecls.insert(this->classDecls.end(), classDecls.begin(), classDecls.end());
+            return {typedefDecls, this->classDecls, functionDecls, variableDecls};
+        }
+
+        KahwaFileBuilder with(MethodDecl* functionDecl) {
+            functionDecls.push_back(functionDecl);
+            return {typedefDecls, classDecls, functionDecls, variableDecls};
+        }
+
+        KahwaFileBuilder with(std::vector<MethodDecl*> functionDecls) {
+            this->functionDecls.insert(this->functionDecls.end(), functionDecls.begin(), functionDecls.end());
+            return {typedefDecls, classDecls, this->functionDecls, variableDecls};
+        }
+
+        KahwaFileBuilder with(FieldDecl* variableDecl) {
+            variableDecls.push_back(variableDecl);
+            return {typedefDecls, classDecls, functionDecls, variableDecls};
+        }
+
+        KahwaFileBuilder with(std::vector<FieldDecl*> variableDecls) {
+            this->variableDecls.insert(this->variableDecls.end(), variableDecls.begin(), variableDecls.end());
+            return {typedefDecls, classDecls, functionDecls, this->variableDecls};
+        }
+
+    private:
+        KahwaFileBuilder(
+        const std::vector<TypedefDecl*> &typedefDecls,
+        const std::vector<ClassDecl*> &classDecls,
+        const std::vector<MethodDecl*> &functionDecls,
+        const std::vector<FieldDecl*> &variableDecls
+        ): typedefDecls(typedefDecls),
+        classDecls(classDecls),
+        functionDecls(functionDecls),
+        variableDecls(variableDecls) {}
+
+        std::vector<TypedefDecl*> typedefDecls;
+        std::vector<ClassDecl*> classDecls;
+        std::vector<MethodDecl*> functionDecls;
+        std::vector<FieldDecl*> variableDecls;
+    };
+
+    static TypedefDecl* createTypedefDecl(const std::string &name,
+                                          TypeRef *referredType,
+                                          const std::vector<Modifier> &modifiers = {}) {
         return astArena.make<TypedefDecl>(name, modifiers, referredType, dummy_source, dummy_source, dummy_source);
     }
 
-    TypeRef* createTypeRef(const std::string& identifier,
-        const std::vector<TypeRef*> &args = {}) {
+    class TypeRefBuilder {
+    public:
+        explicit TypeRefBuilder(const std::string& name): name(name) {}
+
+        TypeRef* build() const {
+            return createTypeRef(name, typeRefs);
+        }
+
+        TypeRefBuilder with(TypeRef* typeRef) {
+            typeRefs.push_back(typeRef);
+            return {name, typeRefs};
+        }
+
+        TypeRefBuilder with(std::vector<TypeRef*> typeRefs) {
+            this->typeRefs.insert(this->typeRefs.end(), typeRefs.begin(), typeRefs.end());
+            return {name, this->typeRefs};
+        }
+
+    private:
+        TypeRefBuilder(const std::string &name,
+        const std::vector<TypeRef*> &typeRefs): name(name), typeRefs(typeRefs) {}
+
+        std::string name;
+        std::vector<TypeRef*> typeRefs;
+    };
+
+    static TypeRef* createTypeRef(const std::string& identifier,
+                                  const std::vector<TypeRef*> &args = {}) {
         return astArena.make<TypeRef>(identifier, args);
     }
 
-    FieldDecl* createFieldDecl(const std::string& name,
-        const std::vector<Modifier> &modifiers = {},
-        TypeRef* type = nullptr) {
+    static FieldDecl* createFieldDecl(const std::string& name,
+                                      const std::vector<Modifier> &modifiers = {},
+                                      TypeRef* type = nullptr) {
         return astArena.make<FieldDecl>(name, modifiers, type, dummy_source, dummy_source, dummy_source);
     }
 
-    MethodDecl* createMethodDecl(const std::string& name,
-        const std::vector<Modifier> &modifiers = {},
-        TypeRef* returnType = nullptr,
-        const std::vector<std::pair<TypeRef*, std::string>>& parameters = {},
-        Block* block = nullptr) {
+    static MethodDecl* createMethodDecl(const std::string& name,
+                                        const std::vector<Modifier> &modifiers = {},
+                                        TypeRef* returnType = nullptr,
+                                        const std::vector<std::pair<TypeRef*, std::string>>& parameters = {},
+                                        Block* block = nullptr) {
         return astArena.make<MethodDecl>(name, modifiers, returnType, parameters, block, dummy_source, dummy_source, dummy_source);
     }
 
-    Block* createBlock(const std::vector<Stmt*>& stmts = {}) {
+    static Block* createBlock(const std::vector<Stmt*>& stmts = {}) {
         return astArena.make<Block>(stmts);
     }
 
-    ClassDecl* createClassDecl(const std::string& name,
-        const std::vector<Modifier> &modifiers = {},
-        const std::vector<TypeRef*>& superClasses = {},
-        const std::vector<FieldDecl*> &fields = {},
-        const std::vector<MethodDecl*> &methods = {},
-        const std::vector<ClassDecl*> &nestedClasses = {}) {
+    class ClassDeclBuilder {
+    public:
+        explicit ClassDeclBuilder(const std::string& name): name(name) {}
+
+        ClassDecl* build() const {
+            return createClassDecl(name, modifiers, superClasses, fields, methods, nestedClasses);
+        }
+
+        ClassDeclBuilder with(Modifier modifier) {
+            modifiers.push_back(modifier);
+            return {name, modifiers, superClasses, fields, methods, nestedClasses};
+        }
+
+        ClassDeclBuilder with(std::vector<Modifier> modifiers) {
+            this->modifiers.insert(this->modifiers.end(), modifiers.begin(), modifiers.end());
+            return {name, this->modifiers, superClasses, fields, methods, nestedClasses};
+        }
+
+        ClassDeclBuilder with(TypeRef* superClass) {
+            superClasses.push_back(superClass);
+            return {name, modifiers, superClasses, fields, methods, nestedClasses};
+        }
+
+        ClassDeclBuilder with(std::vector<TypeRef*> superClasses) {
+            this->superClasses.insert(this->superClasses.end(), superClasses.begin(), superClasses.end());
+            return {name, modifiers, this->superClasses, fields, methods, nestedClasses};
+        }
+
+        ClassDeclBuilder with(FieldDecl* field) {
+            fields.push_back(field);
+            return {name, modifiers, superClasses, fields, methods, nestedClasses};
+        }
+
+        ClassDeclBuilder with(std::vector<FieldDecl*> fields) {
+            this->fields.insert(this->fields.end(), fields.begin(), fields.end());
+            return {name, modifiers, superClasses, this->fields, methods, nestedClasses};
+        }
+
+        ClassDeclBuilder with(MethodDecl* method) {
+            methods.push_back(method);
+            return {name, modifiers, superClasses, fields, methods, nestedClasses};
+        }
+
+        ClassDeclBuilder with(std::vector<MethodDecl*> methods) {
+            this->methods.insert(this->methods.end(), methods.begin(), methods.end());
+            return {name, modifiers, superClasses, fields, this->methods, nestedClasses};
+        }
+
+        ClassDeclBuilder with(ClassDecl* nestedClass) {
+            nestedClasses.push_back(nestedClass);
+            return {name, modifiers, superClasses, fields, methods, nestedClasses};
+        }
+
+        ClassDeclBuilder with(std::vector<ClassDecl*> nestedClasses) {
+            this->nestedClasses.insert(this->nestedClasses.end(), nestedClasses.begin(), nestedClasses.end());
+            return {name, modifiers, superClasses, fields, methods, this->nestedClasses};
+        }
+
+    private:
+        ClassDeclBuilder(
+            const std::string& name,
+            const std::vector<Modifier>& modifiers,
+            const std::vector<TypeRef*>& superClasses,
+            const std::vector<FieldDecl*>& fields,
+            const std::vector<MethodDecl*>& methods,
+            const std::vector<ClassDecl*>& nestedClasses
+        ): name(name), modifiers(modifiers), superClasses(superClasses), fields(fields), methods(methods), nestedClasses(nestedClasses) {}
+
+        std::string name;
+        std::vector<Modifier> modifiers;
+        std::vector<TypeRef*> superClasses;
+        std::vector<FieldDecl*> fields;
+        std::vector<MethodDecl*> methods;
+        std::vector<ClassDecl*> nestedClasses;
+    };
+
+    static ClassDecl* createClassDecl(const std::string& name,
+                                      const std::vector<Modifier> &modifiers = {},
+                                      const std::vector<TypeRef*>& superClasses = {},
+                                      const std::vector<FieldDecl*> &fields = {},
+                                      const std::vector<MethodDecl*> &methods = {},
+                                      const std::vector<ClassDecl*> &nestedClasses = {}) {
         return astArena.make<ClassDecl>(name, dummy_source, dummy_source, dummy_source, modifiers, superClasses, fields, methods, nestedClasses);
     }
 
@@ -231,29 +398,40 @@ protected:
         return str;
     }
 
-    static std::string toString(const TypedefDecl* typedef_decl) {
-        std::string str = toString(typedef_decl->modifiers);
-        if (!typedef_decl->modifiers.empty()) str += " ";
-        str += "typedef " + toString(typedef_decl->referredType) + " " + typedef_decl->name + ";";
+    static std::string toString(const TypedefDecl* typedefDecl) {
+        std::string str = toString(typedefDecl->modifiers);
+        if (!typedefDecl->modifiers.empty()) str += " ";
+        str += "typedef " + toString(typedefDecl->referredType) + " " + typedefDecl->name + ";";
         return str;
     }
 
-    static std::string toString(const ClassDecl* class_decl) {
-        std::string str = toString(class_decl->modifiers);
+    static std::string toString(const ClassDecl* classDecl) {
+        std::string str = toString(classDecl->modifiers);
 
-        if (!class_decl->modifiers.empty()) str += " ";
+        if (!classDecl->modifiers.empty()) str += " ";
         str += "class ";
-        str += class_decl->name;
-        if (!class_decl->superClasses.empty()) {
+        str += classDecl->name;
+        if (!classDecl->superClasses.empty()) {
             str += ": ";
 
+            for (int i = 0; i < classDecl->superClasses.size(); i++) {
+                str += toString(classDecl->superClasses[i]);
+                if (i != classDecl->superClasses.size() - 1) {
+                    str += ", ";
+                }
+            }
         }
+
+        str += " {\n";
+
+
+        str += "}";
 
         return str;
     }
 
-    std::pair<std::string, TypedefDecl*> createSimpleTypeDef(const std::string& name, const std::vector<Modifier>& modifiers, const std::string& typeName) {
-        auto decl = createTypedefDecl(name, modifiers, createTypeRef(typeName));
+    static std::pair<std::string, TypedefDecl*> createSimpleTypeDef(const std::string& name, const std::vector<Modifier>& modifiers, const std::string& typeName) {
+        auto decl = createTypedefDecl(name, createTypeRef(typeName), modifiers);
         std::string str = toString(modifiers);
         if (!modifiers.empty()) str += " ";
         str += "typedef " + typeName + " " + name + ";";
@@ -262,15 +440,15 @@ protected:
 };
 
 TEST_F(ParserTest, ParsesSingleTypedefCorrectly) {
-    const auto typedefDecl1 = createTypedefDecl("myInt", {}, createTypeRef("int"));
+    const auto typedefDecl1 = createTypedefDecl("myInt", createTypeRef("int"));
     const auto str1 = toString(typedefDecl1);
     EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str1), createKahwaFile({typedefDecl1}));
 
-    const auto typedefDecl2 = createTypedefDecl("SomeType", {Modifier::PRIVATE}, createTypeRef("someOtherType"));
+    const auto typedefDecl2 = createTypedefDecl("SomeType", createTypeRef("someOtherType"), {Modifier::PRIVATE});
     const auto str2 = toString(typedefDecl2);
     EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str2), createKahwaFile({typedefDecl2}));
 
-    const auto typedefDecl3 = createTypedefDecl("SomeTypeAgain", {Modifier::PUBLIC, Modifier::OPEN, Modifier::STATIC}, createTypeRef("double_t20"));
+    const auto typedefDecl3 = createTypedefDecl("SomeTypeAgain", createTypeRef("double_t20"), {Modifier::PUBLIC, Modifier::OPEN, Modifier::STATIC});
     const auto str3 = toString(typedefDecl3);
     EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str3), createKahwaFile({typedefDecl3}));
 
@@ -278,21 +456,123 @@ TEST_F(ParserTest, ParsesSingleTypedefCorrectly) {
 }
 
 TEST_F(ParserTest, ParsesMultipleTypedefsCorrectly) {
-    const auto typedefDecl1 = createTypedefDecl("myInt", {}, createTypeRef("int"));
+    const auto typedefDecl1 = createTypedefDecl("myInt", createTypeRef("int"));
     const auto str1 = toString(typedefDecl1);
 
-    const auto typedefDecl2 = createTypedefDecl("SomeType", {Modifier::PRIVATE}, createTypeRef("someOtherType"));
+    const auto typedefDecl2 = createTypedefDecl("SomeType", createTypeRef("someOtherType"), {Modifier::PRIVATE});
     const auto str2 = toString(typedefDecl2);
 
-    const auto typedefDecl3 = createTypedefDecl("SomeTypeAgain", {Modifier::PUBLIC, Modifier::OPEN, Modifier::STATIC}, createTypeRef("double_t20"));
+    const auto typedefDecl3 = createTypedefDecl("SomeTypeAgain", createTypeRef("double_t20"), {Modifier::PUBLIC, Modifier::OPEN, Modifier::STATIC});
     const auto str3 = toString(typedefDecl3);
 
-    EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str1 + str2), createKahwaFile({typedefDecl1, typedefDecl2}));
-    EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str1 + str3), createKahwaFile({typedefDecl1, typedefDecl3}));
-    EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str2 + str3), createKahwaFile({typedefDecl2, typedefDecl3}));
-    EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str1 + str2 + str3), createKahwaFile({typedefDecl1, typedefDecl2, typedefDecl3}));
+    EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str1 + str2), KahwaFileBuilder().with({typedefDecl1, typedefDecl2}).build());
+    EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str1 + str3), KahwaFileBuilder().with({typedefDecl1, typedefDecl3}).build());
+    EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str2 + str3), KahwaFileBuilder().with({typedefDecl2, typedefDecl3}).build());
+    EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str1 + str2 + str3), KahwaFileBuilder().with({typedefDecl1, typedefDecl2, typedefDecl3}).build());
+
+    expectNoDiagnostics();
 }
 
 TEST_F(ParserTest, ParsesEmptyClassCorrectly) {
+    const auto classDecl1 = ClassDeclBuilder("myClass").build();
+    const auto str1 = toString(classDecl1);
 
+    EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str1), KahwaFileBuilder().with(classDecl1).build());
+
+    const auto classDecl2 = ClassDeclBuilder("myClass")
+    .with(Modifier::PRIVATE)
+    .build();
+    const auto str2 = toString(classDecl2);
+
+    EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str2), KahwaFileBuilder().with(classDecl2).build());
+
+    const auto classDecl3 = ClassDeclBuilder("classNamesCanHaveNumbers")
+    .with(Modifier::PRIVATE)
+    .with(Modifier::FINAL)
+    .build();
+    const auto str3 = toString(classDecl3);
+
+    EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str3), KahwaFileBuilder().with(classDecl3).build());
+
+    expectNoDiagnostics();
+}
+
+TEST_F(ParserTest, ParsesEmptyClassWithInheritanceCorrectly) {
+    const auto classDecl1 = ClassDeclBuilder("className")
+    .with(createTypeRef("superClass"))
+    .build();
+    const auto str1 = toString(classDecl1);
+
+    EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str1), KahwaFileBuilder().with(classDecl1).build());
+
+    const auto classDecl2 = ClassDeclBuilder("className")
+    .with({createTypeRef("superClass1"), createTypeRef("superClass2")})
+    .build();
+    const auto str2 = toString(classDecl2);
+
+    EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str2), KahwaFileBuilder().with(classDecl2).build());
+
+    const auto classDecl3 = ClassDeclBuilder("className")
+    .with({createTypeRef("superClass1"), createTypeRef("superClass2")})
+    .with(Modifier::FINAL)
+    .with(Modifier::PRIVATE)
+    .build();
+    const auto str3 = toString(classDecl3);
+
+    EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str3), KahwaFileBuilder().with(classDecl3).build());
+
+    const auto classDecl4 = ClassDeclBuilder("className")
+    .with(TypeRefBuilder("superClass1")
+        .with({
+            TypeRefBuilder("arg1").build(),
+            TypeRefBuilder("arg2").build()
+        }).build())
+    .with(Modifier::FINAL)
+    .with(Modifier::PRIVATE)
+    .build();
+    const auto str4 = toString(classDecl4);
+
+    EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str4), KahwaFileBuilder().with(classDecl4).build());
+
+    expectNoDiagnostics();
+}
+
+TEST_F(ParserTest, ParsesMultipleClassesWithInheritanceAndTypeDefsCorrectly) {
+    const auto classDecl1 = ClassDeclBuilder("className")
+        .with({createTypeRef("superClass1"), createTypeRef("superClass2")})
+        .with(Modifier::FINAL)
+        .with(Modifier::PRIVATE)
+        .build();
+    const auto str1 = toString(classDecl1);
+
+    const auto classDecl2 = ClassDeclBuilder("className")
+    .with(TypeRefBuilder("superClass1")
+        .with({
+            TypeRefBuilder("arg1").build(),
+            TypeRefBuilder("arg2").build()
+        }).build())
+    .with(Modifier::FINAL)
+    .with(Modifier::PRIVATE)
+    .build();
+    const auto str2 = toString(classDecl2);
+
+    EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str1 + str2), KahwaFileBuilder().with({classDecl1, classDecl2}).build());
+
+    const auto typedefDecl1 = createTypedefDecl("someTypeDef", TypeRefBuilder("int").build());
+    const auto str3 = toString(typedefDecl1);
+
+    EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str1 + str2 + str3),
+        KahwaFileBuilder()
+        .with({classDecl1, classDecl2})
+        .with(typedefDecl1)
+        .build());
+
+    const auto typedefDecl2 = createTypedefDecl("anotherTypeDef", TypeRefBuilder("float").build());
+    const auto str4 = toString(typedefDecl2);
+
+    EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str1 + str2 + str3),
+        KahwaFileBuilder()
+        .with({classDecl1, classDecl2})
+        .with({typedefDecl1, typedefDecl2})
+        .build());
 }
