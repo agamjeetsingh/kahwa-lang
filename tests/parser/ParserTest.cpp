@@ -668,3 +668,54 @@ TEST_F(ParserTest, ParsesClassesWithMethodsCorrectly) {
 
     expectNoDiagnostics();
 }
+
+TEST_F(ParserTest, ParsesClassesWithNestedClassesCorrectly) {
+    const auto classDecl1 = ClassDeclBuilder("ExampleClass")
+    .with(Modifier::PRIVATE)
+    .with(ClassDeclBuilder("NestedClass").build())
+    .build();
+    const auto str1 = toString(classDecl1);
+
+    EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str1),
+        KahwaFileBuilder()
+        .with(classDecl1)
+        .build());
+
+    const auto classDecl2 = ClassDeclBuilder("AnotherClass")
+    .with(Modifier::PRIVATE)
+    .with(ClassDeclBuilder("NestedClass1").build())
+    .with(ClassDeclBuilder("NestedClass2").build())
+    .build();
+    const auto str2 = toString(classDecl2);
+
+    EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str2),
+        KahwaFileBuilder()
+        .with(classDecl2)
+        .build());
+
+    const auto classDecl3 = ClassDeclBuilder("AnotherOneWow")
+    .with(ClassDeclBuilder("className")
+        .with(TypeRefBuilder("superClass1")
+        .with({
+            TypeRefBuilder("arg1").build(),
+            TypeRefBuilder("arg2").build()
+        }).build())
+        .with(Modifier::FINAL)
+        .with(Modifier::PROTECTED)
+        .build())
+    .with(ClassDeclBuilder("JustAnotherNestedClass")
+        .with(ClassDeclBuilder("OhItGoesDeeper")
+            .with(ClassDeclBuilder("ThisIsTheEnd")
+                .build())
+            .build())
+        .build())
+    .build();
+    const auto str3 = toString(classDecl3);
+
+    EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str3),
+        KahwaFileBuilder()
+        .with(classDecl3)
+        .build());
+
+    expectNoDiagnostics();
+}
