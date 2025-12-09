@@ -45,57 +45,47 @@ protected:
             return createKahwaFile(typedefDecls, classDecls, functionDecls, variableDecls);
         }
 
-        KahwaFileBuilder with(TypedefDecl* typedefDecl) {
+        KahwaFileBuilder& with(TypedefDecl* typedefDecl) {
             typedefDecls.push_back(typedefDecl);
-            return {typedefDecls, classDecls, functionDecls, variableDecls};
+            return *this;
         }
 
-        KahwaFileBuilder with(std::vector<TypedefDecl*> typedefDecls) {
+        KahwaFileBuilder& with(std::vector<TypedefDecl*> typedefDecls) {
             this->typedefDecls.insert(this->typedefDecls.end(), typedefDecls.begin(), typedefDecls.end());
-            return {this->typedefDecls, classDecls, functionDecls, variableDecls};
+            return *this;
         }
 
-        KahwaFileBuilder with(ClassDecl* classDecl) {
+        KahwaFileBuilder& with(ClassDecl* classDecl) {
             classDecls.push_back(classDecl);
-            return {typedefDecls, classDecls, functionDecls, variableDecls};
+            return *this;
         }
 
-        KahwaFileBuilder with(std::vector<ClassDecl*> classDecls) {
+        KahwaFileBuilder& with(std::vector<ClassDecl*> classDecls) {
             this->classDecls.insert(this->classDecls.end(), classDecls.begin(), classDecls.end());
-            return {typedefDecls, this->classDecls, functionDecls, variableDecls};
+            return *this;
         }
 
-        KahwaFileBuilder with(MethodDecl* functionDecl) {
+        KahwaFileBuilder& with(MethodDecl* functionDecl) {
             functionDecls.push_back(functionDecl);
-            return {typedefDecls, classDecls, functionDecls, variableDecls};
+            return *this;
         }
 
-        KahwaFileBuilder with(std::vector<MethodDecl*> functionDecls) {
+        KahwaFileBuilder& with(std::vector<MethodDecl*> functionDecls) {
             this->functionDecls.insert(this->functionDecls.end(), functionDecls.begin(), functionDecls.end());
-            return {typedefDecls, classDecls, this->functionDecls, variableDecls};
+            return *this;
         }
 
-        KahwaFileBuilder with(FieldDecl* variableDecl) {
+        KahwaFileBuilder& with(FieldDecl* variableDecl) {
             variableDecls.push_back(variableDecl);
-            return {typedefDecls, classDecls, functionDecls, variableDecls};
+            return *this;
         }
 
-        KahwaFileBuilder with(std::vector<FieldDecl*> variableDecls) {
+        KahwaFileBuilder& with(std::vector<FieldDecl*> variableDecls) {
             this->variableDecls.insert(this->variableDecls.end(), variableDecls.begin(), variableDecls.end());
-            return {typedefDecls, classDecls, functionDecls, this->variableDecls};
+            return *this;
         }
 
     private:
-        KahwaFileBuilder(
-        const std::vector<TypedefDecl*> &typedefDecls,
-        const std::vector<ClassDecl*> &classDecls,
-        const std::vector<MethodDecl*> &functionDecls,
-        const std::vector<FieldDecl*> &variableDecls
-        ): typedefDecls(typedefDecls),
-        classDecls(classDecls),
-        functionDecls(functionDecls),
-        variableDecls(variableDecls) {}
-
         std::vector<TypedefDecl*> typedefDecls;
         std::vector<ClassDecl*> classDecls;
         std::vector<MethodDecl*> functionDecls;
@@ -116,20 +106,17 @@ protected:
             return createTypeRef(name, typeRefs);
         }
 
-        TypeRefBuilder with(TypeRef* typeRef) {
+        TypeRefBuilder& with(TypeRef* typeRef) {
             typeRefs.push_back(typeRef);
-            return {name, typeRefs};
+            return *this;
         }
 
-        TypeRefBuilder with(std::vector<TypeRef*> typeRefs) {
+        TypeRefBuilder& with(std::vector<TypeRef*> typeRefs) {
             this->typeRefs.insert(this->typeRefs.end(), typeRefs.begin(), typeRefs.end());
-            return {name, this->typeRefs};
+            return *this;
         }
 
     private:
-        TypeRefBuilder(const std::string &name,
-        const std::vector<TypeRef*> &typeRefs): name(name), typeRefs(typeRefs) {}
-
         std::string name;
         std::vector<TypeRef*> typeRefs;
     };
@@ -154,39 +141,27 @@ protected:
             return createMethodDecl(name, modifiers, returnType, parameters, block);
         }
 
-        MethodDeclBuilder with(Modifier modifier) {
+        MethodDeclBuilder& with(Modifier modifier) {
             modifiers.push_back(modifier);
-            return {name, modifiers, returnType, parameters, block};
+            return *this;
         }
 
-        MethodDeclBuilder with(const std::vector<Modifier>& modifiers) {
+        MethodDeclBuilder& with(const std::vector<Modifier>& modifiers) {
             this->modifiers.insert(this->modifiers.begin(), modifiers.begin(), modifiers.end());
-            return {name, this->modifiers, returnType, parameters, block};
+            return *this;
         }
 
-        MethodDeclBuilder with(const std::pair<TypeRef*, std::string> &parameter) {
+        MethodDeclBuilder& with(const std::pair<TypeRef*, std::string> &parameter) {
             parameters.push_back(parameter);
-            return {name, modifiers, returnType, parameters, block};
+            return *this;
         }
 
-        MethodDeclBuilder with(const std::vector<std::pair<TypeRef*, std::string>>& parameters) {
+        MethodDeclBuilder& with(const std::vector<std::pair<TypeRef*, std::string>>& parameters) {
             this->parameters.insert(this->parameters.begin(), parameters.begin(), parameters.end());
-            return {name, modifiers, returnType, this->parameters, block};
+            return *this;
         }
 
     private:
-        MethodDeclBuilder(
-        const std::string& name,
-        const std::vector<Modifier> &modifiers,
-        TypeRef* returnType,
-        const std::vector<std::pair<TypeRef*, std::string>> &parameters,
-        Block* block):
-        name(name),
-        modifiers(modifiers),
-        returnType(returnType),
-        parameters(parameters),
-        block(block) {}
-
         std::string name;
         std::vector<Modifier> modifiers;
         TypeRef* returnType;
@@ -211,19 +186,17 @@ protected:
             return createBlock(stmts);
         }
 
-        BlockBuilder with(Stmt* stmt) {
+        BlockBuilder& with(Stmt* stmt) {
             stmts.push_back(stmt);
-            return BlockBuilder{stmts};
+            return *this;
         }
 
-        BlockBuilder with(const std::vector<Stmt*> &stmts) {
+        BlockBuilder& with(const std::vector<Stmt*> &stmts) {
             this->stmts.insert(this->stmts.begin(), stmts.begin(), stmts.end());
-            return BlockBuilder{this->stmts};
+            return *this;
         }
 
         private:
-
-        explicit BlockBuilder(const std::vector<Stmt*> &stmts): stmts(stmts) {}
         std::vector<Stmt*> stmts;
     };
 
@@ -239,66 +212,57 @@ protected:
             return createClassDecl(name, modifiers, superClasses, fields, methods, nestedClasses);
         }
 
-        ClassDeclBuilder with(Modifier modifier) {
+        ClassDeclBuilder& with(Modifier modifier) {
             modifiers.push_back(modifier);
-            return {name, modifiers, superClasses, fields, methods, nestedClasses};
+            return *this;
         }
 
-        ClassDeclBuilder with(std::vector<Modifier> modifiers) {
+        ClassDeclBuilder& with(std::vector<Modifier> modifiers) {
             this->modifiers.insert(this->modifiers.end(), modifiers.begin(), modifiers.end());
-            return {name, this->modifiers, superClasses, fields, methods, nestedClasses};
+            return *this;
         }
 
-        ClassDeclBuilder with(TypeRef* superClass) {
+        ClassDeclBuilder& with(TypeRef* superClass) {
             superClasses.push_back(superClass);
-            return {name, modifiers, superClasses, fields, methods, nestedClasses};
+            return *this;
         }
 
-        ClassDeclBuilder with(std::vector<TypeRef*> superClasses) {
+        ClassDeclBuilder& with(std::vector<TypeRef*> superClasses) {
             this->superClasses.insert(this->superClasses.end(), superClasses.begin(), superClasses.end());
-            return {name, modifiers, this->superClasses, fields, methods, nestedClasses};
+            return *this;
         }
 
-        ClassDeclBuilder with(FieldDecl* field) {
+        ClassDeclBuilder& with(FieldDecl* field) {
             fields.push_back(field);
-            return {name, modifiers, superClasses, fields, methods, nestedClasses};
+            return *this;
         }
 
-        ClassDeclBuilder with(std::vector<FieldDecl*> fields) {
+        ClassDeclBuilder& with(std::vector<FieldDecl*> fields) {
             this->fields.insert(this->fields.end(), fields.begin(), fields.end());
-            return {name, modifiers, superClasses, this->fields, methods, nestedClasses};
+            return *this;
         }
 
-        ClassDeclBuilder with(MethodDecl* method) {
+        ClassDeclBuilder& with(MethodDecl* method) {
             methods.push_back(method);
-            return {name, modifiers, superClasses, fields, methods, nestedClasses};
+            return *this;
         }
 
-        ClassDeclBuilder with(std::vector<MethodDecl*> methods) {
+        ClassDeclBuilder& with(std::vector<MethodDecl*> methods) {
             this->methods.insert(this->methods.end(), methods.begin(), methods.end());
-            return {name, modifiers, superClasses, fields, this->methods, nestedClasses};
+            return *this;
         }
 
-        ClassDeclBuilder with(ClassDecl* nestedClass) {
+        ClassDeclBuilder& with(ClassDecl* nestedClass) {
             nestedClasses.push_back(nestedClass);
-            return {name, modifiers, superClasses, fields, methods, nestedClasses};
+            return *this;
         }
 
-        ClassDeclBuilder with(std::vector<ClassDecl*> nestedClasses) {
+        ClassDeclBuilder& with(std::vector<ClassDecl*> nestedClasses) {
             this->nestedClasses.insert(this->nestedClasses.end(), nestedClasses.begin(), nestedClasses.end());
-            return {name, modifiers, superClasses, fields, methods, this->nestedClasses};
+            return *this;
         }
 
     private:
-        ClassDeclBuilder(
-            const std::string& name,
-            const std::vector<Modifier>& modifiers,
-            const std::vector<TypeRef*>& superClasses,
-            const std::vector<FieldDecl*>& fields,
-            const std::vector<MethodDecl*>& methods,
-            const std::vector<ClassDecl*>& nestedClasses
-        ): name(name), modifiers(modifiers), superClasses(superClasses), fields(fields), methods(methods), nestedClasses(nestedClasses) {}
-
         std::string name;
         std::vector<Modifier> modifiers;
         std::vector<TypeRef*> superClasses;
