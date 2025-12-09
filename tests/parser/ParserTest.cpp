@@ -7,6 +7,7 @@
 #include "../../include/diagnostics/DiagnosticEngine.h"
 #include "../../include/parser/Parser.h"
 #include "../../include/tokeniser/Tokeniser.h"
+#include "../../include/parser/Modifier.h"
 
 class ParserTest : public testing::Test {
 protected:
@@ -202,11 +203,50 @@ protected:
         return true;
     }
 
-    static std::string modifiersToString(const std::vector<Modifier>& modifiers) {
+    static std::string toString(const std::vector<Modifier>& modifiers) {
         std::string str;
         for (int i = 0; i < modifiers.size(); i++) {
-            str += toString(modifiers[i]);
+            str += ::toString(modifiers[i]);
             if (i != modifiers.size() - 1) str += " ";
+        }
+
+        return str;
+    }
+
+    static std::string toString(const TypeRef* type_ref) {
+        std::string str = type_ref->identifier;
+        if (!type_ref->args.empty()) {
+            str += "<";
+
+            for (int i = 0; i < type_ref->args.size(); i++) {
+                str += toString(type_ref->args[i]);
+                if (i != type_ref->args.size() - 1) {
+                    str += ", ";
+                }
+            }
+
+            str += ">";
+        }
+
+        return str;
+    }
+
+    static std::string toString(const TypedefDecl* typedef_decl) {
+        std::string str = toString(typedef_decl->modifiers);
+        if (!typedef_decl->modifiers.empty()) str += " ";
+        str += "typedef " + toString(typedef_decl->referredType) + " " + typedef_decl->name + ";";
+        return str;
+    }
+
+    static std::string toString(const ClassDecl* class_decl) {
+        std::string str = toString(class_decl->modifiers);
+
+        if (!class_decl->modifiers.empty()) str += " ";
+        str += "class ";
+        str += class_decl->name;
+        if (!class_decl->superClasses.empty()) {
+            str += ": ";
+
         }
 
         return str;
@@ -214,7 +254,7 @@ protected:
 
     std::pair<std::string, TypedefDecl*> createSimpleTypeDef(const std::string& name, const std::vector<Modifier>& modifiers, const std::string& typeName) {
         auto decl = createTypedefDecl(name, modifiers, createTypeRef(typeName));
-        std::string str = modifiersToString(modifiers);
+        std::string str = toString(modifiers);
         if (!modifiers.empty()) str += " ";
         str += "typedef " + typeName + " " + name + ";";
         return {str, decl};
@@ -222,25 +262,37 @@ protected:
 };
 
 TEST_F(ParserTest, ParsesSingleTypedefCorrectly) {
-    auto [str1, typedefDecl1] = createSimpleTypeDef("myInt", {}, "int");
+    const auto typedefDecl1 = createTypedefDecl("myInt", {}, createTypeRef("int"));
+    const auto str1 = toString(typedefDecl1);
     EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str1), createKahwaFile({typedefDecl1}));
 
-    auto [str2, typedefDecl2] = createSimpleTypeDef("SomeType", {Modifier::PRIVATE}, "someOtherType");
+    const auto typedefDecl2 = createTypedefDecl("SomeType", {Modifier::PRIVATE}, createTypeRef("someOtherType"));
+    const auto str2 = toString(typedefDecl2);
     EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str2), createKahwaFile({typedefDecl2}));
 
-    auto [str3, typedefDecl3] = createSimpleTypeDef("SomeTypeAgain", {Modifier::PUBLIC, Modifier::OPEN, Modifier::STATIC}, "double_t20");
+    const auto typedefDecl3 = createTypedefDecl("SomeTypeAgain", {Modifier::PUBLIC, Modifier::OPEN, Modifier::STATIC}, createTypeRef("double_t20"));
+    const auto str3 = toString(typedefDecl3);
     EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str3), createKahwaFile({typedefDecl3}));
 
     expectNoDiagnostics();
 }
 
 TEST_F(ParserTest, ParsesMultipleTypedefsCorrectly) {
-    auto [str1, typedefDecl1] = createSimpleTypeDef("myInt", {}, "int");
-    auto [str2, typedefDecl2] = createSimpleTypeDef("SomeType", {Modifier::PRIVATE}, "someOtherType");
-    auto [str3, typedefDecl3] = createSimpleTypeDef("SomeTypeAgain", {Modifier::PUBLIC, Modifier::OPEN, Modifier::STATIC}, "double_t20");
+    const auto typedefDecl1 = createTypedefDecl("myInt", {}, createTypeRef("int"));
+    const auto str1 = toString(typedefDecl1);
+
+    const auto typedefDecl2 = createTypedefDecl("SomeType", {Modifier::PRIVATE}, createTypeRef("someOtherType"));
+    const auto str2 = toString(typedefDecl2);
+
+    const auto typedefDecl3 = createTypedefDecl("SomeTypeAgain", {Modifier::PUBLIC, Modifier::OPEN, Modifier::STATIC}, createTypeRef("double_t20"));
+    const auto str3 = toString(typedefDecl3);
 
     EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str1 + str2), createKahwaFile({typedefDecl1, typedefDecl2}));
     EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str1 + str3), createKahwaFile({typedefDecl1, typedefDecl3}));
     EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str2 + str3), createKahwaFile({typedefDecl2, typedefDecl3}));
     EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str1 + str2 + str3), createKahwaFile({typedefDecl1, typedefDecl2, typedefDecl3}));
+}
+
+TEST_F(ParserTest, ParsesEmptyClassCorrectly) {
+
 }
