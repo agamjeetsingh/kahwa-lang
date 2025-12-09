@@ -32,7 +32,7 @@ inline Modifier tokenTypeToModifier(TokenType tokenType) {
     }
 }
 
-inline std::string toString(Modifier modifier) {
+inline std::string toString(const Modifier modifier) {
     switch (modifier) {
         case Modifier::OPEN: return tokenTypeToString(TokenType::OPEN);
         case Modifier::FINAL: return tokenTypeToString(TokenType::FINAL);
@@ -41,6 +41,7 @@ inline std::string toString(Modifier modifier) {
         case Modifier::PRIVATE: return tokenTypeToString(TokenType::PRIVATE);
         case Modifier::PROTECTED: return tokenTypeToString(TokenType::PROTECTED);
         case Modifier::STATIC: return tokenTypeToString(TokenType::STATIC);
+        default: throw std::invalid_argument("Modifier not recognised.");
     }
 }
 
