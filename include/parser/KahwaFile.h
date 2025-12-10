@@ -6,7 +6,9 @@
 #define KAHWAFILE_H
 #include <vector>
 
+#include "ASTBuilder.h"
 #include "TypedefDecl.h"
+#include "../arena/Arena.h"
 
 
 struct KahwaFile {
@@ -55,6 +57,61 @@ struct KahwaFile {
         
         return true;
     }
+};
+
+class KahwaFileBuilder : public ASTBuilder {
+public:
+    KahwaFileBuilder() = default;
+
+    [[nodiscard]] KahwaFile* build() const {
+        return arena->make<KahwaFile>(typedefDecls, classDecls, functionDecls, variableDecls);
+    }
+
+    KahwaFileBuilder& with(TypedefDecl* typedefDecl) {
+        typedefDecls.push_back(typedefDecl);
+        return *this;
+    }
+
+    KahwaFileBuilder& with(std::vector<TypedefDecl*> typedefDecls) {
+        this->typedefDecls.insert(this->typedefDecls.end(), typedefDecls.begin(), typedefDecls.end());
+        return *this;
+    }
+
+    KahwaFileBuilder& with(ClassDecl* classDecl) {
+        classDecls.push_back(classDecl);
+        return *this;
+    }
+
+    KahwaFileBuilder& with(std::vector<ClassDecl*> classDecls) {
+        this->classDecls.insert(this->classDecls.end(), classDecls.begin(), classDecls.end());
+        return *this;
+    }
+
+    KahwaFileBuilder& with(MethodDecl* functionDecl) {
+        functionDecls.push_back(functionDecl);
+        return *this;
+    }
+
+    KahwaFileBuilder& with(std::vector<MethodDecl*> functionDecls) {
+        this->functionDecls.insert(this->functionDecls.end(), functionDecls.begin(), functionDecls.end());
+        return *this;
+    }
+
+    KahwaFileBuilder& with(FieldDecl* variableDecl) {
+        variableDecls.push_back(variableDecl);
+        return *this;
+    }
+
+    KahwaFileBuilder& with(std::vector<FieldDecl*> variableDecls) {
+        this->variableDecls.insert(this->variableDecls.end(), variableDecls.begin(), variableDecls.end());
+        return *this;
+    }
+
+private:
+    std::vector<TypedefDecl*> typedefDecls;
+    std::vector<ClassDecl*> classDecls;
+    std::vector<MethodDecl*> functionDecls;
+    std::vector<FieldDecl*> variableDecls;
 };
 
 

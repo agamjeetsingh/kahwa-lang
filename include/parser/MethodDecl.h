@@ -68,6 +68,42 @@ struct MethodDecl : Decl {
     }
 };
 
+class MethodDeclBuilder : public ASTBuilder {
+public:
+    MethodDeclBuilder(const std::string& name, TypeRef* returnType, Block* block)
+        : name(name), returnType(returnType), block(block) {}
+
+    [[nodiscard]] MethodDecl* build() const {
+        return arena->make<MethodDecl>(name, modifiers, returnType, parameters, block, dummy_source, dummy_source, dummy_source);
+    }
+
+    MethodDeclBuilder& with(Modifier modifier) {
+        modifiers.push_back(modifier);
+        return *this;
+    }
+
+    MethodDeclBuilder& with(const std::vector<Modifier>& modifiers) {
+        this->modifiers.insert(this->modifiers.begin(), modifiers.begin(), modifiers.end());
+        return *this;
+    }
+
+    MethodDeclBuilder& with(const std::pair<TypeRef*, std::string> &parameter) {
+        parameters.push_back(parameter);
+        return *this;
+    }
+
+    MethodDeclBuilder& with(const std::vector<std::pair<TypeRef*, std::string>>& parameters) {
+        this->parameters.insert(this->parameters.begin(), parameters.begin(), parameters.end());
+        return *this;
+    }
+
+private:
+    std::string name;
+    std::vector<Modifier> modifiers;
+    TypeRef* returnType;
+    std::vector<std::pair<TypeRef*, std::string>> parameters;
+    Block* block;
+};
 
 
 #endif //METHODDECL_H

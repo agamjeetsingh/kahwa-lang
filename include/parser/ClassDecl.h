@@ -7,6 +7,7 @@
 
 #include <utility>
 
+#include "ASTBuilder.h"
 #include "Decl.h"
 #include "FieldDecl.h"
 #include "MethodDecl.h"
@@ -76,6 +77,73 @@ struct ClassDecl : Decl {
         return classSourceRange == other.classSourceRange;
     }
 };
+
+class ClassDeclBuilder : public ASTBuilder {
+    public:
+        explicit ClassDeclBuilder(const std::string& name): name(name) {}
+
+        [[nodiscard]] ClassDecl* build() const {
+            return arena->make<ClassDecl>(name, dummy_source, dummy_source, dummy_source, modifiers, superClasses, fields, methods, nestedClasses);
+        }
+
+        ClassDeclBuilder& with(Modifier modifier) {
+            modifiers.push_back(modifier);
+            return *this;
+        }
+
+        ClassDeclBuilder& with(std::vector<Modifier> modifiers) {
+            this->modifiers.insert(this->modifiers.end(), modifiers.begin(), modifiers.end());
+            return *this;
+        }
+
+        ClassDeclBuilder& with(TypeRef* superClass) {
+            superClasses.push_back(superClass);
+            return *this;
+        }
+
+        ClassDeclBuilder& with(std::vector<TypeRef*> superClasses) {
+            this->superClasses.insert(this->superClasses.end(), superClasses.begin(), superClasses.end());
+            return *this;
+        }
+
+        ClassDeclBuilder& with(FieldDecl* field) {
+            fields.push_back(field);
+            return *this;
+        }
+
+        ClassDeclBuilder& with(std::vector<FieldDecl*> fields) {
+            this->fields.insert(this->fields.end(), fields.begin(), fields.end());
+            return *this;
+        }
+
+        ClassDeclBuilder& with(MethodDecl* method) {
+            methods.push_back(method);
+            return *this;
+        }
+
+        ClassDeclBuilder& with(std::vector<MethodDecl*> methods) {
+            this->methods.insert(this->methods.end(), methods.begin(), methods.end());
+            return *this;
+        }
+
+        ClassDeclBuilder& with(ClassDecl* nestedClass) {
+            nestedClasses.push_back(nestedClass);
+            return *this;
+        }
+
+        ClassDeclBuilder& with(std::vector<ClassDecl*> nestedClasses) {
+            this->nestedClasses.insert(this->nestedClasses.end(), nestedClasses.begin(), nestedClasses.end());
+            return *this;
+        }
+
+    private:
+        std::string name;
+        std::vector<Modifier> modifiers;
+        std::vector<TypeRef*> superClasses;
+        std::vector<FieldDecl*> fields;
+        std::vector<MethodDecl*> methods;
+        std::vector<ClassDecl*> nestedClasses;
+    };
 
 
 

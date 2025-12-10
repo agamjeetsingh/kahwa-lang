@@ -26,6 +26,28 @@ struct Block {
     }
 };
 
+class BlockBuilder : public ASTBuilder {
+public:
+
+    BlockBuilder() = default;
+
+    [[nodiscard]] Block* build() const {
+        return arena->make<Block>(stmts);
+    }
+
+    BlockBuilder& with(Stmt* stmt) {
+        stmts.push_back(stmt);
+        return *this;
+    }
+
+    BlockBuilder& with(const std::vector<Stmt*> &stmts) {
+        this->stmts.insert(this->stmts.begin(), stmts.begin(), stmts.end());
+        return *this;
+    }
+
+private:
+    std::vector<Stmt*> stmts;
+};
 
 
 #endif //BLOCK_H
