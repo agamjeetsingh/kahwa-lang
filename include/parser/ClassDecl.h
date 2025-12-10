@@ -80,10 +80,19 @@ struct ClassDecl : Decl {
 
 class ClassDeclBuilder : public ASTBuilder {
     public:
-        explicit ClassDeclBuilder(const std::string& name): name(name) {}
+        explicit ClassDeclBuilder(std::string  name): name(std::move(name)) {}
 
         [[nodiscard]] ClassDecl* build() const {
-            return arena->make<ClassDecl>(name, dummy_source, dummy_source, dummy_source, modifiers, superClasses, fields, methods, nestedClasses);
+            return arena->make<ClassDecl>(
+                name,
+                classSourceRange.has_value() ? classSourceRange.value() : dummy_source,
+                nameSourceRange.has_value() ? nameSourceRange.value() : dummy_source,
+                bodyRange.has_value() ? bodyRange.value() : dummy_source,
+                modifiers,
+                superClasses,
+                fields,
+                methods,
+                nestedClasses);
         }
 
         ClassDeclBuilder& with(Modifier modifier) {
@@ -136,6 +145,21 @@ class ClassDeclBuilder : public ASTBuilder {
             return *this;
         }
 
+        ClassDeclBuilder& withClassSourceRange(const SourceRange& classSourceRange) {
+            this->classSourceRange.emplace(classSourceRange);
+            return *this;
+        }
+
+        ClassDeclBuilder& withNameSourceRange(const SourceRange& nameSourceRange) {
+            this->nameSourceRange.emplace(nameSourceRange);
+            return *this;
+        }
+
+        ClassDeclBuilder& withBodyRange(const SourceRange& bodyRange) {
+            this->bodyRange.emplace(bodyRange);
+            return *this;
+        }
+
     private:
         std::string name;
         std::vector<Modifier> modifiers;
@@ -143,6 +167,9 @@ class ClassDeclBuilder : public ASTBuilder {
         std::vector<FieldDecl*> fields;
         std::vector<MethodDecl*> methods;
         std::vector<ClassDecl*> nestedClasses;
+        std::optional<SourceRange> classSourceRange;
+        std::optional<SourceRange> nameSourceRange;
+        std::optional<SourceRange> bodyRange;
     };
 
 
