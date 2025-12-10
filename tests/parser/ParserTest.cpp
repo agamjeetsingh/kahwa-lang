@@ -32,12 +32,6 @@ protected:
         return parser.parseFile(tokeniser.tokenise(0, str));
     }
 
-    static TypedefDecl* createTypedefDecl(const std::string &name,
-                                          TypeRef *referredType,
-                                          const std::vector<Modifier> &modifiers = {}) {
-        return astArena.make<TypedefDecl>(name, modifiers, referredType, dummy_source, dummy_source, dummy_source);
-    }
-
     static FieldDecl* createFieldDecl(const std::string& name,
                                       const std::vector<Modifier> &modifiers = {},
                                       TypeRef* type = nullptr) {
@@ -238,15 +232,18 @@ protected:
 };
 
 TEST_F(ParserTest, ParsesSingleTypedefCorrectly) {
-    const auto typedefDecl1 = createTypedefDecl("myInt", TypeRefBuilder("int").build());
+    const auto typedefDecl1 = TypedefDeclBuilder("myInt", TypeRefBuilder("int").build()).build();
     const auto str1 = toString(typedefDecl1);
     EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str1), KahwaFileBuilder().with(typedefDecl1).build());
 
-    const auto typedefDecl2 = createTypedefDecl("SomeType", TypeRefBuilder("someOtherType").build(), {Modifier::PRIVATE});
+    const auto typedefDecl2 = TypedefDeclBuilder("SomeType", TypeRefBuilder("someOtherType").build()).with(Modifier::PRIVATE).build();
     const auto str2 = toString(typedefDecl2);
     EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str2), KahwaFileBuilder().with(typedefDecl2).build());
 
-    const auto typedefDecl3 = createTypedefDecl("SomeTypeAgain", TypeRefBuilder("double_t20").build(), {Modifier::PUBLIC, Modifier::OPEN, Modifier::STATIC});
+    const auto typedefDecl3 = TypedefDeclBuilder(
+        "SomeTypeAgain",
+        TypeRefBuilder("double_t20").build()
+        ).with({Modifier::PUBLIC, Modifier::OPEN, Modifier::STATIC}).build();
     const auto str3 = toString(typedefDecl3);
     EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str3), KahwaFileBuilder().with(typedefDecl3).build());
 
@@ -254,13 +251,13 @@ TEST_F(ParserTest, ParsesSingleTypedefCorrectly) {
 }
 
 TEST_F(ParserTest, ParsesMultipleTypedefsCorrectly) {
-    const auto typedefDecl1 = createTypedefDecl("myInt", TypeRefBuilder("int").build());
+    const auto typedefDecl1 = TypedefDeclBuilder("myInt", TypeRefBuilder("int").build()).build();
     const auto str1 = toString(typedefDecl1);
 
-    const auto typedefDecl2 = createTypedefDecl("SomeType", TypeRefBuilder("someOtherType").build(), {Modifier::PRIVATE});
+    const auto typedefDecl2 = TypedefDeclBuilder("SomeType", TypeRefBuilder("someOtherType").build()).with(Modifier::PRIVATE).build();
     const auto str2 = toString(typedefDecl2);
 
-    const auto typedefDecl3 = createTypedefDecl("SomeTypeAgain", TypeRefBuilder("double_t20").build(), {Modifier::PUBLIC, Modifier::OPEN, Modifier::STATIC});
+    const auto typedefDecl3 = TypedefDeclBuilder("SomeTypeAgain", TypeRefBuilder("double_t20").build()).with({Modifier::PUBLIC, Modifier::OPEN, Modifier::STATIC}).build();
     const auto str3 = toString(typedefDecl3);
 
     EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str1 + str2), KahwaFileBuilder().with({typedefDecl1, typedefDecl2}).build());
@@ -356,7 +353,7 @@ TEST_F(ParserTest, ParsesMultipleClassesWithInheritanceAndTypeDefsCorrectly) {
 
     EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str1 + str2), KahwaFileBuilder().with({classDecl1, classDecl2}).build());
 
-    const auto typedefDecl1 = createTypedefDecl("someTypeDef", TypeRefBuilder("int").build());
+    const auto typedefDecl1 = TypedefDeclBuilder("someTypeDef", TypeRefBuilder("int").build()).build();
     const auto str3 = toString(typedefDecl1);
 
     EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str1 + str2 + str3),
@@ -365,7 +362,7 @@ TEST_F(ParserTest, ParsesMultipleClassesWithInheritanceAndTypeDefsCorrectly) {
         .with(typedefDecl1)
         .build());
 
-    const auto typedefDecl2 = createTypedefDecl("anotherTypeDef", TypeRefBuilder("float").build());
+    const auto typedefDecl2 = TypedefDeclBuilder("anotherTypeDef", TypeRefBuilder("float").build()).build();
     const auto str4 = toString(typedefDecl2);
 
     EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str1 + str2 + str3),

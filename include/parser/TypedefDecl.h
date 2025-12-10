@@ -5,6 +5,7 @@
 #ifndef TYPEDEFDECL_H
 #define TYPEDEFDECL_H
 #include <string>
+#include <utility>
 
 #include "TypeRef.h"
 
@@ -37,6 +38,54 @@ struct TypedefDecl : Decl {
     }
 };
 
+class TypedefDeclBuilder : public ASTBuilder{
+public:
+    explicit TypedefDeclBuilder(std::string name, TypeRef* referredType):
+    name(std::move(name)), referredType(referredType) {}
+
+    [[nodiscard]] TypedefDecl* build() const {
+        return arena->make<TypedefDecl>(
+            name,
+            modifiers,
+            referredType,
+            typedefSourceRange.has_value() ? typedefSourceRange.value() : dummy_source,
+            nameSourceRange.has_value() ? nameSourceRange.value() : dummy_source,
+            bodyRange.has_value() ? bodyRange.value() : dummy_source);
+    }
+
+    TypedefDeclBuilder& with(Modifier modifier) {
+        modifiers.push_back(modifier);
+        return *this;
+    }
+
+    TypedefDeclBuilder& with(const std::vector<Modifier>& modifiers) {
+        this->modifiers.insert(this->modifiers.begin(), modifiers.begin(), modifiers.end());
+        return *this;
+    }
+
+    TypedefDeclBuilder& withTypedefSourceRange(const SourceRange& typedefSourceRange) {
+        this->typedefSourceRange.emplace(typedefSourceRange);
+        return *this;
+    }
+
+    TypedefDeclBuilder& withNameSourceRange(const SourceRange& nameSourceRange) {
+        this->nameSourceRange.emplace(nameSourceRange);
+        return *this;
+    }
+
+    TypedefDeclBuilder& withBodyRange(const SourceRange& bodyRange) {
+        this->bodyRange.emplace(bodyRange);
+        return *this;
+    }
+
+private:
+    std::string name;
+    std::vector<Modifier> modifiers;
+    TypeRef* referredType;
+    std::optional<SourceRange> typedefSourceRange;
+    std::optional<SourceRange> nameSourceRange;
+    std::optional<SourceRange> bodyRange;
+};
 
 
 #endif //TYPEDEFDECL_H
