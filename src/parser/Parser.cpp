@@ -68,28 +68,65 @@ TypedefDecl *Parser::ParserWorker::parseTypedef() {
 
     auto modifiers = getModifierList();
 
-    if (const auto nextTokens = expect(
-        std::vector{TokenType::TYPEDEF, TokenType::IDENTIFIER, TokenType::IDENTIFIER, TokenType::SEMI_COLON},
-        std::vector(4, isSafePointForFile)
-        )) {
-        return TypedefDeclBuilder(
-            *nextTokens.value()[2].getIf<std::string>(),
-            TypeRefBuilder(*nextTokens.value()[1].getIf<std::string>()).build())
-        .with(modifiers)
-        .withBodyRange(SourceRange{firstToken, nextTokens->back()})
-        .withTypedefSourceRange(nextTokens.value()[0].source_range)
-        .withNameSourceRange(nextTokens.value()[1].source_range)
-        .build();
+    idx++;
+
+    if (auto typeRef = parseTypeRef(isSafePointForFile)) {
+        if (auto nextTokens = expect({TokenType::IDENTIFIER, TokenType::SEMI_COLON}, {2, isSafePointForFile})) {
+            return TypedefDeclBuilder(*nextTokens.value()[0].getIf<std::string>(), typeRef)
+            .with(modifiers)
+            .withBodyRange(SourceRange{firstToken, nextTokens->back()})
+            .withTypedefSourceRange(typeRef->bodyRange)
+            .withNameSourceRange(nextTokens.value()[1].source_range)
+            .build();
+        }
     }
     return nullptr;
 }
 
-ClassDecl *Parser::ParserWorker::parseClass() {
+TypeRef *Parser::ParserWorker::parseTypeRef(const safePointFunc &isSafePoint) {
+    assertTokenSequence({TokenType::IDENTIFIER});
+    auto typeRefBuilder = TypeRefBuilder(*tokens[idx++].getIf<std::string>());
+
+    if (!next_is(TokenType::LESS)) return typeRefBuilder.build();
+
+    // Generic
+    idx++; // Skip '<'
+
+    if (next_is(TokenType::IDENTIFIER)) {
+        if (auto arg = parseTypeRef(isSafePoint)) {
+            typeRefBuilder.with(arg);
+        } else {
+            return nullptr;
+        }
+    } else {
+        // Report problem
+        syncTo(isSafePoint);
+        return nullptr;
+    }
+
+    while (next_is(TokenType::COMMA)) {
+        idx++;
+
+        if (!expect(TokenType::IDENTIFIER, isSafePoint, false)) return nullptr;
+
+        if (auto arg = parseTypeRef(isSafePoint)) {
+            typeRefBuilder.with(arg);
+        } else {
+            return nullptr;
+        }
+    }
+
+    if (!expect(TokenType::GREATER, skipNothing)) return nullptr;
+
+    return typeRefBuilder.build();
+}
+
+ClassDecl *Parser::ParserWorker::parseClass(const safePointFunc& isSafePoint) {
     std::vector<Modifier> modifiers = getModifierList();
 
     SourceRange classSourceRange = tokens[idx++].source_range;
 
-    auto nameToken = expect(TokenType::IDENTIFIER, isSafePointForFile);
+    auto nameToken = expect(TokenType::IDENTIFIER, isSafePoint);
     if (!nameToken) {
         return nullptr;
     }
@@ -102,7 +139,7 @@ ClassDecl *Parser::ParserWorker::parseClass() {
 
     // TODO - Parse optional super classes
 
-    if (!expect(TokenType::LEFT_CURLY_BRACE, isSafePointForFile)) {
+    if (!expect(TokenType::LEFT_CURLY_BRACE, isSafePoint)) {
         return nullptr;
     }
 
@@ -146,7 +183,7 @@ ClassDecl *Parser::ParserWorker::parseClass() {
         }
     }
 
-    expect(TokenType::RIGHT_CURLY_BRACE, isSafePointForFile);
+    expect(TokenType::RIGHT_CURLY_BRACE, isSafePoint);
 
     const std::size_t file_id = nameToken->source_range.file_id;
     const std::size_t length = 1; // TODO
@@ -156,46 +193,46 @@ ClassDecl *Parser::ParserWorker::parseClass() {
 
 MethodDecl *Parser::ParserWorker::parseMethod() {
     const std::vector<Modifier>& modifiers = getModifierList();
-    assertTokenSequence(3, {TokenType::IDENTIFIER, TokenType::IDENTIFIER, TokenType::LEFT_PAREN});
+    assertTokenSequence({TokenType::IDENTIFIER, TokenType::IDENTIFIER, TokenType::LEFT_PAREN});
 
     std::vector<std::pair<TypeRef*, std::string>> parameters;
     Block* block;
 
     std::vector<Token> nextTokens = next(3);
 
-    auto returnType = astArena.make<TypeRef>(*nextTokens[0].getIf<std::string>());
-    auto returnTypeSourceRange = nextTokens[0].source_range;
-    std::string name = *nextTokens[1].getIf<std::string>();
-    auto nameSourceRange = nextTokens[1].source_range;
-    idx += 3;
-
-    while (next_is(TokenType::RIGHT_PAREN)) {
-        auto tokens = expect(
-            {TokenType::IDENTIFIER, TokenType::IDENTIFIER},
-            std::vector(3, isSafePointForClass));
-        if (!tokens) {
-            return nullptr;
-        }
-
-        auto paramType = astArena.make<TypeRef>(*tokens.value()[0].getIf<std::string>());
-        const std::string& paramName = *tokens.value()[1].getIf<std::string>();
-
-        parameters.emplace_back(paramType, paramName);
-    }
-
-    if (expect(TokenType::LEFT_CURLY_BRACE, isSafePointForClass)) {
-        idx--;
-        block = parseBlock();
-        if (!block) {
-            return nullptr;
-        }
-    } else {
-        return nullptr;
-    }
-
-    SourceRange bodyRange{1, 1}; // TODO
-
-    return astArena.make<MethodDecl>(name, modifiers, returnType, parameters, block, returnTypeSourceRange, nameSourceRange, bodyRange);
+    // auto returnType = astArena.make<TypeRef>(*nextTokens[0].getIf<std::string>());
+    // auto returnTypeSourceRange = nextTokens[0].source_range;
+    // std::string name = *nextTokens[1].getIf<std::string>();
+    // auto nameSourceRange = nextTokens[1].source_range;
+    // idx += 3;
+    //
+    // while (next_is(TokenType::RIGHT_PAREN)) {
+    //     auto tokens = expect(
+    //         {TokenType::IDENTIFIER, TokenType::IDENTIFIER},
+    //         std::vector(3, isSafePointForClass));
+    //     if (!tokens) {
+    //         return nullptr;
+    //     }
+    //
+    //     auto paramType = astArena.make<TypeRef>(*tokens.value()[0].getIf<std::string>());
+    //     const std::string& paramName = *tokens.value()[1].getIf<std::string>();
+    //
+    //     parameters.emplace_back(paramType, paramName);
+    // }
+    //
+    // if (expect(TokenType::LEFT_CURLY_BRACE, isSafePointForClass)) {
+    //     idx--;
+    //     block = parseBlock();
+    //     if (!block) {
+    //         return nullptr;
+    //     }
+    // } else {
+    //     return nullptr;
+    // }
+    //
+    // SourceRange bodyRange{1, 1}; // TODO
+    //
+    // return astArena.make<MethodDecl>(name, modifiers, returnType, parameters, block, returnTypeSourceRange, nameSourceRange, bodyRange);
 }
 
 Block *Parser::ParserWorker::parseBlock() {
@@ -203,9 +240,9 @@ Block *Parser::ParserWorker::parseBlock() {
 }
 
 
-void Parser::ParserWorker::assertTokenSequence(const std::size_t count, const std::vector<TokenType> &expectedTypes) const {
-    std::vector<TokenType> actualTypes;
-    std::vector<Token> actualTokens = next(count);
+void Parser::ParserWorker::assertTokenSequence(const std::vector<TokenType> &expectedTypes) const {
+    std::vector<TokenType> actualTypes{expectedTypes.size()};
+    std::vector<Token> actualTokens = next(expectedTypes.size());
     std::ranges::transform(actualTokens, actualTypes.begin(), [](const Token& token){ return token.type; });
 
     assert(actualTypes == expectedTypes);
@@ -250,12 +287,10 @@ void Parser::ParserWorker::syncTo(const safePointFunc &isSafePoint) {
     idx += next([&isSafePoint](const Token& token) { return isSafePoint(token); }).size();
 }
 
-std::optional<Token> Parser::ParserWorker::expect(const TokenType tokenType, const DiagnosticKind kind, const safePointFunc &isSafePoint) {
+std::optional<Token> Parser::ParserWorker::expect(const TokenType tokenType, const DiagnosticKind kind, const safePointFunc &isSafePoint, bool advance) {
     const auto nextToken = next(1);
-    if (nextToken.size() == 1) {
-        if (nextToken[0].type == tokenType) {
-            return tokens[idx++];
-        }
+    if (nextToken.size() == 1 && nextToken[0].type == tokenType) {
+        return advance ? tokens[idx++] : tokens[idx];
     }
 
     diagnostic_engine.reportProblem(DiagnosticSeverity::ERROR, kind, getPrevTokSourceRange(), toMsg(kind));
@@ -263,28 +298,38 @@ std::optional<Token> Parser::ParserWorker::expect(const TokenType tokenType, con
     return std::nullopt;
 }
 
-std::optional<Token> Parser::ParserWorker::expect(TokenType tokenType, const std::function<bool(const Token &)> &isSafePoint) {
-    return expect(tokenType, expectedTokenTypeToDiagnosticKind(tokenType), isSafePoint);
+std::optional<Token> Parser::ParserWorker::expect(TokenType tokenType, const std::function<bool(const Token &)> &isSafePoint, bool advance) {
+    return expect(tokenType, expectedTokenTypeToDiagnosticKind(tokenType), isSafePoint, advance);
 }
 
-
-std::optional<std::vector<Token>> Parser::ParserWorker::expect(const std::vector<TokenType>& tokenTypes, const std::vector<DiagnosticKind>& kinds, const std::vector<safePointFunc>& isSafePoints) {
+std::optional<std::vector<Token>> Parser::ParserWorker::expect(const std::vector<TokenType>& tokenTypes, const std::vector<DiagnosticKind>& kinds, const std::vector<safePointFunc>& isSafePoints, bool advance) {
     assert(tokenTypes.size() == kinds.size() && kinds.size() == isSafePoints.size());
     std::vector<Token> res;
+    const std::size_t curr_idx = idx;
     for (int i = 0; i < tokenTypes.size(); i++) {
-        if (auto tok = expect(tokenTypes[i], kinds[i], isSafePoints[i])) {
-            res.emplace_back(tok.value());
+        if (curr_idx + i < tokens.size()) {
+            if (const auto nextToken = tokens[curr_idx + i]; nextToken.type == tokenTypes[i]) {
+                res.emplace_back(nextToken);
+            } else {
+                diagnostic_engine.reportProblem(DiagnosticSeverity::ERROR, kinds[i], getPrevTokSourceRange(), toMsg(kinds[i]));
+                syncTo(isSafePoints[i]);
+                return std::nullopt;
+            }
         } else {
+            diagnostic_engine.reportProblem(DiagnosticSeverity::ERROR, kinds[i], getPrevTokSourceRange(), toMsg(kinds[i]));
+            syncTo(isSafePoints[i]);
             return std::nullopt;
         }
+
+        if (advance) idx++;
     }
     return res;
 }
 
-std::optional<std::vector<Token>> Parser::ParserWorker::expect(const std::vector<TokenType> &tokenTypes, const std::vector<std::function<bool(const Token &)> > &isSafePoints) {
+std::optional<std::vector<Token>> Parser::ParserWorker::expect(const std::vector<TokenType> &tokenTypes, const std::vector<std::function<bool(const Token &)>>& isSafePoints, bool advance) {
     std::vector<DiagnosticKind> kinds{tokenTypes.size()};
     std::ranges::transform(tokenTypes, kinds.begin(), [](const TokenType type){ return expectedTokenTypeToDiagnosticKind(type); });
-    return expect(tokenTypes, kinds, isSafePoints);
+    return expect(tokenTypes, kinds, isSafePoints, advance);
 }
 
 SourceRange Parser::ParserWorker::getPrevTokSourceRange() const {

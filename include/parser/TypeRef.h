@@ -4,14 +4,24 @@
 
 #ifndef TYPEREF_H
 #define TYPEREF_H
+#include <utility>
 #include <vector>
 #include "ASTBuilder.h"
 
 struct TypeRef {
-    explicit TypeRef(std::string identifier, const std::vector<TypeRef*> &args = {}): identifier(std::move(identifier)), args(args) {}
+    explicit TypeRef(std::string identifier,
+    const SourceRange &nameSourceRange,
+    const SourceRange &bodyRange,
+    const std::vector<TypeRef*> &args = {}):
+    identifier(std::move(identifier)),
+    args(args),
+    nameSourceRange(nameSourceRange),
+    bodyRange(bodyRange) {}
 
     const std::string identifier;
     const std::vector<TypeRef*> args;
+    const SourceRange nameSourceRange;
+    const SourceRange bodyRange;
 
     bool operator==(const TypeRef &other) const {
         if (identifier != other.identifier || args.size() != other.args.size()) {
@@ -28,12 +38,16 @@ struct TypeRef {
     }
 };
 
-class TypeRefBuilder : public ASTBuilder{
+class TypeRefBuilder : public ASTBuilder {
 public:
-    explicit TypeRefBuilder(const std::string& name): name(name) {}
+    explicit TypeRefBuilder(std::string  name): name(std::move(name)) {}
 
     [[nodiscard]] TypeRef* build() const {
-        return arena->make<TypeRef>(name, typeRefs);
+        return arena->make<TypeRef>(
+            name,
+            nameSourceRange.has_value() ? nameSourceRange.value() : dummy_source,
+            bodyRange.has_value() ? bodyRange.value() : dummy_source,
+            typeRefs);
     }
 
     TypeRefBuilder& with(TypeRef* typeRef) {
@@ -46,9 +60,21 @@ public:
         return *this;
     }
 
+    TypeRefBuilder& withNameSourceRange(const SourceRange& nameSourceRange) {
+        this->nameSourceRange.emplace(nameSourceRange);
+        return *this;
+    }
+
+    TypeRefBuilder& withBodyRange(const SourceRange& bodyRange) {
+        this->bodyRange.emplace(bodyRange);
+        return *this;
+    }
+
 private:
     std::string name;
     std::vector<TypeRef*> typeRefs;
+    std::optional<SourceRange> nameSourceRange;
+    std::optional<SourceRange> bodyRange;
 };
 
 

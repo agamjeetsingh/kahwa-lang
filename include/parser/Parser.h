@@ -33,7 +33,9 @@ public:
 
         TypedefDecl* parseTypedef();
 
-        ClassDecl* parseClass();
+        ClassDecl* parseClass(const safePointFunc& isSafePoint = isSafePointForFile);
+
+        TypeRef* parseTypeRef(const safePointFunc& isSafePoint);
 
         MethodDecl* parseMethod();
 
@@ -58,25 +60,27 @@ public:
 
         void syncTo(const safePointFunc &isSafePoint);
 
-        std::optional<Token> expect(TokenType tokenType, DiagnosticKind kind, const safePointFunc &isSafePoint);
+        std::optional<Token> expect(TokenType tokenType, DiagnosticKind kind, const safePointFunc &isSafePoint, bool advance = true);
 
-        std::optional<Token> expect(TokenType tokenType, const safePointFunc &isSafePoint);
+        std::optional<Token> expect(TokenType tokenType, const safePointFunc &isSafePoint, bool advance = true);
 
-        std::optional<std::vector<Token>> expect(const std::vector<TokenType>& tokenTypes, const std::vector<DiagnosticKind>& kinds, const std::vector<safePointFunc>& isSafePoints);
+        std::optional<std::vector<Token>> expect(const std::vector<TokenType>& tokenTypes, const std::vector<DiagnosticKind>& kinds, const std::vector<safePointFunc>& isSafePoints, bool advance = true);
 
-        std::optional<std::vector<Token>> expect(const std::vector<TokenType>& tokenTypes, const std::vector<safePointFunc>& isSafePoints);
+        std::optional<std::vector<Token>> expect(const std::vector<TokenType>& tokenTypes, const std::vector<safePointFunc>& isSafePoints, bool advance = true);
 
         [[nodiscard]] SourceRange getPrevTokSourceRange() const;
 
-        const safePointFunc isSafePointForFile = [](const Token& token) {
+        static inline const safePointFunc isSafePointForFile = [](const Token& token) {
             return token.type == TokenType::IDENTIFIER || token.type == TokenType::TYPEDEF || MODIFIER_TYPES.contains(token.type);
         };
 
-        const safePointFunc isSafePointForClass = [](const Token& token) {
+        static inline const safePointFunc isSafePointForClass = [](const Token& token) {
             return token.type == TokenType::IDENTIFIER || MODIFIER_TYPES.contains(token.type);
         };
 
-        void assertTokenSequence(std::size_t count, const std::vector<TokenType> &expectedTypes) const;
+        static inline const safePointFunc skipNothing = [](const Token& token) { return true; };
+
+        void assertTokenSequence(const std::vector<TokenType> &expectedTypes) const;
     };
 
 private:
