@@ -21,6 +21,17 @@ protected:
         EXPECT_EQ(diagnostic_engine.getAll(), diagnostics);
     }
 
+    void expectDiagnosticsIgnoreSourceRange(const std::vector<Diagnostic>& diagnostics) const {
+        auto actualDiagnostics = diagnostic_engine.getAll();
+        EXPECT_EQ(actualDiagnostics.size(), diagnostics.size());
+
+        for (int i = 0; i < diagnostics.size(); i++) {
+            EXPECT_EQ(actualDiagnostics[i].severity, diagnostics[i].severity);
+            EXPECT_EQ(actualDiagnostics[i].kind, diagnostics[i].kind);
+            EXPECT_EQ(actualDiagnostics[i].msg, diagnostics[i].msg);
+        }
+    }
+
     void expectNoDiagnostics() const {
         expectDiagnostics({});
     }
@@ -262,6 +273,115 @@ TEST_F(ParserTest, ParsesMultipleTypedefsCorrectly) {
     EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str1 + str2 + str3), KahwaFileBuilder().with({typedefDecl1, typedefDecl2, typedefDecl3}).build());
 
     expectNoDiagnostics();
+}
+
+TEST_F(ParserTest, ParsesGenericTypesCorrectly) {
+    const auto typedefDecl1 = TypedefDeclBuilder(
+        "customType",
+        TypeRefBuilder("vector")
+        .with(TypeRefBuilder("int").build())
+        .build())
+    .build();
+    const auto str1 = toString(typedefDecl1);
+
+    EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str1), KahwaFileBuilder().with(typedefDecl1).build());
+
+    const auto typedefDecl2 = TypedefDeclBuilder(
+        "multipleArgs",
+        TypeRefBuilder("variant")
+        .with(TypeRefBuilder("arg1").build())
+        .with(TypeRefBuilder("arg2").build())
+        .with(TypeRefBuilder("arg3").build())
+        .build())
+    .build();
+    const auto str2 = toString(typedefDecl2);
+
+    EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str2), KahwaFileBuilder().with(typedefDecl2).build());
+
+    const auto typedefDecl3 = TypedefDeclBuilder(
+        "nested",
+        TypeRefBuilder("vector")
+        .with(TypeRefBuilder("pair")
+            .with(TypeRefBuilder("int").build())
+            .with(TypeRefBuilder("bool").build())
+            .build())
+        .build())
+    .build();
+    const auto str3 = toString(typedefDecl3);
+
+    EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str3), KahwaFileBuilder().with(typedefDecl3).build());
+
+    const auto typedefDecl4 = TypedefDeclBuilder(
+        "nestedWithMoreArgs",
+        TypeRefBuilder("vector")
+        .with(TypeRefBuilder("pair")
+            .with(TypeRefBuilder("pair")
+                .with(TypeRefBuilder("int").build())
+                .with(TypeRefBuilder("bool").build())
+                .build())
+            .with(TypeRefBuilder("bool").build())
+            .build())
+        .build())
+    .build();
+    const auto str4 = toString(typedefDecl4);
+
+    EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str4), KahwaFileBuilder().with(typedefDecl4).build());
+
+    expectNoDiagnostics();
+}
+
+TEST_F(ParserTest, ReportsCorrectDiagnosticWhenTypedefIsMalformed) {
+    const auto typedefDecl = TypedefDeclBuilder("myInt", TypeRefBuilder("int").build()).build();
+    const std::string str1 = "typedef int myInt;";
+    const std::string str2 = "typedef int myInt";
+    const std::string str3 = "typedef 0 0";
+    const std::string str4 = "typedef int 0";
+    const std::string str5 = "typedef";
+
+    EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str1), KahwaFileBuilder().with(typedefDecl).build());
+
+    expectNoDiagnostics();
+
+    EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str2), KahwaFileBuilder().build());
+
+    Diagnostic expectedSemicolon = {DiagnosticSeverity::ERROR, DiagnosticKind::EXPECTED_SEMI_COLON, dummy_source, "Expected ';'"};
+    expectDiagnosticsIgnoreSourceRange({expectedSemicolon});
+
+    EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str3), KahwaFileBuilder().build());
+
+    Diagnostic expectedIdentifier = {DiagnosticSeverity::ERROR, DiagnosticKind::EXPECTED_IDENTIFIER, dummy_source, "Expected identifier"};
+    expectDiagnosticsIgnoreSourceRange({expectedSemicolon, expectedIdentifier});
+
+    EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str4), KahwaFileBuilder().build());
+    expectDiagnosticsIgnoreSourceRange({expectedSemicolon, expectedIdentifier, expectedIdentifier});
+
+    EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str5), KahwaFileBuilder().build());
+    expectDiagnosticsIgnoreSourceRange({expectedSemicolon, expectedIdentifier, expectedIdentifier, expectedIdentifier});
+
+    const std::string str6 = "typedef 0 int";
+    Diagnostic expectedDeclaration = {DiagnosticSeverity::ERROR, DiagnosticKind::EXPECTED_DECLARATION, dummy_source, "Expected declaration"};
+
+    EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str6), KahwaFileBuilder().build());
+    expectDiagnosticsIgnoreSourceRange({expectedSemicolon, expectedIdentifier, expectedIdentifier, expectedIdentifier, expectedIdentifier, expectedDeclaration});
+}
+
+TEST_F(ParserTest, RecoversFromMalformedTypedefCorrectly) {
+    const std::string str1 = " typedef int myInt ";
+    const std::string str2 = " typedef 0 0 ";
+    const std::string str3 = " typedef int 0 ";
+    const auto typedefDecl = TypedefDeclBuilder("workNow", TypeRefBuilder("should").build()).build();
+    const auto validStr = toString(typedefDecl);
+
+    EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str1 + validStr), KahwaFileBuilder().with(typedefDecl).build());
+    EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str2 + validStr), KahwaFileBuilder().with(typedefDecl).build());
+    EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str3 + validStr), KahwaFileBuilder().with(typedefDecl).build());
+    EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(validStr + str1), KahwaFileBuilder().with(typedefDecl).build());
+    EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(validStr + str1 + str2 + str3), KahwaFileBuilder().with(typedefDecl).build());
+    EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(validStr + str1 + validStr + str2), KahwaFileBuilder().with({typedefDecl, typedefDecl}).build());
+    EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(validStr + str1 + validStr + str2 + str3 + validStr), KahwaFileBuilder().with({3, typedefDecl}).build());
+
+    const std::string str4 = " private typedef ";
+    EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str4 + validStr), KahwaFileBuilder().with(typedefDecl).build());
 }
 
 TEST_F(ParserTest, ParsesEmptyClassCorrectly) {
