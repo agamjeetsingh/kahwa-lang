@@ -3,7 +3,6 @@
 //
 
 #include "../../include/parser/Parser.h"
-
 #include "../../include/parser/Modifier.h"
 
 KahwaFile *Parser::parseFile(const std::vector<Token> &tokens) const {
@@ -15,10 +14,7 @@ TypedefDecl *Parser::parseTypedef(const std::vector<Token> &tokens) const {
 }
 
 KahwaFile *Parser::ParserWorker::parseFile() {
-    std::vector<TypedefDecl*> typedefDecls;
-    std::vector<ClassDecl*> classDecls;
-    std::vector<MethodDecl*> functionDecls;
-    std::vector<FieldDecl*> variableDecls;
+    auto kahwaFileBuilder = KahwaFileBuilder();
 
     while (idx < tokens.size()) {
         std::size_t save_idx = idx;
@@ -30,7 +26,7 @@ KahwaFile *Parser::ParserWorker::parseFile() {
         if (token.type == TokenType::TYPEDEF) {
             idx = save_idx;
             if (auto typedefDecl = parseTypedef()) {
-                typedefDecls.push_back(typedefDecl);
+                kahwaFileBuilder.with(typedefDecl);
             } else {
                 continue;
             }
@@ -39,7 +35,7 @@ KahwaFile *Parser::ParserWorker::parseFile() {
                 // class-decl
                 idx = save_idx;
                 if (ClassDecl *class_decl = parseClass()) {
-                    classDecls.push_back(class_decl);
+                    kahwaFileBuilder.with(class_decl);
                 }
             } else {
                 continue; // TODO
@@ -51,7 +47,7 @@ KahwaFile *Parser::ParserWorker::parseFile() {
 
                 // TODO - But with recovery being file-level and not class-level
                 if (auto function = parseMethod()) {
-                    functionDecls.push_back(function);
+                    kahwaFileBuilder.with(function);
                 }
 
                 continue;
@@ -62,11 +58,10 @@ KahwaFile *Parser::ParserWorker::parseFile() {
         }
     }
 
-    return astArena.make<KahwaFile>(typedefDecls, classDecls, functionDecls, variableDecls);
+    return kahwaFileBuilder.build();
 }
 
 TypedefDecl *Parser::ParserWorker::parseTypedef() {
-    // idx is pointing to token right after "typedef"
     // Assuming no generics
 
     const Token& firstToken = tokens[idx];
@@ -77,24 +72,20 @@ TypedefDecl *Parser::ParserWorker::parseTypedef() {
         std::vector{TokenType::TYPEDEF, TokenType::IDENTIFIER, TokenType::IDENTIFIER, TokenType::SEMI_COLON},
         std::vector(4, isSafePointForFile)
         )) {
-        auto* referredType = astArena.make<TypeRef>(*nextTokens.value()[1].getIf<std::string>());
-        return astArena.make<TypedefDecl>(
+        return TypedefDeclBuilder(
             *nextTokens.value()[2].getIf<std::string>(),
-            modifiers,
-            referredType,
-            nextTokens.value()[0].source_range,
-            nextTokens.value()[1].source_range,
-            SourceRange{firstToken, nextTokens->back()});
+            TypeRefBuilder(*nextTokens.value()[1].getIf<std::string>()).build())
+        .with(modifiers)
+        .withBodyRange(SourceRange{firstToken, nextTokens->back()})
+        .withTypedefSourceRange(nextTokens.value()[0].source_range)
+        .withNameSourceRange(nextTokens.value()[1].source_range)
+        .build();
     }
     return nullptr;
 }
 
 ClassDecl *Parser::ParserWorker::parseClass() {
     std::vector<Modifier> modifiers = getModifierList();
-    std::vector<TypeRef*> superClasses;
-    std::vector<FieldDecl*> fields;
-    std::vector<MethodDecl*> methods;
-    std::vector<ClassDecl*> nestedClasses;
 
     SourceRange classSourceRange = tokens[idx++].source_range;
 
@@ -103,8 +94,11 @@ ClassDecl *Parser::ParserWorker::parseClass() {
         return nullptr;
     }
 
-    std::string name = *nameToken->getIf<std::string>();
-    SourceRange nameSourceRange = nameToken->source_range;
+    auto classDeclBuilder = ClassDeclBuilder(*nameToken->getIf<std::string>());
+
+    classDeclBuilder.withClassSourceRange(classSourceRange);
+    classDeclBuilder.withNameSourceRange(nameToken->source_range);
+    classDeclBuilder.with(modifiers);
 
     // TODO - Parse optional super classes
 
@@ -157,9 +151,7 @@ ClassDecl *Parser::ParserWorker::parseClass() {
     const std::size_t file_id = nameToken->source_range.file_id;
     const std::size_t length = 1; // TODO
 
-    SourceRange bodyRange{file_id, classSourceRange.pos, length};
-
-    return astArena.make<ClassDecl>(name, classSourceRange, nameSourceRange, bodyRange, modifiers, superClasses, fields, methods, nestedClasses);
+    return classDeclBuilder.withBodyRange({file_id, classSourceRange.pos, length}).build();
 }
 
 MethodDecl *Parser::ParserWorker::parseMethod() {
