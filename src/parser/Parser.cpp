@@ -246,11 +246,11 @@ Token Parser::ParserWorker::next() const {
     return next(1)[0];
 }
 
-void Parser::ParserWorker::syncTo(const std::function<bool(const Token&)> &isSafePoint) {
+void Parser::ParserWorker::syncTo(const safePointFunc &isSafePoint) {
     idx += next([&isSafePoint](const Token& token) { return isSafePoint(token); }).size();
 }
 
-std::optional<Token> Parser::ParserWorker::expect(const TokenType tokenType, const DiagnosticKind kind, const std::function<bool(const Token&)> &isSafePoint) {
+std::optional<Token> Parser::ParserWorker::expect(const TokenType tokenType, const DiagnosticKind kind, const safePointFunc &isSafePoint) {
     const auto nextToken = next(1);
     if (nextToken.size() == 1) {
         if (nextToken[0].type == tokenType) {
@@ -268,7 +268,7 @@ std::optional<Token> Parser::ParserWorker::expect(TokenType tokenType, const std
 }
 
 
-std::optional<std::vector<Token>> Parser::ParserWorker::expect(const std::vector<TokenType>& tokenTypes, const std::vector<DiagnosticKind>& kinds, const std::vector<std::function<bool(const Token&)>>& isSafePoints) {
+std::optional<std::vector<Token>> Parser::ParserWorker::expect(const std::vector<TokenType>& tokenTypes, const std::vector<DiagnosticKind>& kinds, const std::vector<safePointFunc>& isSafePoints) {
     assert(tokenTypes.size() == kinds.size() && kinds.size() == isSafePoints.size());
     std::vector<Token> res;
     for (int i = 0; i < tokenTypes.size(); i++) {

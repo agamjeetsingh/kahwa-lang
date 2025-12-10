@@ -11,6 +11,8 @@
 #include "../arena/Arena.h"
 #include "../diagnostics/DiagnosticEngine.h"
 
+typedef std::function<bool(const Token&)> safePointFunc;
+
 class Parser {
 public:
     explicit Parser(Arena& astArena, DiagnosticEngine& diagnostic_engine): astArena(astArena), diagnostic_engine(diagnostic_engine) {
@@ -48,29 +50,29 @@ public:
 
         [[nodiscard]] bool next_is(const std::vector<TokenType>& expected) const;
 
-        std::vector<Token> next(const std::function<bool(const Token&)> &until) const;
+        std::vector<Token> next(const safePointFunc &until) const;
 
-        std::vector<Token> next(std::size_t count, const std::function<bool(const Token&)> &until = [](const Token& token){ return false; }) const;
+        std::vector<Token> next(std::size_t count, const safePointFunc &until = [](const Token& token){ return false; }) const;
 
         [[nodiscard]] Token next() const;
 
-        void syncTo(const std::function<bool(const Token&)> &isSafePoint);
+        void syncTo(const safePointFunc &isSafePoint);
 
-        std::optional<Token> expect(TokenType tokenType, DiagnosticKind kind, const std::function<bool(const Token&)> &isSafePoint);
+        std::optional<Token> expect(TokenType tokenType, DiagnosticKind kind, const safePointFunc &isSafePoint);
 
-        std::optional<Token> expect(TokenType tokenType, const std::function<bool(const Token&)> &isSafePoint);
+        std::optional<Token> expect(TokenType tokenType, const safePointFunc &isSafePoint);
 
-        std::optional<std::vector<Token>> expect(const std::vector<TokenType>& tokenTypes, const std::vector<DiagnosticKind>& kinds, const std::vector<std::function<bool(const Token&)>>& isSafePoints);
+        std::optional<std::vector<Token>> expect(const std::vector<TokenType>& tokenTypes, const std::vector<DiagnosticKind>& kinds, const std::vector<safePointFunc>& isSafePoints);
 
-        std::optional<std::vector<Token>> expect(const std::vector<TokenType>& tokenTypes, const std::vector<std::function<bool(const Token&)>>& isSafePoints);
+        std::optional<std::vector<Token>> expect(const std::vector<TokenType>& tokenTypes, const std::vector<safePointFunc>& isSafePoints);
 
         [[nodiscard]] SourceRange getPrevTokSourceRange() const;
 
-        const std::function<bool(const Token&)> isSafePointForFile = [](const Token& token) {
+        const safePointFunc isSafePointForFile = [](const Token& token) {
             return token.type == TokenType::IDENTIFIER || token.type == TokenType::TYPEDEF || MODIFIER_TYPES.contains(token.type);
         };
 
-        const std::function<bool(const Token&)> isSafePointForClass = [](const Token& token) {
+        const safePointFunc isSafePointForClass = [](const Token& token) {
             return token.type == TokenType::IDENTIFIER || MODIFIER_TYPES.contains(token.type);
         };
 
