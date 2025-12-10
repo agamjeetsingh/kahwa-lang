@@ -57,6 +57,8 @@ add_executable(kahwa_lang main.cpp
         include/parser/Stmt.h
         src/parser/Decl.cpp
         include/parser/Decl.h
+        src/parser/ASTBuilder.cpp
+        include/parser/ASTBuilder.h
 )
 
 target_link_libraries(kahwa_lang PRIVATE magic_enum::magic_enum)
@@ -99,6 +101,8 @@ add_executable(
         include/parser/KahwaFile.h
         src/source/SourceLocation.cpp
         src/source/SourceRange.cpp
+        src/parser/ASTBuilder.cpp
+        include/parser/ASTBuilder.h
 )
 
 target_link_libraries(
