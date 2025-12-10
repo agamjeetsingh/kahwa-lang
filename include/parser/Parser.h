@@ -13,7 +13,9 @@
 
 class Parser {
 public:
-    explicit Parser(Arena& astArena, DiagnosticEngine& diagnostic_engine): astArena(astArena), diagnostic_engine(diagnostic_engine) {}
+    explicit Parser(Arena& astArena, DiagnosticEngine& diagnostic_engine): astArena(astArena), diagnostic_engine(diagnostic_engine) {
+        ASTBuilder::setArena(&astArena);
+    }
 
     [[nodiscard]] KahwaFile* parseFile(const std::vector<Token> &tokens) const;
 

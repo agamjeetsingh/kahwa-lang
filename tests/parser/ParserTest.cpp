@@ -225,10 +225,6 @@ protected:
 
         return str;
     }
-
-    void SetUp() override {
-        ASTBuilder::setArena(&astArena);
-    }
 };
 
 TEST_F(ParserTest, ParsesSingleTypedefCorrectly) {
