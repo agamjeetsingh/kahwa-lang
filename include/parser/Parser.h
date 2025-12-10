@@ -42,7 +42,7 @@ public:
         Block* parseBlock();
 
     private:
-        const std::vector<Token> tokens;
+        std::vector<Token> tokens;
         std::size_t idx = 0;
 
         Arena& astArena;

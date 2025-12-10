@@ -64,7 +64,7 @@ KahwaFile *Parser::ParserWorker::parseFile() {
 TypedefDecl *Parser::ParserWorker::parseTypedef() {
     // Assuming no generics
 
-    const Token& firstToken = tokens[idx];
+    const Token firstToken = tokens[idx];
 
     auto modifiers = getModifierList();
 
@@ -115,7 +115,33 @@ TypeRef *Parser::ParserWorker::parseTypeRef(const safePointFunc &isSafePoint) {
             return nullptr;
         }
     }
+    // TODO - Right shift equals needs to be handled too...
+    if (next_is(TokenType::RIGHT_SHIFT)) {
+        auto rightShiftToken = tokens[idx];
+        std::vector<Token> newTokens;
 
+        // Copy tokens before idx
+        newTokens.reserve(tokens.size() + 1);
+        for (int i = 0; i < idx; i++) {
+            newTokens.emplace_back(tokens[i]);
+        }
+
+        newTokens.emplace_back(TokenType::GREATER, SourceRange{
+            rightShiftToken.source_range.file_id,
+            rightShiftToken.source_range.pos
+        });
+        newTokens.emplace_back(TokenType::GREATER, SourceRange{
+            rightShiftToken.source_range.file_id,
+            rightShiftToken.source_range.pos + 1,
+        });
+
+        for (int i = idx + 1; i < tokens.size(); i++) {
+            newTokens.emplace_back(tokens[i]);
+        }
+        // Copy tokens after idx+1
+
+        tokens = std::move(newTokens);
+    }
     if (!expect(TokenType::GREATER, skipNothing)) return nullptr;
 
     return typeRefBuilder.build();
