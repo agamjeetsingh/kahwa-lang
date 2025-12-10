@@ -82,21 +82,21 @@ inline std::optional<std::string> expectedDiagnostictoMsg(const DiagnosticKind k
 inline std::string toMsg(const DiagnosticKind kind) {
     switch (kind) {
         case DiagnosticKind::UNTERMINATED_STRING_LITERAL:
-            return "Unterminated string literal.";
+            return "Unterminated string literal";
         case DiagnosticKind::UNRECOGNISED_TOKEN:
-            return "Unrecognised token.";
+            return "Unrecognised token";
         case DiagnosticKind::EXPECTED_DECLARATION:
-            return "Expected a declaration.";
+            return "Expected declaration";
         case DiagnosticKind::EXPECTED_CLASS_NAME:
-            return "Expected a class name.";
+            return "Expected class name";
         case DiagnosticKind::EXPECTED_IDENTIFIER:
-            return "Expected an identifier.";
+            return "Expected identifier";
         default:
             if (auto msg = expectedDiagnostictoMsg(kind)) {
                 return msg.value();
             }
 
-            throw std::runtime_error("Kind cannot be converted to msg.");
+            throw std::runtime_error("Kind cannot be converted to msg");
     }
 }
 
