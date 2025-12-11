@@ -17,22 +17,28 @@ protected:
     Parser parser{astArena, diagnostic_engine};
     Tokeniser tokeniser{diagnostic_engine};
 
-    void expectDiagnostics(const std::vector<Diagnostic>& diagnostics) const {
-        EXPECT_EQ(diagnostic_engine.getAll(), diagnostics);
+    void expectDiagnostics(const std::vector<Diagnostic>& diagnostics) {
+        auto& actualDiagnostics = diagnostic_engine.getAll();
+        EXPECT_EQ(actualDiagnostics.size(), alreadyExpected + diagnostics.size());
+        EXPECT_TRUE((std::equal(actualDiagnostics.end() - diagnostics.size(), actualDiagnostics.end(), diagnostics.begin())));
+        alreadyExpected += diagnostics.size();
     }
 
-    void expectDiagnosticsIgnoreSourceRange(const std::vector<Diagnostic>& diagnostics) const {
-        auto actualDiagnostics = diagnostic_engine.getAll();
-        EXPECT_EQ(actualDiagnostics.size(), diagnostics.size());
+    void expectDiagnosticsIgnoreSourceRange(const std::vector<Diagnostic>& diagnostics) {
+        auto& actualDiagnostics = diagnostic_engine.getAll();
+        EXPECT_EQ(actualDiagnostics.size(), alreadyExpected + diagnostics.size());
 
-        for (int i = 0; i < diagnostics.size(); i++) {
-            EXPECT_EQ(actualDiagnostics[i].severity, diagnostics[i].severity);
-            EXPECT_EQ(actualDiagnostics[i].kind, diagnostics[i].kind);
-            EXPECT_EQ(actualDiagnostics[i].msg, diagnostics[i].msg);
+        for (std::size_t i = alreadyExpected; i < actualDiagnostics.size(); i++) {
+            EXPECT_EQ(actualDiagnostics[i].severity, diagnostics[i - alreadyExpected].severity);
+            EXPECT_EQ(actualDiagnostics[i].kind, diagnostics[i - alreadyExpected].kind);
+            EXPECT_EQ(actualDiagnostics[i].msg, diagnostics[i - alreadyExpected].msg);
         }
+        alreadyExpected += diagnostics.size();
     }
 
-    void expectNoDiagnostics() const {
+    std::size_t alreadyExpected = 0;
+
+    void expectNoDiagnostics() {
         expectDiagnostics({});
     }
 
@@ -350,19 +356,19 @@ TEST_F(ParserTest, ReportsCorrectDiagnosticWhenTypedefIsMalformed) {
     EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str3), KahwaFileBuilder().build());
 
     Diagnostic expectedIdentifier = {DiagnosticSeverity::ERROR, DiagnosticKind::EXPECTED_IDENTIFIER, dummy_source, "Expected identifier"};
-    expectDiagnosticsIgnoreSourceRange({expectedSemicolon, expectedIdentifier});
+    expectDiagnosticsIgnoreSourceRange({ expectedIdentifier});
 
     EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str4), KahwaFileBuilder().build());
-    expectDiagnosticsIgnoreSourceRange({expectedSemicolon, expectedIdentifier, expectedIdentifier});
+    expectDiagnosticsIgnoreSourceRange({ expectedIdentifier});
 
     EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str5), KahwaFileBuilder().build());
-    expectDiagnosticsIgnoreSourceRange({expectedSemicolon, expectedIdentifier, expectedIdentifier, expectedIdentifier});
+    expectDiagnosticsIgnoreSourceRange({expectedIdentifier});
 
     const std::string str6 = "typedef 0 int";
     Diagnostic expectedDeclaration = {DiagnosticSeverity::ERROR, DiagnosticKind::EXPECTED_DECLARATION, dummy_source, "Expected declaration"};
 
     EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str6), KahwaFileBuilder().build());
-    expectDiagnosticsIgnoreSourceRange({expectedSemicolon, expectedIdentifier, expectedIdentifier, expectedIdentifier, expectedIdentifier, expectedDeclaration});
+    expectDiagnosticsIgnoreSourceRange({expectedIdentifier, expectedDeclaration});
 }
 
 TEST_F(ParserTest, RecoversFromMalformedTypedefCorrectly) {
