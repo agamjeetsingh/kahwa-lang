@@ -268,6 +268,13 @@ protected:
             }
         }
 
+        if (!classDecl->nestedClasses.empty()) {
+            for (auto nestedClass: classDecl->nestedClasses) {
+                str += toString(nestedClass);
+                str += "\n";
+            }
+        }
+
 
         str += "}";
 
@@ -592,7 +599,7 @@ TEST_F(ParserTest, ParsesMultipleClassesWithInheritanceAndTypeDefsCorrectly) {
     const auto typedefDecl2 = TypedefDeclBuilder("anotherTypeDef", TypeRefBuilder("float").build()).build();
     const auto str4 = toString(typedefDecl2);
 
-    EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str1 + str2 + str3),
+    EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str1 + str2 + str3 + str4),
         KahwaFileBuilder()
         .with({classDecl1, classDecl2})
         .with({typedefDecl1, typedefDecl2})

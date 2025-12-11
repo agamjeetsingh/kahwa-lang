@@ -204,8 +204,15 @@ ClassDecl *Parser::ParserWorker::parseClass(const safePointFunc& isSafePoint) {
 
         std::size_t save_idx = idx;
         getModifierList();
+        if (next_is(TokenType::CLASS)) {
+            idx = save_idx;
 
-        if (auto typeRef = parseTypeRef(isSafePointForClass)) {
+            if (auto classDecl = parseClass()) {
+                classDeclBuilder.with(classDecl);
+            } else {
+                continue;
+            }
+        } else if (auto typeRef = parseTypeRef(isSafePointForClass)) {
             // Could be either <type of variable> or <return type of method> or <name of constructor>
 
             if (next_is(TokenType::LEFT_PAREN)) {
