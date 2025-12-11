@@ -17,8 +17,20 @@ public:
         diagnostics.emplace_back(severity, kind, SourceRange{location}, msg);
     }
 
+    void reportProblem(DiagnosticSeverity severity, DiagnosticKind kind, const SourceLocation location) {
+        diagnostics.emplace_back(severity, kind, SourceRange{location});
+    }
+
     void reportProblem(DiagnosticSeverity severity, DiagnosticKind kind, SourceRange range, const std::string& msg) {
         diagnostics.emplace_back(severity, kind, range, msg);
+    }
+
+    void reportProblem(DiagnosticSeverity severity, DiagnosticKind kind, SourceRange range) {
+        diagnostics.emplace_back(severity, kind, range);
+    }
+
+    void reportProblem(const Diagnostic& diagnostic) {
+        diagnostics.push_back(diagnostic);
     }
 
     [[nodiscard]] const std::vector<Diagnostic>& getAll() const { return diagnostics; }

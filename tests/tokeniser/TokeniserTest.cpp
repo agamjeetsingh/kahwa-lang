@@ -254,7 +254,7 @@ TEST_F(TokeniserTest, ReportsDiagnosticForUnterminatedString) {
     const auto tokens = tokeniser.tokenise(0, "\" Unterminated string! Oh no! \n \t \r");
     EXPECT_TRUE (tokens.empty());
 
-    expectDiagnostics({Diagnostic{DiagnosticSeverity::ERROR, DiagnosticKind::UNTERMINATED_STRING_LITERAL, SourceRange{0, 0}, toMsg(DiagnosticKind::UNTERMINATED_STRING_LITERAL)}});
+    expectDiagnostics({Diagnostic{DiagnosticSeverity::ERROR, DiagnosticKind::UNTERMINATED_STRING_LITERAL, SourceRange{0, 0}}});
 }
 
 TEST_F(TokeniserTest, ReportsDiagnosticForUnrecognisedToken) {
@@ -265,7 +265,7 @@ TEST_F(TokeniserTest, ReportsDiagnosticForUnrecognisedToken) {
     EXPECT_EQ (*tokens[1].getIf<std::string>(), "Weird");
     EXPECT_EQ (*tokens[2].getIf<std::string>(), "char");
 
-    expectDiagnostics({Diagnostic{DiagnosticSeverity::ERROR, DiagnosticKind::UNRECOGNISED_TOKEN, SourceRange{0, 0}, toMsg(DiagnosticKind::UNRECOGNISED_TOKEN)}});
+    expectDiagnostics({Diagnostic{DiagnosticSeverity::ERROR, DiagnosticKind::UNRECOGNISED_TOKEN, SourceRange{0, 0}}});
 }
 
 TEST_F(TokeniserTest, TokeniserIdentifiesIdentifierCorrectly) {

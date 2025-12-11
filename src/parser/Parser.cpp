@@ -38,7 +38,7 @@ KahwaFile *Parser::ParserWorker::parseFile() {
                     kahwaFileBuilder.with(class_decl);
                 }
             } else {
-                diagnostic_engine.reportProblem(DiagnosticSeverity::ERROR, DiagnosticKind::EXPECTED_DECLARATION, token.source_range, toMsg(DiagnosticKind::EXPECTED_DECLARATION));
+                diagnostic_engine.reportProblem(DiagnosticSeverity::ERROR, DiagnosticKind::EXPECTED_DECLARATION, token.source_range);
 
                 continue; // TODO
                 // variable-decl or function-decl
@@ -56,7 +56,7 @@ KahwaFile *Parser::ParserWorker::parseFile() {
             }
 
             // TODO - Insert a bad node
-            diagnostic_engine.reportProblem(DiagnosticSeverity::ERROR, DiagnosticKind::EXPECTED_DECLARATION, SourceRange{token.source_range}, toMsg(DiagnosticKind::EXPECTED_DECLARATION));
+            diagnostic_engine.reportProblem(DiagnosticSeverity::ERROR, DiagnosticKind::EXPECTED_DECLARATION, SourceRange{token.source_range});
         }
     }
 
@@ -326,7 +326,7 @@ std::optional<Token> Parser::ParserWorker::expect(const TokenType tokenType, con
         return advance ? tokens[idx++] : tokens[idx];
     }
 
-    diagnostic_engine.reportProblem(DiagnosticSeverity::ERROR, kind, getPrevTokSourceRange(), toMsg(kind));
+    diagnostic_engine.reportProblem(DiagnosticSeverity::ERROR, kind, getPrevTokSourceRange());
     syncTo(isSafePoint);
     return std::nullopt;
 }
@@ -344,12 +344,12 @@ std::optional<std::vector<Token>> Parser::ParserWorker::expect(const std::vector
             if (const auto nextToken = tokens[curr_idx + i]; nextToken.type == tokenTypes[i]) {
                 res.emplace_back(nextToken);
             } else {
-                diagnostic_engine.reportProblem(DiagnosticSeverity::ERROR, kinds[i], getPrevTokSourceRange(), toMsg(kinds[i]));
+                diagnostic_engine.reportProblem(DiagnosticSeverity::ERROR, kinds[i], getPrevTokSourceRange());
                 syncTo(isSafePoints[i]);
                 return std::nullopt;
             }
         } else {
-            diagnostic_engine.reportProblem(DiagnosticSeverity::ERROR, kinds[i], getPrevTokSourceRange(), toMsg(kinds[i]));
+            diagnostic_engine.reportProblem(DiagnosticSeverity::ERROR, kinds[i], getPrevTokSourceRange());
             syncTo(isSafePoints[i]);
             return std::nullopt;
         }

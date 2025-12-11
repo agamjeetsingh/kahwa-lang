@@ -350,12 +350,12 @@ TEST_F(ParserTest, ReportsCorrectDiagnosticWhenTypedefIsMalformed) {
 
     EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str2), KahwaFileBuilder().build());
 
-    Diagnostic expectedSemicolon = {DiagnosticSeverity::ERROR, DiagnosticKind::EXPECTED_SEMI_COLON, dummy_source, "Expected ';'"};
+    Diagnostic expectedSemicolon = {DiagnosticSeverity::ERROR, DiagnosticKind::EXPECTED_SEMI_COLON, dummy_source};
     expectDiagnosticsIgnoreSourceRange({expectedSemicolon});
 
     EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str3), KahwaFileBuilder().build());
 
-    Diagnostic expectedIdentifier = {DiagnosticSeverity::ERROR, DiagnosticKind::EXPECTED_IDENTIFIER, dummy_source, "Expected identifier"};
+    Diagnostic expectedIdentifier = {DiagnosticSeverity::ERROR, DiagnosticKind::EXPECTED_IDENTIFIER, dummy_source};
     expectDiagnosticsIgnoreSourceRange({ expectedIdentifier});
 
     EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str4), KahwaFileBuilder().build());
@@ -365,7 +365,7 @@ TEST_F(ParserTest, ReportsCorrectDiagnosticWhenTypedefIsMalformed) {
     expectDiagnosticsIgnoreSourceRange({expectedIdentifier});
 
     const std::string str6 = "typedef 0 int";
-    Diagnostic expectedDeclaration = {DiagnosticSeverity::ERROR, DiagnosticKind::EXPECTED_DECLARATION, dummy_source, "Expected declaration"};
+    Diagnostic expectedDeclaration = {DiagnosticSeverity::ERROR, DiagnosticKind::EXPECTED_DECLARATION, dummy_source};
 
     EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str6), KahwaFileBuilder().build());
     expectDiagnosticsIgnoreSourceRange({expectedIdentifier, expectedDeclaration});

@@ -184,7 +184,7 @@ std::vector<Token> Tokeniser::TokeniserWorker::tokenise() {
                 if (auto maybeToken = tokeniseString(curr_idx)) {
                     tokens.push_back(maybeToken.value());
                 } else {
-                    diagnostic_engine.reportProblem(DiagnosticSeverity::ERROR, DiagnosticKind::UNTERMINATED_STRING_LITERAL, SourceLocation{file_id, curr_idx}, toMsg(DiagnosticKind::UNTERMINATED_STRING_LITERAL));
+                    diagnostic_engine.reportProblem(DiagnosticSeverity::ERROR, DiagnosticKind::UNTERMINATED_STRING_LITERAL, SourceLocation{file_id, curr_idx});
                     return tokens;
                 }
                 break;
@@ -222,7 +222,7 @@ std::vector<Token> Tokeniser::TokeniserWorker::tokenise() {
                     }
                 } else {
                     tokens.emplace_back(TokenType::BAD, std::to_string(c), SourceRange{file_id, curr_idx});
-                    diagnostic_engine.reportProblem(DiagnosticSeverity::ERROR, DiagnosticKind::UNRECOGNISED_TOKEN, SourceRange{file_id, curr_idx}, toMsg(DiagnosticKind::UNRECOGNISED_TOKEN));
+                    diagnostic_engine.reportProblem(DiagnosticSeverity::ERROR, DiagnosticKind::UNRECOGNISED_TOKEN, SourceRange{file_id, curr_idx});
                 }
         }
     }
