@@ -36,6 +36,15 @@ protected:
         alreadyExpected += diagnostics.size();
     }
 
+    void expectDiagnosticKindsIgnoreSourceRange(const std::vector<DiagnosticKind>& diagnosticKinds) {
+        std::vector<Diagnostic> diagnostics;
+        for (auto kind: diagnosticKinds) {
+            diagnostics.emplace_back(DiagnosticSeverity::ERROR, kind, dummy_source);
+        }
+
+        expectDiagnosticsIgnoreSourceRange(diagnostics);
+    }
+
     std::size_t alreadyExpected = 0;
 
     void expectNoDiagnostics() {
@@ -47,6 +56,10 @@ protected:
 
     [[nodiscard]] KahwaFile* parseFile(const std::string &str) const {
         return parser.parseFile(tokeniser.tokenise(0, str));
+    }
+
+    [[nodiscard]] TypeRef* parseTypeRef(const std::string &str) const {
+        return parser.parseTypeRef(tokeniser.tokenise(0, str));
     }
 
     static FieldDecl* createFieldDecl(const std::string& name,
@@ -77,10 +90,21 @@ protected:
         if (td1 == nullptr && td2 == nullptr) return true;
         if (td1 == nullptr || td2 == nullptr) return false;
         if (!declEqualIgnoreSourceRange(td1, td2)) return false;
-        
-        if (td1->referredType == nullptr && td2->referredType == nullptr) return true;
-        if (td1->referredType == nullptr || td2->referredType == nullptr) return false;
-        return *td1->referredType == *td2->referredType;
+
+        return typeRefEqualIgnoreSourceRange(td1->referredType, td2->referredType);
+    }
+
+    static bool typeRefEqualIgnoreSourceRange(const TypeRef* t1, const TypeRef* t2) {
+        if (t1 == nullptr && t2 == nullptr) return true;
+        if (t1 == nullptr || t2 == nullptr) return false;
+
+        if (t1->args.size() != t2->args.size()) return false;
+
+        for (int i = 0; i < t1->args.size(); i++) {
+            if (!typeRefEqualIgnoreSourceRange(t1->args[i], t2->args[i])) return false;
+        }
+
+        return true;
     }
 
     static bool fieldDeclEqualIgnoreSourceRange(const FieldDecl* fd1, const FieldDecl* fd2) {
@@ -369,6 +393,55 @@ TEST_F(ParserTest, ReportsCorrectDiagnosticWhenTypedefIsMalformed) {
 
     EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str6), KahwaFileBuilder().build());
     expectDiagnosticsIgnoreSourceRange({expectedIdentifier, expectedDeclaration});
+}
+
+TEST_F(ParserTest, ReportsCorrectDiagnosticWhenTypedefIsMalformedWithGenerics) {
+    const auto typedefDecl = TypedefDeclBuilder(
+        "pid",
+        TypeRefBuilder("pair")
+        .with(TypeRefBuilder("int").build())
+        .with(TypeRefBuilder("double").build())
+        .build()).build();
+
+    const auto str = toString(typedefDecl);
+    const std::vector<std::string> strs{
+        "pair<", // identifier
+        "pair<int", // greater
+        "pair<int, ", // identifier
+        "pair<int, double", // greater
+        "pair<int, double,", // identifier
+        "pair<,>", // identifier
+        "pair<int double>", // greater, declaration
+        "pair<int, double, >", // identifier
+        "pair<pair<int, double>", // greater
+        "pair<>", // not sure
+        "pair<,,>"}; // identifier
+
+    const std::vector<std::vector<DiagnosticKind>> expectedDiagnosticKinds{
+        {DiagnosticKind::EXPECTED_IDENTIFIER},
+        {DiagnosticKind::EXPECTED_GREATER},
+        {DiagnosticKind::EXPECTED_IDENTIFIER},
+        {DiagnosticKind::EXPECTED_GREATER},
+        {DiagnosticKind::EXPECTED_IDENTIFIER},
+        {DiagnosticKind::EXPECTED_IDENTIFIER},
+        {DiagnosticKind::EXPECTED_GREATER, DiagnosticKind::EXPECTED_DECLARATION},
+        {DiagnosticKind::EXPECTED_IDENTIFIER},
+        {DiagnosticKind::EXPECTED_GREATER},
+        {},
+        {DiagnosticKind::EXPECTED_IDENTIFIER}
+    };
+
+    EXPECT_EQ(strs.size(), expectedDiagnosticKinds.size());
+
+    EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str), KahwaFileBuilder().with(typedefDecl).build());
+
+    expectNoDiagnostics();
+
+    for (int i = 0; i < strs.size(); i++) {
+        EXPECT_PRED2(typeRefEqualIgnoreSourceRange, parseTypeRef(strs[i]), nullptr);
+
+        expectDiagnosticKindsIgnoreSourceRange(expectedDiagnosticKinds[i]);
+    }
 }
 
 TEST_F(ParserTest, RecoversFromMalformedTypedefCorrectly) {

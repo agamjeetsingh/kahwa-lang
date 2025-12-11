@@ -13,6 +13,10 @@ TypedefDecl *Parser::parseTypedef(const std::vector<Token> &tokens) const {
     return ParserWorker(tokens, astArena, diagnostic_engine).parseTypedef();
 }
 
+TypeRef* Parser::parseTypeRef(const std::vector<Token> &tokens) const {
+    return ParserWorker(tokens, astArena, diagnostic_engine).parseTypeRef();
+}
+
 KahwaFile *Parser::ParserWorker::parseFile() {
     auto kahwaFileBuilder = KahwaFileBuilder();
 
@@ -99,15 +103,14 @@ TypeRef *Parser::ParserWorker::parseTypeRef(const safePointFunc &isSafePoint) {
     // Generic
     idx++; // Skip '<'
 
-    if (next_is(TokenType::IDENTIFIER)) {
+    if (auto tok = expect(TokenType::IDENTIFIER, isSafePoint)) {
+        idx--;
         if (auto arg = parseTypeRef(isSafePoint)) {
             typeRefBuilder.with(arg);
         } else {
             return nullptr;
         }
     } else {
-        // Report problem
-        syncTo(isSafePoint);
         return nullptr;
     }
 

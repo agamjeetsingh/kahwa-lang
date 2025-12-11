@@ -23,6 +23,8 @@ public:
 
     [[nodiscard]] TypedefDecl* parseTypedef(const std::vector<Token> &tokens) const;
 
+    [[nodiscard]] TypeRef* parseTypeRef(const std::vector<Token> &tokens) const;
+
     class ParserWorker {
     public:
         explicit ParserWorker(const std::vector<Token> &tokens, Arena& astArena, DiagnosticEngine& diagnostic_engine): tokens(tokens), astArena(astArena), diagnostic_engine(diagnostic_engine) {}
@@ -35,7 +37,7 @@ public:
 
         ClassDecl* parseClass(const safePointFunc& isSafePoint = isSafePointForFile);
 
-        TypeRef* parseTypeRef(const safePointFunc& isSafePoint);
+        TypeRef* parseTypeRef(const safePointFunc& isSafePoint = isSafePointForFile);
 
         MethodDecl* parseMethod();
 
