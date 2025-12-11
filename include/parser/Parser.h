@@ -39,7 +39,7 @@ public:
 
         TypeRef* parseTypeRef(const safePointFunc& isSafePoint = isSafePointForFile);
 
-        MethodDecl* parseMethod();
+        MethodDecl* parseMethod(const safePointFunc& isSafePoint = isSafePointForFile);
 
         Block* parseBlock();
 

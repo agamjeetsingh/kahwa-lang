@@ -74,7 +74,15 @@ public:
         : name(name), returnType(returnType), block(block) {}
 
     [[nodiscard]] MethodDecl* build() const {
-        return arena->make<MethodDecl>(name, modifiers, returnType, parameters, block, dummy_source, dummy_source, dummy_source);
+        return arena->make<MethodDecl>(
+            name,
+            modifiers,
+            returnType,
+            parameters,
+            block,
+            returnTypeSourceRange.has_value() ? returnTypeSourceRange.value() : dummy_source,
+            nameSourceRange.has_value() ? nameSourceRange.value() : dummy_source,
+            bodyRange.has_value() ? bodyRange.value() : dummy_source);
     }
 
     MethodDeclBuilder& with(Modifier modifier) {
@@ -97,12 +105,36 @@ public:
         return *this;
     }
 
+    MethodDeclBuilder& with(Block* block) {
+        this->block = block;
+        return *this;
+    }
+
+    MethodDeclBuilder& withReturnTypeSourceRange(const SourceRange& returnTypeSourceRange) {
+        this->returnTypeSourceRange.emplace(returnTypeSourceRange);
+        return *this;
+    }
+
+    MethodDeclBuilder& withNameSourceRange(const SourceRange& nameSourceRange) {
+        this->nameSourceRange.emplace(nameSourceRange);
+        return *this;
+    }
+
+    MethodDeclBuilder& withBodyRange(const SourceRange& bodyRange) {
+        this->bodyRange.emplace(bodyRange);
+        return *this;
+    }
+
 private:
     std::string name;
     std::vector<Modifier> modifiers;
     TypeRef* returnType;
     std::vector<std::pair<TypeRef*, std::string>> parameters;
     Block* block;
+
+    std::optional<SourceRange> returnTypeSourceRange;
+    std::optional<SourceRange> nameSourceRange;
+    std::optional<SourceRange> bodyRange;
 };
 
 

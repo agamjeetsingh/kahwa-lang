@@ -172,6 +172,7 @@ ClassDecl *Parser::ParserWorker::parseClass(const safePointFunc& isSafePoint) {
     classDeclBuilder.withNameSourceRange(nameToken->source_range);
     classDeclBuilder.with(modifiers);
 
+    // Parse super classes
     if (next_is(TokenType::COLON)) {
         idx++;
 
@@ -204,8 +205,8 @@ ClassDecl *Parser::ParserWorker::parseClass(const safePointFunc& isSafePoint) {
         std::size_t save_idx = idx;
         getModifierList();
 
-        if (auto nextToken1 = expect(TokenType::IDENTIFIER, isSafePointForClass)) {
-            // Could be type of variable or return type of method or name of constructor
+        if (auto typeRef = parseTypeRef(isSafePointForClass)) {
+            // Could be either <type of variable> or <return type of method> or <name of constructor>
 
             if (next_is(TokenType::LEFT_PAREN)) {
                 // constructor
@@ -223,6 +224,11 @@ ClassDecl *Parser::ParserWorker::parseClass(const safePointFunc& isSafePoint) {
                     // method
 
                     idx = save_idx;
+                    if (auto methodDecl = parseMethod(isSafePoint)) {
+                        classDeclBuilder.with(methodDecl);
+                    } else {
+                        continue;
+                    }
 
                     // TODO
                     continue;
@@ -244,52 +250,74 @@ ClassDecl *Parser::ParserWorker::parseClass(const safePointFunc& isSafePoint) {
     return classDeclBuilder.withBodyRange({file_id, classSourceRange.pos, length}).build();
 }
 
-MethodDecl *Parser::ParserWorker::parseMethod() {
+MethodDecl *Parser::ParserWorker::parseMethod(const safePointFunc& isSafePoint) {
     const std::vector<Modifier>& modifiers = getModifierList();
-    assertTokenSequence({TokenType::IDENTIFIER, TokenType::IDENTIFIER, TokenType::LEFT_PAREN});
 
-    std::vector<std::pair<TypeRef*, std::string>> parameters;
+    auto returnType = parseTypeRef(isSafePoint);
+
+    assertTokenSequence({TokenType::IDENTIFIER, TokenType::LEFT_PAREN});
+
+    auto nameToken = tokens[idx++];
+    auto methodDeclBuilder = MethodDeclBuilder(*nameToken.getIf<std::string>(), returnType, nullptr);
+    methodDeclBuilder.with(modifiers);
+    methodDeclBuilder.withNameSourceRange(nameToken.source_range);
+    methodDeclBuilder.withReturnTypeSourceRange(returnType->bodyRange);
+
+    idx++; // Skipping opening parenthesis '('
+
+    if (!next_is(TokenType::RIGHT_PAREN)) {
+        if (auto paramTypeRef = parseTypeRef(isSafePoint)) {
+            if (auto paramNameToken = expect(TokenType::IDENTIFIER, isSafePoint)) {
+                methodDeclBuilder.with({paramTypeRef, *paramNameToken.value().getIf<std::string>()});
+            } else {
+                return nullptr;
+            }
+        } else {
+            return nullptr;
+        }
+    }
+
+    while (next_is(TokenType::COMMA)) {
+        idx++; // Skip comma
+
+        if (auto paramTypeRef = parseTypeRef(isSafePoint)) {
+            if (auto paramNameToken = expect(TokenType::IDENTIFIER, isSafePoint)) {
+                methodDeclBuilder.with({paramTypeRef, *paramNameToken.value().getIf<std::string>()});
+            } else {
+                return nullptr;
+            }
+        } else {
+            return nullptr;
+        }
+    }
+
+    if (!expect(TokenType::RIGHT_PAREN, isSafePoint)) {
+        return nullptr;
+    }
+
     Block* block;
 
-    std::vector<Token> nextTokens = next(3);
+    if (expect(TokenType::LEFT_CURLY_BRACE, isSafePoint)) {
+        idx--;
+        block = parseBlock();
+        if (!block) {
+            return nullptr;
+        }
+    } else {
+        return nullptr;
+    }
 
-    // auto returnType = astArena.make<TypeRef>(*nextTokens[0].getIf<std::string>());
-    // auto returnTypeSourceRange = nextTokens[0].source_range;
-    // std::string name = *nextTokens[1].getIf<std::string>();
-    // auto nameSourceRange = nextTokens[1].source_range;
-    // idx += 3;
-    //
-    // while (next_is(TokenType::RIGHT_PAREN)) {
-    //     auto tokens = expect(
-    //         {TokenType::IDENTIFIER, TokenType::IDENTIFIER},
-    //         std::vector(3, isSafePointForClass));
-    //     if (!tokens) {
-    //         return nullptr;
-    //     }
-    //
-    //     auto paramType = astArena.make<TypeRef>(*tokens.value()[0].getIf<std::string>());
-    //     const std::string& paramName = *tokens.value()[1].getIf<std::string>();
-    //
-    //     parameters.emplace_back(paramType, paramName);
-    // }
-    //
-    // if (expect(TokenType::LEFT_CURLY_BRACE, isSafePointForClass)) {
-    //     idx--;
-    //     block = parseBlock();
-    //     if (!block) {
-    //         return nullptr;
-    //     }
-    // } else {
-    //     return nullptr;
-    // }
-    //
-    // SourceRange bodyRange{1, 1}; // TODO
-    //
-    // return astArena.make<MethodDecl>(name, modifiers, returnType, parameters, block, returnTypeSourceRange, nameSourceRange, bodyRange);
+    SourceRange bodyRange{1, 1}; // TODO
+    methodDeclBuilder.withBodyRange(bodyRange);
+    methodDeclBuilder.with(block);
+
+    return methodDeclBuilder.build();
 }
 
 Block *Parser::ParserWorker::parseBlock() {
-
+    // TODO
+    idx += 2;
+    return BlockBuilder().build();
 }
 
 

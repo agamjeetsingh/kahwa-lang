@@ -261,10 +261,41 @@ protected:
 
         str += " {\n";
 
+        if (!classDecl->methods.empty()) {
+            for (auto method : classDecl->methods) {
+                str += toString(method);
+                str += "\n";
+            }
+        }
+
 
         str += "}";
 
         return str;
+    }
+
+    static std::string toString(const MethodDecl* methodDecl) {
+        std::string str = toString(methodDecl->modifiers);
+        if (!methodDecl->modifiers.empty()) str += " ";
+
+        str += toString(methodDecl->returnType);
+        str += " ";
+        str += methodDecl->name;
+        str += "(";
+        for (int i = 0; i < methodDecl->parameters.size(); i++) {
+            str += toString(methodDecl->parameters[i].first);
+            str += " ";
+            str += methodDecl->parameters[i].second;
+            if (i != methodDecl->parameters.size() - 1) str += ", ";
+        }
+
+        str += ") ";
+        str += toString(methodDecl->block);
+        return str;
+    }
+
+    static std::string toString(const Block* block) {
+        return "{\n}"; // TODO
     }
 };
 
@@ -570,7 +601,7 @@ TEST_F(ParserTest, ParsesMultipleClassesWithInheritanceAndTypeDefsCorrectly) {
     expectNoDiagnostics();
 }
 
-TEST_F(ParserTest, ParsesClassesWithMethodsCorrectly) {
+TEST_F(ParserTest, ParsesClassesWithMethodsWithEmptyBodiesCorrectly) {
     const auto classDecl1 = ClassDeclBuilder("className")
     .with(TypeRefBuilder("superClass1")
         .with(TypeRefBuilder("arg1").build())
