@@ -52,9 +52,9 @@ public:
 
         [[nodiscard]] bool next_is(const std::vector<TokenType>& expected) const;
 
-        std::vector<Token> next(const safePointFunc &until) const;
+        [[nodiscard]] std::vector<Token> next(const safePointFunc &until) const;
 
-        std::vector<Token> next(std::size_t count, const safePointFunc &until = [](const Token& token){ return false; }) const;
+        [[nodiscard]] std::vector<Token> next(std::size_t count, const safePointFunc &until = [](const Token& token){ return false; }) const;
 
         [[nodiscard]] Token next() const;
 

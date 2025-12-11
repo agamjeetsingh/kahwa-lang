@@ -38,6 +38,8 @@ KahwaFile *Parser::ParserWorker::parseFile() {
                     kahwaFileBuilder.with(class_decl);
                 }
             } else {
+                diagnostic_engine.reportProblem(DiagnosticSeverity::ERROR, DiagnosticKind::EXPECTED_DECLARATION, token.source_range, toMsg(DiagnosticKind::EXPECTED_DECLARATION));
+
                 continue; // TODO
                 // variable-decl or function-decl
 
@@ -84,8 +86,13 @@ TypedefDecl *Parser::ParserWorker::parseTypedef() {
 }
 
 TypeRef *Parser::ParserWorker::parseTypeRef(const safePointFunc &isSafePoint) {
-    assertTokenSequence({TokenType::IDENTIFIER});
-    auto typeRefBuilder = TypeRefBuilder(*tokens[idx++].getIf<std::string>());
+    std::string name;
+    if (auto nameToken = expect(TokenType::IDENTIFIER, isSafePoint)) {
+        name = *nameToken.value().getIf<std::string>();
+    } else {
+        return nullptr;
+    }
+    auto typeRefBuilder = TypeRefBuilder(name);
 
     if (!next_is(TokenType::LESS)) return typeRefBuilder.build();
 
