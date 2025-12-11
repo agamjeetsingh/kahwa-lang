@@ -35,7 +35,7 @@ KahwaFile *Parser::ParserWorker::parseFile() {
                 continue;
             }
         } else {
-            if (next_is(TokenType::CLASS)) {
+            if (token.type == TokenType::CLASS) {
                 // class-decl
                 idx = save_idx;
                 if (ClassDecl *class_decl = parseClass()) {
@@ -60,7 +60,6 @@ KahwaFile *Parser::ParserWorker::parseFile() {
             }
 
             // TODO - Insert a bad node
-            diagnostic_engine.reportProblem(DiagnosticSeverity::ERROR, DiagnosticKind::EXPECTED_DECLARATION, SourceRange{token.source_range});
         }
     }
 
@@ -173,7 +172,25 @@ ClassDecl *Parser::ParserWorker::parseClass(const safePointFunc& isSafePoint) {
     classDeclBuilder.withNameSourceRange(nameToken->source_range);
     classDeclBuilder.with(modifiers);
 
-    // TODO - Parse optional super classes
+    if (next_is(TokenType::COLON)) {
+        idx++;
+
+        if (auto superClass = parseTypeRef(isSafePoint)) {
+            classDeclBuilder.with(superClass);
+        } else {
+            return nullptr;
+        }
+
+        while (next_is(TokenType::COMMA)) {
+            idx++; // Skip comma
+
+            if (auto superClass = parseTypeRef(isSafePoint)) {
+                classDeclBuilder.with(superClass);
+            } else {
+                return nullptr;
+            }
+        }
+    }
 
     if (!expect(TokenType::LEFT_CURLY_BRACE, isSafePoint)) {
         return nullptr;

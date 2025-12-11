@@ -517,6 +517,7 @@ TEST_F(ParserTest, ParsesEmptyClassWithInheritanceCorrectly) {
             TypeRefBuilder("arg1").build(),
             TypeRefBuilder("arg2").build()
         }).build())
+    .with(TypeRefBuilder("superClass2").build())
     .with(Modifier::FINAL)
     .with(Modifier::PRIVATE)
     .build();
