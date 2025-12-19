@@ -16,13 +16,14 @@
 struct MethodDecl : Decl {
     MethodDecl(std::string name,
     const std::vector<Modifier> &modifiers,
+    const std::vector<SourceRange> &modifierSourceRanges,
     TypeRef* returnType,
     const std::vector<std::pair<TypeRef*, std::string>>& parameters,
     Block* block,
     const SourceRange &returnTypeSourceRange,
     const SourceRange &nameSourceRange,
     const SourceRange &bodyRange):
-    Decl(std::move(name), modifiers, nameSourceRange, bodyRange),
+    Decl(std::move(name), modifiers, modifierSourceRanges, nameSourceRange, bodyRange),
     returnType(returnType),
     parameters(parameters),
     block(block),
@@ -70,13 +71,14 @@ struct MethodDecl : Decl {
 
 class MethodDeclBuilder : public ASTBuilder {
 public:
-    MethodDeclBuilder(const std::string& name, TypeRef* returnType, Block* block)
-        : name(name), returnType(returnType), block(block) {}
+    MethodDeclBuilder(std::string  name, TypeRef* returnType, Block* block)
+        : name(std::move(name)), returnType(returnType), block(block) {}
 
     [[nodiscard]] MethodDecl* build() const {
         return arena->make<MethodDecl>(
             name,
             modifiers,
+            modifierSourceRanges,
             returnType,
             parameters,
             block,
@@ -85,13 +87,28 @@ public:
             bodyRange.has_value() ? bodyRange.value() : dummy_source);
     }
 
-    MethodDeclBuilder& with(Modifier modifier) {
+    MethodDeclBuilder& with(Modifier modifier, const SourceRange &sourceRange = dummy_source) {
         modifiers.push_back(modifier);
+        modifierSourceRanges.push_back(sourceRange);
         return *this;
     }
 
     MethodDeclBuilder& with(const std::vector<Modifier>& modifiers) {
-        this->modifiers.insert(this->modifiers.begin(), modifiers.begin(), modifiers.end());
+        return with(modifiers, std::vector(modifiers.size(), dummy_source));
+    }
+
+    MethodDeclBuilder& with(const std::vector<Modifier>& modifiers, const std::vector<SourceRange>& sourceRanges) {
+        assert(modifiers.size() == sourceRanges.size());
+        this->modifiers.insert(this->modifiers.end(), modifiers.begin(), modifiers.end());
+        std::vector<SourceRange> newModifierSourceRanges;
+        newModifierSourceRanges.reserve(this->modifierSourceRanges.size() + sourceRanges.size());
+        for (const auto& range : this->modifierSourceRanges) {
+            newModifierSourceRanges.emplace_back(range);
+        }
+        for (const auto& range : sourceRanges) {
+            newModifierSourceRanges.emplace_back(range);
+        }
+        this->modifierSourceRanges = std::move(newModifierSourceRanges);
         return *this;
     }
 
@@ -128,6 +145,7 @@ public:
 private:
     std::string name;
     std::vector<Modifier> modifiers;
+    std::vector<SourceRange> modifierSourceRanges;
     TypeRef* returnType;
     std::vector<std::pair<TypeRef*, std::string>> parameters;
     Block* block;

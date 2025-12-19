@@ -14,11 +14,12 @@ struct TypedefDecl : Decl {
     TypedefDecl(
         const std::string &name,
         const std::vector<Modifier>& modifiers,
+        const std::vector<SourceRange>& modifierSourceRanges,
         TypeRef* referredType,
         const SourceRange &typedefSourceRange,
         const SourceRange &nameSourceRange,
         const SourceRange &bodyRange):
-    Decl(name, modifiers, nameSourceRange, bodyRange),
+    Decl(name, modifiers, modifierSourceRanges, nameSourceRange, bodyRange),
     typedefSourceRange(typedefSourceRange),
     referredType(referredType) {}
 
@@ -47,19 +48,35 @@ public:
         return arena->make<TypedefDecl>(
             name,
             modifiers,
+            modifierSourceRanges,
             referredType,
             typedefSourceRange.has_value() ? typedefSourceRange.value() : dummy_source,
             nameSourceRange.has_value() ? nameSourceRange.value() : dummy_source,
             bodyRange.has_value() ? bodyRange.value() : dummy_source);
     }
 
-    TypedefDeclBuilder& with(Modifier modifier) {
+    TypedefDeclBuilder& with(Modifier modifier, const SourceRange &sourceRange = dummy_source) {
         modifiers.push_back(modifier);
+        modifierSourceRanges.push_back(sourceRange);
         return *this;
     }
 
     TypedefDeclBuilder& with(const std::vector<Modifier>& modifiers) {
-        this->modifiers.insert(this->modifiers.begin(), modifiers.begin(), modifiers.end());
+        return with(modifiers, std::vector(modifiers.size(), dummy_source));
+    }
+
+    TypedefDeclBuilder& with(std::vector<Modifier> modifiers, const std::vector<SourceRange>& sourceRanges) {
+        assert(modifiers.size() == sourceRanges.size());
+        this->modifiers.insert(this->modifiers.end(), modifiers.begin(), modifiers.end());
+        std::vector<SourceRange> newModifierSourceRanges;
+        newModifierSourceRanges.reserve(this->modifierSourceRanges.size() + sourceRanges.size());
+        for (const auto& range : this->modifierSourceRanges) {
+            newModifierSourceRanges.emplace_back(range);
+        }
+        for (const auto& range : sourceRanges) {
+            newModifierSourceRanges.emplace_back(range);
+        }
+        this->modifierSourceRanges = std::move(newModifierSourceRanges);
         return *this;
     }
 
@@ -81,6 +98,7 @@ public:
 private:
     std::string name;
     std::vector<Modifier> modifiers;
+    std::vector<SourceRange> modifierSourceRanges;
     TypeRef* referredType;
     std::optional<SourceRange> typedefSourceRange;
     std::optional<SourceRange> nameSourceRange;
