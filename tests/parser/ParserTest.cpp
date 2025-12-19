@@ -4,52 +4,18 @@
 
 #include <gtest/gtest.h>
 
+#include "../DiagnosticTesting.h"
 #include "../../include/diagnostics/DiagnosticEngine.h"
 #include "../../include/parser/Parser.h"
 #include "../../include/tokeniser/Tokeniser.h"
 #include "../../include/parser/Modifier.h"
 #include "../../include/parser/ASTBuilder.h"
 
-class ParserTest : public testing::Test {
+class ParserTest : public testing::Test, public DiagnosticTesting {
 protected:
     inline static Arena astArena;
-    DiagnosticEngine diagnostic_engine;
     Parser parser{astArena, diagnostic_engine};
     Tokeniser tokeniser{diagnostic_engine};
-
-    void expectDiagnostics(const std::vector<Diagnostic>& diagnostics) {
-        auto& actualDiagnostics = diagnostic_engine.getAll();
-        EXPECT_EQ(actualDiagnostics.size(), alreadyExpected + diagnostics.size());
-        EXPECT_TRUE((std::equal(actualDiagnostics.end() - diagnostics.size(), actualDiagnostics.end(), diagnostics.begin())));
-        alreadyExpected += diagnostics.size();
-    }
-
-    void expectDiagnosticsIgnoreSourceRange(const std::vector<Diagnostic>& diagnostics) {
-        auto& actualDiagnostics = diagnostic_engine.getAll();
-        EXPECT_EQ(actualDiagnostics.size(), alreadyExpected + diagnostics.size());
-
-        for (std::size_t i = alreadyExpected; i < actualDiagnostics.size(); i++) {
-            EXPECT_EQ(actualDiagnostics[i].severity, diagnostics[i - alreadyExpected].severity);
-            EXPECT_EQ(actualDiagnostics[i].kind, diagnostics[i - alreadyExpected].kind);
-            EXPECT_EQ(actualDiagnostics[i].msg, diagnostics[i - alreadyExpected].msg);
-        }
-        alreadyExpected += diagnostics.size();
-    }
-
-    void expectDiagnosticKindsIgnoreSourceRange(const std::vector<DiagnosticKind>& diagnosticKinds) {
-        std::vector<Diagnostic> diagnostics;
-        for (auto kind: diagnosticKinds) {
-            diagnostics.emplace_back(DiagnosticSeverity::ERROR, kind, dummy_source);
-        }
-
-        expectDiagnosticsIgnoreSourceRange(diagnostics);
-    }
-
-    std::size_t alreadyExpected = 0;
-
-    void expectNoDiagnostics() {
-        expectDiagnostics({});
-    }
 
     static inline SourceRange dummy_source = {0, 0};
 
@@ -65,7 +31,7 @@ protected:
     static FieldDecl* createFieldDecl(const std::string& name,
                                       const std::vector<Modifier> &modifiers = {},
                                       TypeRef* type = nullptr) {
-        return astArena.make<FieldDecl>(name, modifiers, type, dummy_source, dummy_source, dummy_source);
+        return astArena.make<FieldDecl>(name, modifiers, std::vector(modifiers.size(), dummy_source), type, dummy_source, dummy_source, dummy_source);
     }
 
     static bool declEqualIgnoreSourceRange(const Decl* d1, const Decl* d2) {
@@ -452,7 +418,7 @@ TEST_F(ParserTest, ReportsCorrectDiagnosticWhenTypedefIsMalformedWithGenerics) {
         "pair<int double>", // greater, declaration
         "pair<int, double, >", // identifier
         "pair<pair<int, double>", // greater
-        "pair<>", // not sure
+        "pair<>", // not sure, TODO - Do something about it
         "pair<,,>"}; // identifier
 
     const std::vector<std::vector<DiagnosticKind>> expectedDiagnosticKinds{
@@ -465,7 +431,7 @@ TEST_F(ParserTest, ReportsCorrectDiagnosticWhenTypedefIsMalformedWithGenerics) {
         {DiagnosticKind::EXPECTED_GREATER, DiagnosticKind::EXPECTED_DECLARATION},
         {DiagnosticKind::EXPECTED_IDENTIFIER},
         {DiagnosticKind::EXPECTED_GREATER},
-        {},
+        {}, // TODO - Give error maybe
         {DiagnosticKind::EXPECTED_IDENTIFIER}
     };
 
@@ -499,6 +465,10 @@ TEST_F(ParserTest, RecoversFromMalformedTypedefCorrectly) {
 
     const std::string str4 = " private typedef ";
     EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str4 + validStr), KahwaFileBuilder().with(typedefDecl).build());
+}
+
+TEST_F(ParserTest, RecoversFromMalformedTypedefCorrectlyWithGenerics) {
+    // TODO
 }
 
 TEST_F(ParserTest, ParsesEmptyClassCorrectly) {
@@ -707,6 +677,45 @@ TEST_F(ParserTest, ParsesClassesWithNestedClassesCorrectly) {
         KahwaFileBuilder()
         .with(classDecl3)
         .build());
+
+    expectNoDiagnostics();
+}
+
+TEST_F(ParserTest, ParsesClassesWithFieldsCorrectly) {
+
+}
+
+TEST_F(ParserTest, ParsesTopLevelMethodsCorrectly) {
+    const auto methodDecl1 = MethodDeclBuilder(
+        "foo",
+        TypeRefBuilder("float").build(),
+        BlockBuilder().build()).build();
+    const auto str1 = toString(methodDecl1);
+
+    EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange,
+        parseFile(str1),
+        KahwaFileBuilder().with(methodDecl1).build());
+
+    const auto methodDecl2 = MethodDeclBuilder(
+        "foo",
+        TypeRefBuilder("int").build(),
+        BlockBuilder().build())
+        .with(Modifier::PRIVATE)
+        .with(Modifier::STATIC)
+        .with({TypeRefBuilder("int").build(), "length"})
+        .with({TypeRefBuilder("vector") // vector<int>
+            .with(TypeRefBuilder("int").build())
+            .build(), "list"})
+        .build();
+    const auto str2 = toString(methodDecl2);
+
+    EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange,
+        parseFile(str2),
+        KahwaFileBuilder().with(methodDecl2).build());
+
+    EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange,
+        parseFile(str1 + str2),
+        KahwaFileBuilder().with({methodDecl1, methodDecl2}).build());
 
     expectNoDiagnostics();
 }

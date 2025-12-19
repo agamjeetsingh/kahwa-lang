@@ -59,6 +59,18 @@ add_executable(kahwa_lang main.cpp
         include/parser/Decl.h
         src/parser/ASTBuilder.cpp
         include/parser/ASTBuilder.h
+        include/symbols/FunctionSymbol.cpp
+        include/symbols/FunctionSymbol.h
+        include/symbols/ClassSymbol.cpp
+        include/symbols/ClassSymbol.h
+        include/symbols/TypeParameterSymbol.cpp
+        include/symbols/TypeParameterSymbol.h
+        include/symbols/MethodSymbol.cpp
+        include/symbols/MethodSymbol.h
+        include/parser/SemanticAnalyser.cpp
+        include/parser/SemanticAnalyser.h
+        include/parser/SymbolBuilder.cpp
+        include/parser/SymbolBuilder.h
 )
 
 target_link_libraries(kahwa_lang PRIVATE magic_enum::magic_enum)
@@ -103,6 +115,8 @@ add_executable(
         src/source/SourceRange.cpp
         src/parser/ASTBuilder.cpp
         include/parser/ASTBuilder.h
+        tests/DiagnosticTesting.h
+        tests/DiagnosticTesting.cpp
 )
 
 target_link_libraries(
