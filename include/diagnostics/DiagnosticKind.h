@@ -7,7 +7,9 @@
 
 #include <magic_enum.hpp>
 #include <optional>
+#include <algorithm>
 #include "../tokeniser/Token.h"
+#include "../parser/Modifier.h"
 
 
 
@@ -24,16 +26,12 @@ enum class DiagnosticKind {
     EXPECTED_TYPEDEF,
     EXPECTED_GREATER,
     EXPECTED_RIGHT_PAREN,
-};
 
-inline std::string toMsg(const DiagnosticKind kind, const std::string& aux) {
-    switch (kind) {
-        case DiagnosticKind::EXPECTED_SOMETHING:
-            return "Expected '" + aux + "'";
-        default:
-            throw std::runtime_error("Kind cannot be converted to msg with aux.");
-    }
-}
+    STATIC_NOT_VALID_MODIFIER_FOR_CLASSES,
+    REPEATED_MODIFIER,
+    ILLEGAL_MODIFIER_COMBINATION,
+    MODIFIER_NOT_ALLOWED,
+};
 
 inline DiagnosticKind expectedTokenTypeToDiagnosticKind(const TokenType tokenType) {
     const auto typeName = std::string{magic_enum::enum_name(tokenType)};
@@ -81,6 +79,47 @@ inline std::optional<std::string> expectedDiagnostictoMsg(const DiagnosticKind k
     return "Expected " + tokenStr;
 }
 
+inline std::optional<std::string> notValidModifierDiagnosticToMsg(const DiagnosticKind kind) {
+    std::string kindName = std::string{magic_enum::enum_name(kind)};
+    
+    // Look for pattern: <MODIFIER>_NOT_VALID_MODIFIER_FOR_<TARGET>
+    const std::string pattern = "_NOT_VALID_MODIFIER_FOR_";
+    auto patternPos = kindName.find(pattern);
+    if (patternPos == std::string::npos) {
+        return std::nullopt;
+    }
+    
+    std::string modifierPart = kindName.substr(0, patternPos);
+    std::string targetPart = kindName.substr(patternPos + pattern.length());
+    
+    auto modifier = magic_enum::enum_cast<Modifier>(modifierPart);
+    if (!modifier.has_value()) {
+        return std::nullopt;
+    }
+    
+    // Convert target to lowercase
+    std::string target = targetPart;
+    std::ranges::transform(target, target.begin(), tolower);
+    
+    return "'" + toString(modifier.value()) + "' is not a valid modifier for " + target;
+}
+
+inline std::string toMsg(const DiagnosticKind kind, const std::string &str) {
+    assert(kind == DiagnosticKind::EXPECTED_SOMETHING);
+    return "Expected " + str;
+}
+
+inline std::string toMsg(const DiagnosticKind kind, Modifier modifier) {
+    assert(kind == DiagnosticKind::REPEATED_MODIFIER || kind == DiagnosticKind::MODIFIER_NOT_ALLOWED);
+    if (kind == DiagnosticKind::REPEATED_MODIFIER) return "Repeated modifier '" + toString(modifier) + "'";
+    return "Modifier '" + toString(modifier) + "' not allowed here";
+}
+
+inline std::string toMsg(const DiagnosticKind kind, Modifier modifier1, Modifier modifier2) {
+    assert(kind == DiagnosticKind::ILLEGAL_MODIFIER_COMBINATION);
+    return "Illegal combination of modifiers '" + toString(modifier1) + "' and '" + toString(modifier2) + "'";
+}
+
 inline std::string toMsg(const DiagnosticKind kind) {
     switch (kind) {
         case DiagnosticKind::UNTERMINATED_STRING_LITERAL:
@@ -95,6 +134,10 @@ inline std::string toMsg(const DiagnosticKind kind) {
             return "Expected identifier";
         default:
             if (auto msg = expectedDiagnostictoMsg(kind)) {
+                return msg.value();
+            }
+            
+            if (auto msg = notValidModifierDiagnosticToMsg(kind)) {
                 return msg.value();
             }
 
