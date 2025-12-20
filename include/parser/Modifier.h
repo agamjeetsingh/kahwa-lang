@@ -18,6 +18,14 @@ enum class Modifier {
     STATIC
 };
 
+inline bool isModalityModifier(Modifier modifier) {
+    return modifier == Modifier::OPEN || modifier == Modifier::FINAL || modifier == Modifier::ABSTRACT;
+}
+
+inline bool isVisibilityModifier(Modifier modifier) {
+    return modifier == Modifier::PUBLIC || modifier == Modifier::PROTECTED || modifier == Modifier::PRIVATE;
+}
+
 inline Modifier tokenTypeToModifier(TokenType tokenType) {
     switch (tokenType) {
         case TokenType::OPEN: return Modifier::OPEN;
