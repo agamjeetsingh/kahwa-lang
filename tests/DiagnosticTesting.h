@@ -16,6 +16,18 @@ class DiagnosticTesting {
 protected:
     DiagnosticEngine diagnostic_engine;
 
+    void expectErrorsIgnoreSourceRange(const std::vector<std::pair<DiagnosticKind, std::string>>& diagnostics) {
+        auto& actualDiagnostics = diagnostic_engine.getAll();
+        std::vector<Diagnostic> expectedDiagnostics;
+        expectedDiagnostics.reserve(diagnostics.size());
+        for (auto pair: diagnostics) {
+            expectedDiagnostics.emplace_back(DiagnosticSeverity::ERROR, pair.first, dummy_source, pair.second);
+        }
+        EXPECT_EQ(actualDiagnostics.size(), alreadyExpected + expectedDiagnostics.size());
+        EXPECT_TRUE((std::equal(actualDiagnostics.end() - expectedDiagnostics.size(), actualDiagnostics.end(), expectedDiagnostics.begin())));
+        alreadyExpected += expectedDiagnostics.size();
+    }
+
     void expectDiagnostics(const std::vector<Diagnostic>& diagnostics) {
         auto& actualDiagnostics = diagnostic_engine.getAll();
         EXPECT_EQ(actualDiagnostics.size(), alreadyExpected + diagnostics.size());
