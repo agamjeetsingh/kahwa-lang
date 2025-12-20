@@ -76,41 +76,52 @@ protected:
 };
 
 TEST_F(SemanticAnalyserTest, ReportsProblemsForIllegalModifiersOnClass) {
-    auto classSymbol1 = ClassSymbolBuilder("myClass").build();
-
     for (auto modifier: illegalModifiersForClass) {
-        EXPECT_PRED2(classSymbolEqualIgnoreSourceRange, classSymbol1, semantic_analyser.analyseClass(
+        EXPECT_PRED2(classSymbolEqualIgnoreSourceRange, ClassSymbolBuilder("myClass").build(), semantic_analyser.analyseClass(
             ClassDeclBuilder("myClass").with(modifier).build()));
 
         expectErrorsIgnoreSourceRange({{DiagnosticKind::MODIFIER_NOT_ALLOWED, toMsg(DiagnosticKind::MODIFIER_NOT_ALLOWED, modifier)}});
     }
 
-    auto classSymbol2 = ClassSymbolBuilder("myClass").withNestedClass(ClassSymbolBuilder("nestedClass").build()).build();
-
     for (auto modifier: illegalModifiersForNestedClass) {
-        EXPECT_PRED2(classSymbolEqualIgnoreSourceRange, classSymbol2, semantic_analyser.analyseClass(
-        ClassDeclBuilder("myClass").with(ClassDeclBuilder("nestedClass").with(modifier).build()).build()));
+        EXPECT_PRED2(classSymbolEqualIgnoreSourceRange,
+            ClassSymbolBuilder("myClass").withNestedClass(ClassSymbolBuilder("nestedClass").setVisibility(Modifier::PRIVATE).build()).build(),
+            semantic_analyser.analyseClass(ClassDeclBuilder("myClass")
+                .with(ClassDeclBuilder("nestedClass")
+                    .with(modifier)
+                    .build())
+                .build()));
 
         expectErrorsIgnoreSourceRange({{DiagnosticKind::MODIFIER_NOT_ALLOWED, toMsg(DiagnosticKind::MODIFIER_NOT_ALLOWED, modifier)}});
     }
 
     for (auto modifier: legalModifiersForClass) {
-        EXPECT_PRED2(classSymbolEqualIgnoreSourceRange, classSymbol1, semantic_analyser.analyseClass(
+        EXPECT_PRED2(classSymbolEqualIgnoreSourceRange, ClassSymbolBuilder("myClass").with(modifier).build(), semantic_analyser.analyseClass(
             ClassDeclBuilder("myClass").with(modifier).build()));
 
         expectNoDiagnostics();
     }
 
     for (auto modifier: legalModifiersForNestedClass) {
-        EXPECT_PRED2(classSymbolEqualIgnoreSourceRange, classSymbol2, semantic_analyser.analyseClass(
-        ClassDeclBuilder("myClass").with(ClassDeclBuilder("nestedClass").with(modifier).build()).build()));
+        EXPECT_PRED2(classSymbolEqualIgnoreSourceRange,
+            ClassSymbolBuilder("myClass")
+            .withNestedClass(ClassSymbolBuilder("nestedClass")
+                .setVisibility(Modifier::PRIVATE)
+                .with(modifier)
+                .build())
+            .build(),
+            semantic_analyser.analyseClass(
+                ClassDeclBuilder("myClass")
+                .with(ClassDeclBuilder("nestedClass")
+                    .with(modifier)
+                    .build())
+                .build()));
 
         expectNoDiagnostics();
     }
 }
 
 TEST_F(SemanticAnalyserTest, ReportsProblemForIllegalModifierCombinationsWithTwoModifiersOnClass) {
-    auto classSymbol = ClassSymbolBuilder("myClass").build();
 
     std::vector<std::vector<Modifier>> illegalCombinations = {
         {Modifier::ABSTRACT, Modifier::FINAL},
@@ -121,8 +132,18 @@ TEST_F(SemanticAnalyserTest, ReportsProblemForIllegalModifierCombinationsWithTwo
         {Modifier::OPEN, Modifier::FINAL},
     };
 
-    for (auto& illegalCombination: illegalCombinations) {
-        EXPECT_PRED2(classSymbolEqualIgnoreSourceRange, classSymbol, semantic_analyser.analyseClass(
+    std::vector effectiveModifiers = {
+        Modifier::ABSTRACT,
+        Modifier::ABSTRACT,
+        Modifier::PRIVATE,
+        Modifier::PUBLIC,
+        Modifier::OPEN,
+        Modifier::OPEN
+    };
+
+    for (int i = 0; i < illegalCombinations.size(); i++) {
+        const auto& illegalCombination = illegalCombinations[i];
+        EXPECT_PRED2(classSymbolEqualIgnoreSourceRange, ClassSymbolBuilder("myClass").with(effectiveModifiers[i]).build(), semantic_analyser.analyseClass(
             ClassDeclBuilder("myClass").with(illegalCombination).build()));
 
         expectErrorsIgnoreSourceRange({{
@@ -135,7 +156,6 @@ TEST_F(SemanticAnalyserTest, ReportsProblemForIllegalModifierCombinationsWithTwo
 }
 
 TEST_F(SemanticAnalyserTest, ReportsProblemForRepeatedModifiersOnClass) {
-    auto classSymbol = ClassSymbolBuilder("myClass").build();
 
     std::vector<std::vector<Modifier>> repeatedModifiers = {
         {Modifier::PUBLIC, Modifier::PUBLIC},
@@ -146,7 +166,7 @@ TEST_F(SemanticAnalyserTest, ReportsProblemForRepeatedModifiersOnClass) {
     };
 
     for (auto& repeatedModifierPair: repeatedModifiers) {
-        EXPECT_PRED2(classSymbolEqualIgnoreSourceRange, classSymbol, semantic_analyser.analyseClass(
+        EXPECT_PRED2(classSymbolEqualIgnoreSourceRange, ClassSymbolBuilder("myClass").with(repeatedModifierPair[0]).build(), semantic_analyser.analyseClass(
             ClassDeclBuilder("myClass").with(repeatedModifierPair).build()));
 
         expectErrorsIgnoreSourceRange({{
@@ -158,7 +178,7 @@ TEST_F(SemanticAnalyserTest, ReportsProblemForRepeatedModifiersOnClass) {
 
 TEST_F(SemanticAnalyserTest, DifferentModifierErrorsDoNotInterfereWithEachOther) {
     EXPECT_PRED2(classSymbolEqualIgnoreSourceRange,
-        ClassSymbolBuilder("myClass").setAbstract().build(),
+        ClassSymbolBuilder("myClass").setModality(Modifier::ABSTRACT).setVisibility(Modifier::PRIVATE).build(),
         semantic_analyser.analyseClass(
             ClassDeclBuilder("myClass")
             .with({Modifier::PRIVATE, Modifier::ABSTRACT, Modifier::PRIVATE})
@@ -169,7 +189,7 @@ TEST_F(SemanticAnalyserTest, DifferentModifierErrorsDoNotInterfereWithEachOther)
         }});
 
     EXPECT_PRED2(classSymbolEqualIgnoreSourceRange,
-        ClassSymbolBuilder("myClass").setVisibility(Modifier::PRIVATE).build(),
+        ClassSymbolBuilder("myClass").setVisibility(Modifier::PRIVATE).setModality(Modifier::ABSTRACT).build(),
         semantic_analyser.analyseClass(
             ClassDeclBuilder("myClass")
             .with({Modifier::FINAL, Modifier::ABSTRACT, Modifier::PRIVATE})
