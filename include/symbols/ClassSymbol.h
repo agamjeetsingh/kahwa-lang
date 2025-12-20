@@ -9,19 +9,19 @@
 #include "MethodSymbol.h"
 #include "TypeParameterSymbol.h"
 #include "../parser/Modifier.h"
-#include "../parser/SymbolBuilder.h"
+#include "SymbolBuilder.h"
 
 
 struct ClassSymbol {
     explicit ClassSymbol(
         std::string name,
-        bool isAbstract = false,
-        bool isOpen = false,
-        Modifier visibility = DEFAULT_VISIBILITY,
-        const std::vector<TypeParameterSymbol*>& genericArguments = {},
-        const std::vector<ClassSymbol*>& superClasses = {},
-        const std::vector<MethodSymbol*>& methods = {},
-        const std::vector<ClassSymbol*>& nestedClasses = {}):
+        bool isAbstract,
+        bool isOpen,
+        Modifier visibility,
+        const std::vector<TypeParameterSymbol*>& genericArguments,
+        const std::vector<ClassSymbol*>& superClasses,
+        const std::vector<MethodSymbol*>& methods,
+        const std::vector<ClassSymbol*>& nestedClasses):
     name(std::move(name)),
     isAbstract(isAbstract),
     isOpen(isOpen),
@@ -32,9 +32,9 @@ struct ClassSymbol {
     nestedClasses(nestedClasses) {}
 
     std::string name;
-    bool isAbstract = false;
-    bool isOpen = false;
-    Modifier visibility = DEFAULT_VISIBILITY;
+    bool isAbstract;
+    bool isOpen;
+    Modifier visibility;
 
     const std::vector<TypeParameterSymbol*> genericArguments;
     const std::vector<ClassSymbol*> superClasses;

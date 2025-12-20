@@ -2,4 +2,4 @@
 // Created by Agamjeet Singh on 18/12/25.
 //
 
-#include "FunctionSymbol.h"
+#include "../../include/symbols/ClassSymbol.h"

@@ -7,7 +7,7 @@
 #include "../DiagnosticTesting.h"
 #include "../../include/arena/Arena.h"
 #include "../../include/diagnostics/DiagnosticEngine.h"
-#include "../../include/parser/SemanticAnalyser.h"
+#include "../../include/symbols/SemanticAnalyser.h"
 
 class SemanticAnalyserTest : public testing::Test, public DiagnosticTesting {
 protected:

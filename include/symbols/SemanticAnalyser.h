@@ -6,9 +6,9 @@
 #define SEMANTICANALYSER_H
 #include <ranges>
 
-#include "ClassDecl.h"
+#include "../parser/ClassDecl.h"
 #include "../diagnostics/DiagnosticEngine.h"
-#include "../symbols/ClassSymbol.h"
+#include "ClassSymbol.h"
 
 
 class DiagnosticEngine;
@@ -26,23 +26,27 @@ public:
     ClassSymbol* analyseClass(const ClassDecl* classDecl, bool topLevel = true) {
         ClassSymbolBuilder builder{classDecl->name};
 
+        // Adding all methods
         std::vector<MethodSymbol*> methods{classDecl->methods.size()};
         std::ranges::transform(classDecl->methods, methods.begin(), [this](const MethodDecl* methodDecl) {
             return analyseMethod(methodDecl);
         });
         builder.with(methods);
 
+        // Adding all nested classes (recursively)
         std::vector<ClassSymbol*> nestedClasses{classDecl->nestedClasses.size()};
         std::ranges::transform(classDecl->nestedClasses, nestedClasses.begin(), [this](const ClassDecl* nestedClass) {
             return analyseClass(nestedClass, false);
         });
         builder.withNestedClasses(nestedClasses);
 
+        // Setting effective visibility
         auto visibilityModifiers = classDecl->modifiers | std::ranges::views::filter([](const ModifierNode& modifier) {
             return isVisibilityModifier(modifier.modifier);
         });
         builder.setVisibility(resolveVisibility(std::vector(visibilityModifiers.begin(), visibilityModifiers.end()), topLevel));
 
+        // Static keyword isn't allowed. Emitting diagnostics for each occurence.
         for (auto staticModifier : classDecl->modifiers |
             std::ranges::views::filter([](const ModifierNode& modifier) {
                 return modifier.modifier == Modifier::STATIC;
@@ -54,6 +58,7 @@ public:
                 toMsg(DiagnosticKind::MODIFIER_NOT_ALLOWED, staticModifier.modifier));
         }
 
+        // Setting effective modality
         auto modalityModifiers = classDecl->modifiers | std::ranges::views::filter([](const ModifierNode& modifier) {
             return isModalityModifier(modifier.modifier);
         });

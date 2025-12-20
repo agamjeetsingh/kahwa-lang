@@ -59,18 +59,18 @@ add_executable(kahwa_lang main.cpp
         include/parser/Decl.h
         src/parser/ASTBuilder.cpp
         include/parser/ASTBuilder.h
-        include/symbols/FunctionSymbol.cpp
+        src/symbols/FunctionSymbol.cpp
         include/symbols/FunctionSymbol.h
-        include/symbols/ClassSymbol.cpp
+        src/symbols/ClassSymbol.cpp
         include/symbols/ClassSymbol.h
-        include/symbols/TypeParameterSymbol.cpp
+        src/symbols/TypeParameterSymbol.cpp
         include/symbols/TypeParameterSymbol.h
-        include/symbols/MethodSymbol.cpp
+        src/symbols/MethodSymbol.cpp
         include/symbols/MethodSymbol.h
-        include/parser/SemanticAnalyser.cpp
-        include/parser/SemanticAnalyser.h
-        include/parser/SymbolBuilder.cpp
-        include/parser/SymbolBuilder.h
+        src/symbols/SemanticAnalyser.cpp
+        include/symbols/SemanticAnalyser.h
+        src/symbols/SymbolBuilder.cpp
+        include/symbols/SymbolBuilder.h
         include/parser/ModifierNode.cpp
         include/parser/ModifierNode.h
 )
@@ -117,18 +117,18 @@ add_executable(
         src/source/SourceRange.cpp
         src/parser/ASTBuilder.cpp
         include/parser/ASTBuilder.h
-        include/symbols/FunctionSymbol.cpp
+        src/symbols/FunctionSymbol.cpp
         include/symbols/FunctionSymbol.h
-        include/symbols/ClassSymbol.cpp
+        src/symbols/ClassSymbol.cpp
         include/symbols/ClassSymbol.h
-        include/symbols/TypeParameterSymbol.cpp
+        src/symbols/TypeParameterSymbol.cpp
         include/symbols/TypeParameterSymbol.h
-        include/symbols/MethodSymbol.cpp
+        src/symbols/MethodSymbol.cpp
         include/symbols/MethodSymbol.h
-        include/parser/SemanticAnalyser.cpp
-        include/parser/SemanticAnalyser.h
-        include/parser/SymbolBuilder.cpp
-        include/parser/SymbolBuilder.h
+        src/symbols/SemanticAnalyser.cpp
+        include/symbols/SemanticAnalyser.h
+        src/symbols/SymbolBuilder.cpp
+        include/symbols/SymbolBuilder.h
         tests/semantic_analysis/SemanticAnalyserTest.cpp
         tests/DiagnosticTesting.h
         tests/DiagnosticTesting.cpp
