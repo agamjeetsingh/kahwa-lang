@@ -28,12 +28,6 @@ protected:
         return parser.parseTypeRef(tokeniser.tokenise(0, str));
     }
 
-    static FieldDecl* createFieldDecl(const std::string& name,
-                                      const std::vector<Modifier> &modifiers = {},
-                                      TypeRef* type = nullptr) {
-        return astArena.make<FieldDecl>(name, modifiers, std::vector(modifiers.size(), dummy_source), type, dummy_source, dummy_source, dummy_source);
-    }
-
     static bool declEqualIgnoreSourceRange(const Decl* d1, const Decl* d2) {
         if (d1 == nullptr && d2 == nullptr) return true;
         if (d1 == nullptr || d2 == nullptr) return false;
@@ -173,10 +167,10 @@ protected:
         return true;
     }
 
-    static std::string toString(const std::vector<Modifier>& modifiers) {
+    static std::string toString(const std::vector<ModifierNode>& modifiers) {
         std::string str;
         for (int i = 0; i < modifiers.size(); i++) {
-            str += ::toString(modifiers[i]);
+            str += ::toString(modifiers[i].modifier);
             if (i != modifiers.size() - 1) str += " ";
         }
 

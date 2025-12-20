@@ -16,13 +16,12 @@
 struct FieldDecl : Decl {
     FieldDecl(
     std::string name,
-    const std::vector<Modifier> &modifiers,
-    const std::vector<SourceRange> &modifierSourceRanges,
+    const std::vector<ModifierNode> &modifiers,
     TypeRef* type,
     const SourceRange &typeSourceRange,
     const SourceRange &nameSourceRange,
     const SourceRange &bodyRange):
-    Decl(std::move(name), modifiers, modifierSourceRanges, nameSourceRange, bodyRange),
+    Decl(std::move(name), modifiers, nameSourceRange, bodyRange),
     type(type),
     typeSourceRange(typeSourceRange) {}
 

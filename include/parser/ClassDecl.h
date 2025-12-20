@@ -20,14 +20,13 @@ struct ClassDecl : Decl {
         const SourceRange &classSourceRange,
         const SourceRange &nameSourceRange,
         const SourceRange &bodyRange,
-        const std::vector<Modifier> &modifiers = {},
-        const std::vector<SourceRange> &modifierSourceRanges = {},
+        const std::vector<ModifierNode> &modifiers = {},
         const std::vector<TypeRef*>& superClasses = {},
         const std::vector<FieldDecl*> &fields = {},
         const std::vector<MethodDecl*> &methods = {},
         const std::vector<ClassDecl*> &nestedClasses = {}
         ):
-    Decl(std::move(name), modifiers, modifierSourceRanges, nameSourceRange, bodyRange),
+    Decl(std::move(name), modifiers, nameSourceRange, bodyRange),
     superClasses(superClasses),
     fields(fields),
     methods(methods),
@@ -90,7 +89,6 @@ class ClassDeclBuilder : public ASTBuilder {
                 nameSourceRange.has_value() ? nameSourceRange.value() : dummy_source,
                 bodyRange.has_value() ? bodyRange.value() : dummy_source,
                 modifiers,
-                modifierSourceRanges,
                 superClasses,
                 fields,
                 methods,
@@ -102,23 +100,15 @@ class ClassDeclBuilder : public ASTBuilder {
         }
 
         ClassDeclBuilder& with(Modifier modifier, const SourceRange &sourceRange = dummy_source) {
-            modifiers.push_back(modifier);
-            modifierSourceRanges.push_back(sourceRange);
+            modifiers.emplace_back(modifier, sourceRange);
             return *this;
         }
 
         ClassDeclBuilder& with(const std::vector<Modifier> &modifiers, const std::vector<SourceRange>& sourceRanges) {
             assert(modifiers.size() == sourceRanges.size());
-            this->modifiers.insert(this->modifiers.end(), modifiers.begin(), modifiers.end());
-            std::vector<SourceRange> newModifierSourceRanges;
-            newModifierSourceRanges.reserve(this->modifierSourceRanges.size() + sourceRanges.size());
-            for (const auto& range : this->modifierSourceRanges) {
-                newModifierSourceRanges.emplace_back(range);
+            for (int i = 0; i < modifiers.size(); i++) {
+                this->modifiers.emplace_back(modifiers[i], sourceRanges[i]);
             }
-            for (const auto& range : sourceRanges) {
-                newModifierSourceRanges.emplace_back(range);
-            }
-            this->modifierSourceRanges = std::move(newModifierSourceRanges);
             return *this;
         }
 
@@ -179,8 +169,7 @@ class ClassDeclBuilder : public ASTBuilder {
 
     private:
         std::string name;
-        std::vector<Modifier> modifiers;
-        std::vector<SourceRange> modifierSourceRanges;
+        std::vector<ModifierNode> modifiers;
         std::vector<TypeRef*> superClasses;
         std::vector<FieldDecl*> fields;
         std::vector<MethodDecl*> methods;

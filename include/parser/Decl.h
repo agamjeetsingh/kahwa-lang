@@ -7,32 +7,29 @@
 #include <utility>
 
 #include "Modifier.h"
+#include "ModifierNode.h"
 #include "../source/SourceRange.h"
 
 
 struct Decl {
     Decl(std::string name,
-    const std::vector<Modifier> &modifiers,
-    const std::vector<SourceRange> &modifierSourceRanges,
+    const std::vector<ModifierNode> &modifiers,
     const SourceRange &nameSourceRange,
     const SourceRange &bodyRange):
     name(std::move(name)),
     modifiers(modifiers),
-    modifierSourceRanges(modifierSourceRanges),
     nameSourceRange(nameSourceRange),
     bodyRange(bodyRange) {}
 
     const std::string name;
-    const std::vector<Modifier> modifiers;
+    const std::vector<ModifierNode> modifiers;
 
-    const std::vector<SourceRange> modifierSourceRanges;
     const SourceRange nameSourceRange;
     const SourceRange bodyRange;
 
     bool operator==(const Decl &other) const {
         return name == other.name &&
                modifiers == other.modifiers &&
-               modifierSourceRanges == other.modifierSourceRanges &&
                nameSourceRange == other.nameSourceRange &&
                bodyRange == other.bodyRange;
     }

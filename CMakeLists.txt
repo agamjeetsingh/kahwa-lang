@@ -71,6 +71,8 @@ add_executable(kahwa_lang main.cpp
         include/parser/SemanticAnalyser.h
         include/parser/SymbolBuilder.cpp
         include/parser/SymbolBuilder.h
+        include/parser/ModifierNode.cpp
+        include/parser/ModifierNode.h
 )
 
 target_link_libraries(kahwa_lang PRIVATE magic_enum::magic_enum)
