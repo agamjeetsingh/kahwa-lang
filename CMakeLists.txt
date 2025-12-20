@@ -115,6 +115,16 @@ add_executable(
         src/source/SourceRange.cpp
         src/parser/ASTBuilder.cpp
         include/parser/ASTBuilder.h
+        include/symbols/FunctionSymbol.cpp
+        include/symbols/FunctionSymbol.h
+        include/symbols/ClassSymbol.cpp
+        include/symbols/ClassSymbol.h
+        include/symbols/TypeParameterSymbol.cpp
+        include/symbols/TypeParameterSymbol.h
+        include/symbols/MethodSymbol.cpp
+        include/symbols/MethodSymbol.h
+        include/parser/SymbolBuilder.cpp
+        include/parser/SymbolBuilder.h
         tests/DiagnosticTesting.h
         tests/DiagnosticTesting.cpp
 )
