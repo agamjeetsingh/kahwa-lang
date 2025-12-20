@@ -13,8 +13,8 @@ public:
     static void setArena(Arena* arena) { ASTBuilder::arena = arena; }
 
 protected:
-    static Arena* arena;
-    static SourceRange dummy_source;
+    inline static Arena* arena;
+    inline static SourceRange dummy_source = {0, 0};
 };
 
 

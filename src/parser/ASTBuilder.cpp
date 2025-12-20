@@ -4,6 +4,3 @@
 
 #include "../../include/parser/ASTBuilder.h"
 
-Arena* ASTBuilder::arena = nullptr;
-
-SourceRange ASTBuilder::dummy_source = {0, 0};
