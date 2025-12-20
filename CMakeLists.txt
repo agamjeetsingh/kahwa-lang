@@ -123,8 +123,11 @@ add_executable(
         include/symbols/TypeParameterSymbol.h
         include/symbols/MethodSymbol.cpp
         include/symbols/MethodSymbol.h
+        include/parser/SemanticAnalyser.cpp
+        include/parser/SemanticAnalyser.h
         include/parser/SymbolBuilder.cpp
         include/parser/SymbolBuilder.h
+        tests/semantic_analysis/SemanticAnalyserTest.cpp
         tests/DiagnosticTesting.h
         tests/DiagnosticTesting.cpp
 )
