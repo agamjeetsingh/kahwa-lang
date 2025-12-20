@@ -53,13 +53,39 @@ public:
         return arena->make<ClassSymbol>(name, isAbstract, isOpen, visibility, genericArguments, superClasses, methods, nestedClasses);
     }
 
-    ClassSymbolBuilder& setAbstract() { isAbstract = true; return *this; }
-
-    ClassSymbolBuilder& setOpen() { isOpen = true; return *this; }
+    ClassSymbolBuilder& setModality(Modifier modifier) {
+        assert(isModalityModifier(modifier));
+        switch (modifier) {
+            case Modifier::FINAL:
+                isAbstract = false;
+                isOpen = false;
+                break;
+            case Modifier::OPEN:
+                isAbstract = false;
+                isOpen = true;
+                break;
+            case Modifier::ABSTRACT:
+                isAbstract = true;
+                isOpen = true;
+                break;
+            default:
+                throw std::runtime_error("Unreachable");
+        }
+        return *this;
+    }
 
     ClassSymbolBuilder& setVisibility(Modifier visibility) {
-        assert((std::unordered_set{Modifier::PRIVATE, Modifier::PUBLIC, Modifier::PROTECTED}.contains(visibility)));
+        assert(isVisibilityModifier(visibility));
         this->visibility = visibility;
+        return *this;
+    }
+
+    ClassSymbolBuilder& with(Modifier modifier) {
+        if (isVisibilityModifier(modifier)) {
+            setVisibility(modifier);
+        } else if (isModalityModifier(modifier)) {
+            setModality(modifier);
+        }
         return *this;
     }
 
