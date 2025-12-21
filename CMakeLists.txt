@@ -73,6 +73,14 @@ add_executable(kahwa_lang main.cpp
         include/symbols/SymbolBuilder.h
         include/parser/ModifierNode.cpp
         include/parser/ModifierNode.h
+        src/types/Type.cpp
+        include/types/Type.h
+        include/types/Variance.cpp
+        include/types/Variance.h
+        include/symbols/TypeSymbol.cpp
+        include/symbols/TypeSymbol.h
+        include/symbols/Symbol.cpp
+        include/symbols/Symbol.h
 )
 
 target_link_libraries(kahwa_lang PRIVATE magic_enum::magic_enum)
@@ -132,6 +140,7 @@ add_executable(
         tests/semantic_analysis/SemanticAnalyserTest.cpp
         tests/DiagnosticTesting.h
         tests/DiagnosticTesting.cpp
+        tests/semantic_analysis/TypeTest.cpp
 )
 
 target_link_libraries(
