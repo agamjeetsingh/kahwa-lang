@@ -7,22 +7,25 @@
 #include <vector>
 
 #include "MethodSymbol.h"
-#include "TypeParameterSymbol.h"
 #include "../parser/Modifier.h"
 #include "SymbolBuilder.h"
+#include "TypeSymbol.h"
+#include "TypeParameterSymbol.h"
+#include "../types/Variance.h"
 
+struct Type;
 
-struct ClassSymbol {
+struct ClassSymbol final : TypeSymbol {
     explicit ClassSymbol(
         std::string name,
         bool isAbstract,
         bool isOpen,
         Modifier visibility,
         const std::vector<TypeParameterSymbol*>& genericArguments,
-        const std::vector<ClassSymbol*>& superClasses,
+        const std::vector<Type*>& superClasses,
         const std::vector<MethodSymbol*>& methods,
         const std::vector<ClassSymbol*>& nestedClasses):
-    name(std::move(name)),
+    TypeSymbol(std::move(name)),
     isAbstract(isAbstract),
     isOpen(isOpen),
     visibility(visibility),
@@ -31,17 +34,20 @@ struct ClassSymbol {
     methods(methods),
     nestedClasses(nestedClasses) {}
 
-    std::string name;
     bool isAbstract;
     bool isOpen;
     Modifier visibility;
 
     const std::vector<TypeParameterSymbol*> genericArguments;
-    const std::vector<ClassSymbol*> superClasses;
+    const std::vector<Type*> superClasses;
     const std::vector<MethodSymbol*> methods;
     const std::vector<ClassSymbol*> nestedClasses;
 
     static constexpr auto DEFAULT_VISIBILITY = Modifier::PUBLIC;
+
+    bool operator==(const ClassSymbol &other) const {
+        return this == &other;
+    }
 };
 
 
@@ -94,17 +100,22 @@ public:
         return *this;
     }
 
+    ClassSymbolBuilder& with(const std::string& genericArgumentName, const Variance variance = Variance::INVARIANT) {
+        genericArguments.push_back(arena->make<TypeParameterSymbol>(genericArgumentName, variance));
+        return *this;
+    }
+
     ClassSymbolBuilder& with(std::vector<TypeParameterSymbol*> genericArguments) {
         this->genericArguments.insert(this->genericArguments.end(), genericArguments.begin(), genericArguments.end());
         return *this;
     }
 
-    ClassSymbolBuilder& withSuperClass(ClassSymbol* superClass) {
+    ClassSymbolBuilder& withSuperClass(Type* superClass) {
         superClasses.push_back(superClass);
         return *this;
     }
 
-    ClassSymbolBuilder& withSuperClasses(std::vector<ClassSymbol*> superClasses) {
+    ClassSymbolBuilder& withSuperClasses(std::vector<Type*> superClasses) {
         this->superClasses.insert(this->superClasses.end(), superClasses.begin(), superClasses.end());
         return *this;
     }
@@ -136,7 +147,7 @@ private:
     Modifier visibility = ClassSymbol::DEFAULT_VISIBILITY;
 
     std::vector<TypeParameterSymbol*> genericArguments;
-    std::vector<ClassSymbol*> superClasses;
+    std::vector<Type*> superClasses;
     std::vector<MethodSymbol*> methods;
     std::vector<ClassSymbol*> nestedClasses;
 };
