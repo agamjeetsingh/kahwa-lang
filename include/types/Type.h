@@ -10,6 +10,8 @@
 #include "../symbols/ClassSymbol.h"
 #include "../symbols/TypeParameterSymbol.h"
 
+class TypeBuilder;
+
 struct Type {
     explicit Type(TypeSymbol* typeSymbol, const std::vector<Type*>& genericArguments = {}): typeSymbol(typeSymbol), genericArguments(genericArguments) {
         if (auto ptr = dynamic_cast<ClassSymbol*>(typeSymbol)) {
@@ -63,18 +65,18 @@ struct Type {
                 if (variance == Variance::CONTRAVARIANT && !type2->isSubtypeOf(type1)) {
                     return false;
                 }
-                if (!type1->isSubtypeOf(type2)) return false;
+                if (variance == Variance::COVARIANT && !type1->isSubtypeOf(type2)) return false;
             }
             return true;
         } else {
             // Check if this is even a subtype of other (ignoring generics)
 
-            const auto it = std::ranges::find_if(classSymbol->superClasses, [other](const Type* superClass) {
-                return superClass && *dynamic_cast<ClassSymbol*>(superClass->typeSymbol) == *dynamic_cast<ClassSymbol*>(other->typeSymbol);
-            });
-            if (it == classSymbol->superClasses.end()) {
-                return false;
-            }
+            // const auto it = std::ranges::find_if(classSymbol->superClasses, [other](const Type* superClass) {
+            //     return superClass && *dynamic_cast<ClassSymbol*>(superClass->typeSymbol) == *dynamic_cast<ClassSymbol*>(other->typeSymbol);
+            // });
+            // if (it == classSymbol->superClasses.end()) {
+            //     return false;
+            // }
 
             // Do the generic conversion and then ask about subtyping again
 
@@ -87,7 +89,16 @@ struct Type {
                 map[classSymbol->genericArguments[i]] = i;
             }
 
+            for (auto superClass: classSymbol->superClasses) {
+
+            }
+
             std::vector<Type*> convertedGenericArguments;
+
+            // for (auto genericArgument : ) {
+            //
+            // }
+
             for (auto genericArgument : other->genericArguments) {
                 auto typeParameter = dynamic_cast<TypeParameterSymbol*>(genericArgument->typeSymbol);
                 if (!typeParameter) {
@@ -103,6 +114,8 @@ struct Type {
             return Type{otherClassSymbol, convertedGenericArguments}.isSubtypeOf(other);
         }
     }
+
+    static Type* substitute(const std::vector<TypeParameterSymbol*>& subTypeBluePrint, const Type* superType, const Type* actualSubType);
 
 private:
     std::string toString;

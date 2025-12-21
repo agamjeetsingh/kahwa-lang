@@ -147,3 +147,60 @@ TEST_F(TypeTest, CorrectlyChecksSubtypingForDirectInheritanceWithGenericsHavingS
     // False: A<U> <: B<V> (unrelated generic types)
     testSubtypeRelations({typeA1, typeA2, typeB3, typeB4}, {});
 }
+
+// ======= TESTING TYPE SUBSTITUTION =======
+
+// substitute(A<T, U, V>, B<C<T>, V>, A<int, int, float>) = B<C<int>, float>
+// substitute(A<T, U, V>, B<T, V>, A<T, int, float>) = B<T, float>
+// substitute(A<T, U, V>, B<T>, A<int, int, float>) = B<int>
+// substitute(A<T, U, V>, T, A<int, int, float>) = int
+// substitute(A<T, U, V>, double, A<int, int, float>) = double
+TEST_F(TypeTest, CorrectlySubstitutesTypes) {
+    // A<T, U, V>
+    auto typeSymbolA = ClassSymbolBuilder("A").with({"T", "U", "V"}).build();
+
+    // Test 1: A<T, U, V>, float, A<int, int, float> --> float
+    auto typeA1 = TypeBuilder(typeSymbolA).with({intType, intType, floatType}).build();
+    ASSERT_TRUE((*Type::substitute(typeSymbolA->genericArguments, floatType, typeA1) == *floatType));
+
+    // Test 2: A<T, U, V>, T, A<int, int, float> --> int
+    auto typeA2 = TypeBuilder(typeSymbolA).with({intType, intType, floatType}).build();
+    ASSERT_TRUE((*Type::substitute(typeSymbolA->genericArguments, TypeBuilder("T").build(), typeA2) == *intType));
+
+    // Test 3: A<T, U, V>, B<T>, A<int, int, float> --> B<int>
+    auto typeA3 = TypeBuilder(typeSymbolA).with({intType, intType, floatType}).build();
+    auto typeSymbolB3 = ClassSymbolBuilder("B").withNumOfGenericArgs(1).build();
+    auto typeB3 = TypeBuilder(typeSymbolB3).with(TypeBuilder("T").build()).build();
+    auto typeRes3 = TypeBuilder(typeSymbolB3).with(intType).build();
+    ASSERT_TRUE((*Type::substitute(typeSymbolA->genericArguments, typeB3, typeA3) == *typeRes3));
+
+    // Test 4: A<T, U, V>, B<T, V>, A<T, int, float> --> B<T, float>
+    auto typeA4 = TypeBuilder(typeSymbolA).with({TypeBuilder("T").build(), intType, floatType}).build();
+    auto typeSymbolB4 = ClassSymbolBuilder("B").withNumOfGenericArgs(2).build();
+    auto typeB4 = TypeBuilder(typeSymbolB4).with({
+        TypeBuilder("T").build(),
+        TypeBuilder("V").build()
+        }).build();
+    auto typeRes4 = TypeBuilder(typeSymbolB4).with({
+        TypeBuilder("T").build(),
+        floatType
+    }).build();
+
+    ASSERT_TRUE((*Type::substitute(typeSymbolA->genericArguments, typeB4, typeA4) == *typeRes4));
+
+    // Test 5: A<T, U, V>, B<C<T>, V, U>, A<int, float, T> --> B<C<int>, T, float>
+    auto typeA5 = TypeBuilder(typeSymbolA).with({intType, floatType, TypeBuilder("T").build()}).build();
+    auto typeSymbolB5 = ClassSymbolBuilder("B").withNumOfGenericArgs(3).build();
+    auto typeSymbolC5 = ClassSymbolBuilder("C").withNumOfGenericArgs(1).build();
+    auto typeB5 = TypeBuilder(typeSymbolB5).with({
+        TypeBuilder(typeSymbolC5).with(TypeBuilder("T").build()).build(),
+        TypeBuilder("V").build(),
+        TypeBuilder("U").build()}).build();
+    auto typeRes5 = TypeBuilder(typeSymbolB5)
+    .with(TypeBuilder(typeSymbolC5).with(intType).build())
+    .with(TypeBuilder("T").build())
+    .with(floatType)
+    .build();
+
+    ASSERT_TRUE((*Type::substitute(typeSymbolA->genericArguments, typeB5, typeA5) == *typeRes5));
+}
