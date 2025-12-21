@@ -138,19 +138,23 @@ TEST_F(TypeTest, CorrectlyChecksSubtypingForGenericVarianceWithMultipleParameter
 }
 
 TEST_F(TypeTest, CorrectlyChecksSubtypingForChainOfInheritance) {
-    // A <: B <: C
+    // A <: B <: C, D
+    auto typeSymbolD = ClassSymbolBuilder("D").build();
     auto typeSymbolC = ClassSymbolBuilder("C").build();
-    auto typeSymbolB = ClassSymbolBuilder("B").withSuperClass(TypeBuilder(typeSymbolC).build()).build();
+    auto typeSymbolB = ClassSymbolBuilder("B").withSuperClasses({TypeBuilder(typeSymbolC).build(), TypeBuilder(typeSymbolD).build()}).build();
     auto typeSymbolA = ClassSymbolBuilder("A").withSuperClass(TypeBuilder(typeSymbolB).build()).build();
 
+    auto typeD = TypeBuilder(typeSymbolD).build();
     auto typeC = TypeBuilder(typeSymbolC).build();
     auto typeB = TypeBuilder(typeSymbolB).build();
     auto typeA = TypeBuilder(typeSymbolA).build();
 
-    testSubtypeRelations({typeA, typeB, typeC}, {
+    testSubtypeRelations({typeA, typeB, typeC, typeD}, {
         {typeA, typeB},
         {typeB, typeC},
-        {typeA, typeC}
+        {typeA, typeC},
+        {typeA, typeD},
+        {typeB, typeD}
     });
 }
 
@@ -185,30 +189,136 @@ TEST_F(TypeTest, CorrectlyChecksSubtypingForDirectInheritanceWithGenericsHavingS
 }
 
 TEST_F(TypeTest, CorrectlyChecksSubtypingForDirectInheritanceWithGenericsHavingMultipleParameters) {
-    // C<T, U, V>
-    auto typeSymbolC = ClassSymbolBuilder("C")
+    auto typeSymbolB = ClassSymbolBuilder("B").withNumOfGenericArgs(2).build();
+
+    // A<T, U, V> <: B<V, T>
+    auto typeSymbolA = ClassSymbolBuilder("A")
     .with("T")
     .with("U")
     .with("V")
+    .withSuperClass(TypeBuilder(typeSymbolB)
+        .with(TypeBuilder("V").build())
+        .with(TypeBuilder("T").build())
+        .build())
     .build();
-    // C<T, U, V>
-    auto typeC1 = TypeBuilder(typeSymbolC).with({TypeBuilder("T").build(), TypeBuilder("U").build(), TypeBuilder("V").build()}).build();
-    // C<int, float, int>
-    auto typeC2 = TypeBuilder(typeSymbolC).with({intType, floatType, intType}).build();
-    // C<int, U, float>
-    auto typeC3 = TypeBuilder(typeSymbolC).with({intType, TypeBuilder("U").build(), floatType}).build();
 
-    // B<V, T> <: A<T, U, V>
+    std::vector types = {
+        // A<T, U, V>
+        TypeBuilder(typeSymbolA)
+            .with({
+                TypeBuilder("T").build(),
+                TypeBuilder("U").build(),
+                TypeBuilder("V").build()
+            })
+            .build(),
+        // A<int, float, int>
+        TypeBuilder(typeSymbolA)
+            .with({intType, floatType, intType})
+            .build(),
+        // A<int, U, float>
+        TypeBuilder(typeSymbolA)
+            .with({intType, TypeBuilder("U").build(), floatType})
+            .build(),
+        // A<int, number, V>
+        TypeBuilder(typeSymbolA)
+            .with({intType, numberType, TypeBuilder("V").build()})
+            .build(),
+        // B<V, T>
+        TypeBuilder(typeSymbolB)
+            .with({TypeBuilder("V").build(), TypeBuilder("T").build()})
+            .build(),
+        // B<int, int>
+        TypeBuilder(typeSymbolB)
+            .with({intType, intType})
+            .build(),
+        // B<float, int>
+        TypeBuilder(typeSymbolB)
+            .with({floatType, intType})
+            .build(),
+        // B<V, int>
+        TypeBuilder(typeSymbolB)
+            .with({TypeBuilder("V").build(), intType})
+            .build()
+    };
+
+    testSubtypeRelations(types, {
+        {types[0], types[4]},  // A<T,U,V> <: B<V,T>
+        {types[1], types[5]},  // A<int,float,int> <: B<int,int>
+        {types[2], types[6]},  // A<int,U,float> <: B<float,int>
+        {types[3], types[7]}   // A<int,number,V> <: B<V,int>
+    });
+}
+
+TEST_F(TypeTest, CorrectlyChecksSubtypingForLongInheritanceChainAndGenericsWithMultipleParameters) {
+    // A<T, out U, V> <: B<U, in T> <: C<out T>
+    // A<int, float, number> <: A<int, number, number> <: B<number, number> <: B<number, int> <: C<int>
+
+    // Directly: A<int, float, number> <: C<int> <: C<number>
+
+    auto typeSymbolC = ClassSymbolBuilder("C")
+    .with("T", Variance::COVARIANT)
+    .build();
     auto typeSymbolB = ClassSymbolBuilder("B")
-    .with("V")
-    .with("T")
-    .withSuperClass(TypeBuilder(typeSymbolC).with(typeC1).build())
+    .with(
+        {"U", "T"},
+        {Variance::INVARIANT, Variance::CONTRAVARIANT})
+    .withSuperClass(TypeBuilder(typeSymbolC).with(TypeBuilder("T").build()).build())
+    .build();
+    auto typeSymbolA = ClassSymbolBuilder("A")
+    .with(
+        {"T", "U", "V"},
+        {Variance::INVARIANT, Variance::COVARIANT, Variance::INVARIANT})
+    .withSuperClass(TypeBuilder(typeSymbolB).with({TypeBuilder("U").build(), TypeBuilder("T").build()}).build())
     .build();
 
-    // auto typeSymbolC = ClassSymbolBuilder("C")
-    // .with("T")
-    // .with("U")
-    // .withSuperClass()
+    auto typeA1 = TypeBuilder(typeSymbolA).with({intType, floatType, numberType}).build();
+    auto typeA2 = TypeBuilder(typeSymbolA).with({floatType, floatType, numberType}).build();
+    auto typeA3 = TypeBuilder(typeSymbolA).with({numberType, floatType, numberType}).build();
+    auto typeC1 = TypeBuilder(typeSymbolC).with(intType).build();
+    auto typeC2 = TypeBuilder(typeSymbolC).with(floatType).build();
+    auto typeC3 = TypeBuilder(typeSymbolC).with(numberType).build();
+
+    testSubtypeRelations({typeA1, typeA2, typeA3, typeC1, typeC2, typeC3}, {
+        {typeC1, typeC3},
+        {typeC2, typeC3},
+        {typeA1, typeC1},
+        {typeA1, typeC3},
+        {typeA2, typeC2},
+        {typeA2, typeC3},
+        {typeA3, typeC3}
+    });
+}
+
+TEST_F(TypeTest, CorrectlyChecksSubtypingForRecursiveInheritance) {
+    // Node<T> : Iterable<Node<T>>
+    // This creates a recursive inheritance pattern that could cause infinite loops
+    
+    auto typeSymbolIterable = ClassSymbolBuilder("Iterable")
+        .withNumOfGenericArgs(1)
+        .build();
+    
+    auto typeSymbolNode = ClassSymbolBuilder("Node")
+        .with("T")
+        .withSuperClass(TypeBuilder(typeSymbolIterable).build())
+        .build();
+
+    // Yeah cannot even define it right now...
+
+    // Node<int>
+    auto nodeInt = TypeBuilder(typeSymbolNode)
+        .with(intType)
+        .build();
+    // Iterable<Node<int>>
+    auto iterableNodeInt = TypeBuilder(typeSymbolIterable)
+        .with(nodeInt)
+        .build();
+    
+    // Test: Node<int> should be subtype of Iterable<Node<int>>
+    // This should NOT infinite loop
+    EXPECT_TRUE(nodeInt->isSubtypeOf(iterableNodeInt));
+    
+    // Test reflexivity still works
+    EXPECT_TRUE(nodeInt->isSubtypeOf(nodeInt));
 }
 
 // ======= TESTING TYPE SUBSTITUTION =======
