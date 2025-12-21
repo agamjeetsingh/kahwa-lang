@@ -11,8 +11,11 @@ class SymbolBuilder {
 public:
     static void setArena(Arena* arena) { SymbolBuilder::arena = arena; }
 
+private:
+    inline static Arena demoArena;
 protected:
-    inline static Arena* arena;
+    inline static Arena* arena = &demoArena;
+
 };
 
 

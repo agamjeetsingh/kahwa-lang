@@ -8,7 +8,9 @@
 
 
 class MethodSymbol final : public FunctionSymbol {
-
+    bool operator==(const MethodSymbol &) const {
+        return true;
+    }
 };
 
 
