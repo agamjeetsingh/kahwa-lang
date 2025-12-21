@@ -69,49 +69,21 @@ struct Type {
             }
             return true;
         } else {
-            // Check if this is even a subtype of other (ignoring generics)
-
-            // const auto it = std::ranges::find_if(classSymbol->superClasses, [other](const Type* superClass) {
-            //     return superClass && *dynamic_cast<ClassSymbol*>(superClass->typeSymbol) == *dynamic_cast<ClassSymbol*>(other->typeSymbol);
-            // });
-            // if (it == classSymbol->superClasses.end()) {
-            //     return false;
-            // }
-
-            // Do the generic conversion and then ask about subtyping again
-
-            // A<T, U, V>  <: B<V, T, int>
-            // A<double, int, V> <: B<V, double, int>
-            // A<vector<double> int, V> <: B<V, vector<double>, int>
-
             std::unordered_map<TypeParameterSymbol*, int> map;
             for (int i = 0; i < classSymbol->genericArguments.size(); i++) {
                 map[classSymbol->genericArguments[i]] = i;
             }
 
             for (auto superClass: classSymbol->superClasses) {
-
-            }
-
-            std::vector<Type*> convertedGenericArguments;
-
-            // for (auto genericArgument : ) {
-            //
-            // }
-
-            for (auto genericArgument : other->genericArguments) {
-                auto typeParameter = dynamic_cast<TypeParameterSymbol*>(genericArgument->typeSymbol);
-                if (!typeParameter) {
-                    convertedGenericArguments.push_back(genericArgument);
-                    continue;
+                auto convertedType = substitute(classSymbol->genericArguments, superClass, this);
+                // Should have: this <: converted
+                assert(convertedType->typeSymbol == superClass->typeSymbol);
+                if (convertedType->isSubtypeOf(other)) {
+                    return true;
                 }
-
-                convertedGenericArguments.push_back(genericArguments[map[typeParameter]]);
             }
 
-            // This isn't enough for A -> B -> C conversion
-
-            return Type{otherClassSymbol, convertedGenericArguments}.isSubtypeOf(other);
+            return false;
         }
     }
 

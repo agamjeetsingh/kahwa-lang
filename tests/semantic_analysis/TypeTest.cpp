@@ -24,7 +24,6 @@ protected:
                 }
                 bool expected = std::ranges::find(expectedSubtypes, std::make_pair(subtype, supertype)) != expectedSubtypes.end();
                 EXPECT_EQ(subtype->isSubtypeOf(supertype), expected);
-                assert(subtype->isSubtypeOf(supertype) == expected);
             }
         }
     }
