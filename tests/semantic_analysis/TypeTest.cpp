@@ -77,12 +77,12 @@ TEST_F(TypeTest, CorrectlyChecksSubtypingForDirectInheritanceWithGenerics) {
     auto typeB2 = TypeBuilder(typeSymbolB).with(TypeBuilder("U").build()).build();
 
     // A<U>
-    auto typeSymbolA = ClassSymbolBuilder("A").with("U").build();
+    auto typeSymbolA = ClassSymbolBuilder("A").with("U").withSuperClass(typeB2).build();
     // A<int>
     auto typeA1 = TypeBuilder(typeSymbolA).with(&intType).build();
     // A<U>
     auto typeA2 = TypeBuilder(typeSymbolA).with(TypeBuilder("U").build()).build();
 
-    EXPECT_TRUE(typeA1->isSubtypeOf(typeA1));
-    EXPECT_TRUE(typeA2->isSubtypeOf(typeB2));
+    EXPECT_TRUE(typeA1->isSubtypeOf(typeB1)); // B<int> <: A<int>
+    EXPECT_TRUE(typeA2->isSubtypeOf(typeB2)); // A<U> <: B<U>
 }

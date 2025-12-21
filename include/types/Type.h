@@ -70,7 +70,7 @@ struct Type {
             // Check if this is even a subtype of other (ignoring generics)
 
             const auto it = std::ranges::find_if(classSymbol->superClasses, [other](const Type* superClass) {
-                return superClass && *superClass == *other;
+                return superClass && *dynamic_cast<ClassSymbol*>(superClass->typeSymbol) == *dynamic_cast<ClassSymbol*>(other->typeSymbol);
             });
             if (it == classSymbol->superClasses.end()) {
                 return false;
@@ -94,8 +94,6 @@ struct Type {
                     convertedGenericArguments.push_back(genericArgument);
                     continue;
                 }
-
-                assert(map.contains(typeParameter));
 
                 convertedGenericArguments.push_back(genericArguments[map[typeParameter]]);
             }
