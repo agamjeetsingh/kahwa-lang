@@ -8,6 +8,7 @@
 
 
 class TypeSymbol : public Symbol {
+public:
     explicit TypeSymbol(std::string name): Symbol(std::move(name)) {}
 };
 

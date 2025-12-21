@@ -75,7 +75,6 @@ add_executable(kahwa_lang main.cpp
         include/parser/ModifierNode.h
         src/types/Type.cpp
         include/types/Type.h
-        include/types/Variance.cpp
         include/types/Variance.h
         include/symbols/TypeSymbol.cpp
         include/symbols/TypeSymbol.h
@@ -137,6 +136,15 @@ add_executable(
         include/symbols/SemanticAnalyser.h
         src/symbols/SymbolBuilder.cpp
         include/symbols/SymbolBuilder.h
+        include/parser/ModifierNode.cpp
+        include/parser/ModifierNode.h
+        src/types/Type.cpp
+        include/types/Type.h
+        include/types/Variance.h
+        include/symbols/TypeSymbol.cpp
+        include/symbols/TypeSymbol.h
+        include/symbols/Symbol.cpp
+        include/symbols/Symbol.h
         tests/semantic_analysis/SemanticAnalyserTest.cpp
         tests/DiagnosticTesting.h
         tests/DiagnosticTesting.cpp
