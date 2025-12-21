@@ -18,12 +18,25 @@ struct Type {
             assert(genericArguments.empty());
         }
 
+        toString = typeSymbol->name;
+        if (!genericArguments.empty()) {
+            toString += "<";
 
+            for (int i = 0; i < genericArguments.size(); i++) {
+                toString += genericArguments[i]->toString;
+
+                if (i != genericArguments.size() - 1) {
+                    toString += ", ";
+                }
+            }
+
+            toString += ">";
+        }
     }
 
     TypeSymbol* typeSymbol;
 
-    std::vector<Type*> genericArguments;
+    const std::vector<Type*> genericArguments;
 
     bool operator==(const Type &other) const {
         return this->isSubtypeOf(&other) && other.isSubtypeOf(this);
