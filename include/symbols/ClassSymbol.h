@@ -105,6 +105,26 @@ public:
         return *this;
     }
 
+    ClassSymbolBuilder& withNumOfGenericArgs(std::size_t numberOfGenericArguments) {
+        std::vector<std::string> genericArgumentNames(numberOfGenericArguments);
+        std::ranges::generate(genericArgumentNames, [i = 1]() mutable { return "__dummyTypeParameter" + std::to_string(i++); });
+
+        return with(genericArgumentNames);
+    }
+
+    ClassSymbolBuilder& with(const std::vector<std::string>& genericArgumentNames) {
+        return with(genericArgumentNames, std::vector(genericArgumentNames.size(), Variance::INVARIANT));
+    }
+
+    ClassSymbolBuilder& with(const std::vector<std::string>& genericArgumentNames, const std::vector<Variance>& variances) {
+        assert(genericArgumentNames.size() == variances.size());
+
+        for (int i = 0; i < genericArgumentNames.size(); i++) {
+            genericArguments.push_back(arena->make<TypeParameterSymbol>(genericArgumentNames[i], variances[i]));
+        }
+        return *this;
+    }
+
     ClassSymbolBuilder& with(std::vector<TypeParameterSymbol*> genericArguments) {
         this->genericArguments.insert(this->genericArguments.end(), genericArguments.begin(), genericArguments.end());
         return *this;
