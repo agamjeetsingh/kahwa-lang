@@ -100,6 +100,43 @@ TEST_F(TypeTest, CorrectlyChecksSubtypingForGenericVarianceWithOneParameter) {
     });
 }
 
+TEST_F(TypeTest, CorrectlyChecksSubtypingForGenericVarianceWithMultipleParameters) {
+    // A<T, in U, out T>
+    auto typeSymbolA = ClassSymbolBuilder("A").with(
+        {"T", "U", "V"},
+        {Variance::INVARIANT, Variance::CONTRAVARIANT, Variance::COVARIANT}).build();
+
+    std::vector types = {
+        TypeBuilder(typeSymbolA) // 0. A<T, int, number>
+        .with({TypeBuilder("T").build(), intType, numberType}).build(),
+        TypeBuilder(typeSymbolA) // 1. A<T, number, number>
+        .with({TypeBuilder("T").build(), numberType, numberType}).build(),
+        TypeBuilder(typeSymbolA) // 2. A<T, int, float>
+        .with({TypeBuilder("T").build(), intType, floatType}).build(),
+        TypeBuilder(typeSymbolA) // 3. A<T, number, float>
+        .with({TypeBuilder("T").build(), numberType, floatType}).build(),
+        TypeBuilder(typeSymbolA) // 4. A<float, number, number>
+        .with({floatType, numberType, numberType}).build(),
+        TypeBuilder(typeSymbolA) // 5. A<float, int, number>
+        .with({floatType, intType, numberType}).build(),
+        TypeBuilder(typeSymbolA) // 6. A<float, number, float>
+        .with({floatType, numberType, floatType}).build(),
+        TypeBuilder(typeSymbolA) // 7. A<number, number, float>
+        .with({numberType, numberType, floatType}).build()
+    };
+
+    testSubtypeRelations(types, {
+        {types[1], types[0]},
+        {types[2], types[0]},
+        {types[3], types[0]},
+        {types[3], types[1]},
+        {types[3], types[2]},
+        {types[4], types[5]},
+        {types[6], types[4]},
+        {types[6], types[5]}
+    });
+}
+
 TEST_F(TypeTest, CorrectlyChecksSubtypingForChainOfInheritance) {
     // A <: B <: C
     auto typeSymbolC = ClassSymbolBuilder("C").build();
@@ -145,6 +182,33 @@ TEST_F(TypeTest, CorrectlyChecksSubtypingForDirectInheritanceWithGenericsHavingS
     // False: A<int> <: B<float> (B's variance is invariant)
     // False: A<U> <: B<V> (unrelated generic types)
     testSubtypeRelations({typeA1, typeA2, typeB3, typeB4}, {});
+}
+
+TEST_F(TypeTest, CorrectlyChecksSubtypingForDirectInheritanceWithGenericsHavingMultipleParameters) {
+    // C<T, U, V>
+    auto typeSymbolC = ClassSymbolBuilder("C")
+    .with("T")
+    .with("U")
+    .with("V")
+    .build();
+    // C<T, U, V>
+    auto typeC1 = TypeBuilder(typeSymbolC).with({TypeBuilder("T").build(), TypeBuilder("U").build(), TypeBuilder("V").build()}).build();
+    // C<int, float, int>
+    auto typeC2 = TypeBuilder(typeSymbolC).with({intType, floatType, intType}).build();
+    // C<int, U, float>
+    auto typeC3 = TypeBuilder(typeSymbolC).with({intType, TypeBuilder("U").build(), floatType}).build();
+
+    // B<V, T> <: A<T, U, V>
+    auto typeSymbolB = ClassSymbolBuilder("B")
+    .with("V")
+    .with("T")
+    .withSuperClass(TypeBuilder(typeSymbolC).with(typeC1).build())
+    .build();
+
+    // auto typeSymbolC = ClassSymbolBuilder("C")
+    // .with("T")
+    // .with("U")
+    // .withSuperClass()
 }
 
 // ======= TESTING TYPE SUBSTITUTION =======
