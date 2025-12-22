@@ -26,17 +26,20 @@ struct ClassDecl : Decl {
         const std::vector<MethodDecl*> &methods = {},
         const std::vector<ClassDecl*> &nestedClasses = {}
         ):
+        const std::vector<TypeRef*>& typeParameters = {},
     Decl(std::move(name), modifiers, nameSourceRange, bodyRange),
     superClasses(superClasses),
     fields(fields),
     methods(methods),
     nestedClasses(nestedClasses),
+    typeParameters(typeParameters),
     classSourceRange(classSourceRange) {}
 
     const std::vector<TypeRef*> superClasses;
     const std::vector<FieldDecl*> fields;
     const std::vector<MethodDecl*> methods;
     const std::vector<ClassDecl*> nestedClasses;
+    const std::vector<TypeRef*> typeParameters;
 
     const SourceRange classSourceRange;
 
@@ -93,6 +96,8 @@ class ClassDeclBuilder : public ASTBuilder {
                 fields,
                 methods,
                 nestedClasses);
+                nestedClasses,
+                typeParameters);
         }
 
         ClassDeclBuilder& with(const std::vector<Modifier> &modifiers) {
@@ -167,6 +172,30 @@ class ClassDeclBuilder : public ASTBuilder {
             return *this;
         }
 
+        ClassDeclBuilder& withTypeParameter(TypeRef* typeParameter) {
+            typeParameters.push_back(typeParameter);
+            return *this;
+        }
+
+        ClassDeclBuilder& withTypeParameter(const std::string &typeParameterName) {
+            typeParameters.push_back(TypeRefBuilder(typeParameterName).build());
+            return *this;
+        }
+
+        ClassDeclBuilder& withTypeParameters(const std::vector<TypeRef*>& typeParameters) {
+            this->typeParameters.insert(this->typeParameters.begin(), typeParameters.begin(), typeParameters.end());
+            return *this;
+        }
+
+        ClassDeclBuilder& withTypeParameters(const std::vector<std::string>& typeParameterNames) {
+            std::vector<TypeRef*> typeParameters{typeParameterNames.size()};
+            std::ranges::transform(typeParameterNames, typeParameters.begin(), [](const std::string& name) {
+                return TypeRefBuilder(name).build();
+            });
+            return withTypeParameters(typeParameters);
+        }
+
+
     private:
         std::string name;
         std::vector<ModifierNode> modifiers;
@@ -174,6 +203,7 @@ class ClassDeclBuilder : public ASTBuilder {
         std::vector<FieldDecl*> fields;
         std::vector<MethodDecl*> methods;
         std::vector<ClassDecl*> nestedClasses;
+        std::vector<TypeRef*> typeParameters;
         std::optional<SourceRange> classSourceRange;
         std::optional<SourceRange> nameSourceRange;
         std::optional<SourceRange> bodyRange;
