@@ -112,12 +112,12 @@ class ClassDeclBuilder : public ASTBuilder {
             return *this;
         }
 
-        ClassDeclBuilder& with(TypeRef* superClass) {
+        ClassDeclBuilder& withSuperClass(TypeRef* superClass) {
             superClasses.push_back(superClass);
             return *this;
         }
 
-        ClassDeclBuilder& with(std::vector<TypeRef*> superClasses) {
+        ClassDeclBuilder& withSuperClasses(std::vector<TypeRef*> superClasses) {
             this->superClasses.insert(this->superClasses.end(), superClasses.begin(), superClasses.end());
             return *this;
         }

@@ -4,6 +4,7 @@
 
 #include "../../include/parser/Parser.h"
 #include "../../include/parser/Modifier.h"
+#include "../../include/symbols/TypeParameterSymbol.h"
 
 KahwaFile *Parser::parseFile(const std::vector<Token> &tokens) const {
     return ParserWorker(tokens, astArena, diagnostic_engine).parseFile();
@@ -172,12 +173,32 @@ ClassDecl *Parser::ParserWorker::parseClass(const safePointFunc& isSafePoint) {
     classDeclBuilder.withNameSourceRange(nameToken->source_range);
     classDeclBuilder.with(modifiers);
 
+    // Parse type parameters
+    idx--; // So we can parse type parameters as a typeRef
+    if (auto typeParametersAsTypeRef = parseTypeRef(isSafePoint)) {
+        for (auto typeParameter: typeParametersAsTypeRef->args) {
+            if (!typeParameter->args.empty()) {
+                diagnostic_engine.reportProblem(
+                    DiagnosticSeverity::ERROR,
+                    DiagnosticKind::TYPE_PARAMETERS_CANNOT_HAVE_GENERIC_ARGUMENTS,
+                    typeParameter->bodyRange,
+                    toMsg(DiagnosticKind::TYPE_PARAMETERS_CANNOT_HAVE_GENERIC_ARGUMENTS, typeParameter->toString()));
+                // So something like myClass<A, B<T>> would get treated as myClass<A, B>
+                classDeclBuilder.withTypeParameter(TypeRefBuilder(typeParameter->identifier).build());
+            } else {
+                classDeclBuilder.withTypeParameter(typeParameter);
+            }
+        }
+    } else {
+        return nullptr;
+    }
+
     // Parse super classes
     if (next_is(TokenType::COLON)) {
         idx++;
 
         if (auto superClass = parseTypeRef(isSafePoint)) {
-            classDeclBuilder.with(superClass);
+            classDeclBuilder.withSuperClass(superClass);
         } else {
             return nullptr;
         }
@@ -186,7 +207,7 @@ ClassDecl *Parser::ParserWorker::parseClass(const safePointFunc& isSafePoint) {
             idx++; // Skip comma
 
             if (auto superClass = parseTypeRef(isSafePoint)) {
-                classDeclBuilder.with(superClass);
+                classDeclBuilder.withSuperClass(superClass);
             } else {
                 return nullptr;
             }

@@ -491,21 +491,21 @@ TEST_F(ParserTest, ParsesEmptyClassCorrectly) {
 
 TEST_F(ParserTest, ParsesEmptyClassWithInheritanceCorrectly) {
     const auto classDecl1 = ClassDeclBuilder("className")
-    .with(TypeRefBuilder("superClass").build())
+    .withSuperClass(TypeRefBuilder("superClass").build())
     .build();
     const auto str1 = toString(classDecl1);
 
     EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str1), KahwaFileBuilder().with(classDecl1).build());
 
     const auto classDecl2 = ClassDeclBuilder("className")
-    .with({TypeRefBuilder("superClass1").build(), TypeRefBuilder("superClass2").build()})
+    .withSuperClasses({TypeRefBuilder("superClass1").build(), TypeRefBuilder("superClass2").build()})
     .build();
     const auto str2 = toString(classDecl2);
 
     EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str2), KahwaFileBuilder().with(classDecl2).build());
 
     const auto classDecl3 = ClassDeclBuilder("className")
-    .with({TypeRefBuilder("superClass1").build(), TypeRefBuilder("superClass2").build()})
+    .withSuperClasses({TypeRefBuilder("superClass1").build(), TypeRefBuilder("superClass2").build()})
     .with(Modifier::FINAL)
     .with(Modifier::PRIVATE)
     .build();
@@ -514,12 +514,12 @@ TEST_F(ParserTest, ParsesEmptyClassWithInheritanceCorrectly) {
     EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(str3), KahwaFileBuilder().with(classDecl3).build());
 
     const auto classDecl4 = ClassDeclBuilder("className")
-    .with(TypeRefBuilder("superClass1")
+    .withSuperClass(TypeRefBuilder("superClass1")
         .with({
             TypeRefBuilder("arg1").build(),
             TypeRefBuilder("arg2").build()
         }).build())
-    .with(TypeRefBuilder("superClass2").build())
+    .withSuperClass(TypeRefBuilder("superClass2").build())
     .with(Modifier::FINAL)
     .with(Modifier::PRIVATE)
     .build();
@@ -532,14 +532,14 @@ TEST_F(ParserTest, ParsesEmptyClassWithInheritanceCorrectly) {
 
 TEST_F(ParserTest, ParsesMultipleClassesWithInheritanceAndTypeDefsCorrectly) {
     const auto classDecl1 = ClassDeclBuilder("className")
-        .with({TypeRefBuilder("superClass1").build(), TypeRefBuilder("superClass2").build()})
+        .withSuperClasses({TypeRefBuilder("superClass1").build(), TypeRefBuilder("superClass2").build()})
         .with(Modifier::FINAL)
         .with(Modifier::PRIVATE)
         .build();
     const auto str1 = toString(classDecl1);
 
     const auto classDecl2 = ClassDeclBuilder("className")
-    .with(TypeRefBuilder("superClass1")
+    .withSuperClass(TypeRefBuilder("superClass1")
         .with({
             TypeRefBuilder("arg1").build(),
             TypeRefBuilder("arg2").build()
@@ -574,7 +574,7 @@ TEST_F(ParserTest, ParsesMultipleClassesWithInheritanceAndTypeDefsCorrectly) {
 
 TEST_F(ParserTest, ParsesClassesWithMethodsWithEmptyBodiesCorrectly) {
     const auto classDecl1 = ClassDeclBuilder("className")
-    .with(TypeRefBuilder("superClass1")
+    .withSuperClass(TypeRefBuilder("superClass1")
         .with(TypeRefBuilder("arg1").build())
         .build())
     .with(Modifier::FINAL)
@@ -592,7 +592,7 @@ TEST_F(ParserTest, ParsesClassesWithMethodsWithEmptyBodiesCorrectly) {
         .build());
 
     const auto classDecl2 = ClassDeclBuilder("className")
-    .with(TypeRefBuilder("superClass1")
+    .withSuperClass(TypeRefBuilder("superClass1")
         .with(TypeRefBuilder("arg1").build())
         .build())
     .with(Modifier::FINAL)
@@ -650,7 +650,7 @@ TEST_F(ParserTest, ParsesClassesWithNestedClassesCorrectly) {
 
     const auto classDecl3 = ClassDeclBuilder("AnotherOneWow")
     .with(ClassDeclBuilder("className")
-        .with(TypeRefBuilder("superClass1")
+        .withSuperClass(TypeRefBuilder("superClass1")
         .with({
             TypeRefBuilder("arg1").build(),
             TypeRefBuilder("arg2").build()
