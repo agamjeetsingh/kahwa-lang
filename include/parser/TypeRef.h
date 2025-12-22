@@ -36,6 +36,24 @@ struct TypeRef {
         
         return true;
     }
+
+    std::string toString() const {
+        std::string str = identifier;
+        if (!args.empty()) {
+            str += "<";
+
+            for (int i = 0; i < args.size(); i++) {
+                str += args[i]->toString();
+                if (i != args.size() - 1) {
+                    str += ", ";
+                }
+            }
+
+            str += ">";
+        }
+
+        return str;
+    }
 };
 
 class TypeRefBuilder : public ASTBuilder {

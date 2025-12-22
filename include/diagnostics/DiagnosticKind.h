@@ -31,6 +31,7 @@ enum class DiagnosticKind {
     REPEATED_MODIFIER,
     ILLEGAL_MODIFIER_COMBINATION,
     MODIFIER_NOT_ALLOWED,
+    TYPE_PARAMETERS_CANNOT_HAVE_GENERIC_ARGUMENTS
 };
 
 inline DiagnosticKind expectedTokenTypeToDiagnosticKind(const TokenType tokenType) {
@@ -105,8 +106,8 @@ inline std::optional<std::string> notValidModifierDiagnosticToMsg(const Diagnost
 }
 
 inline std::string toMsg(const DiagnosticKind kind, const std::string &str) {
-    assert(kind == DiagnosticKind::EXPECTED_SOMETHING);
-    return "Expected " + str;
+    assert(kind == DiagnosticKind::TYPE_PARAMETERS_CANNOT_HAVE_GENERIC_ARGUMENTS);
+    return "Type parameter " + str + " has generic arguments, which are not allowed";
 }
 
 inline std::string toMsg(const DiagnosticKind kind, Modifier modifier) {

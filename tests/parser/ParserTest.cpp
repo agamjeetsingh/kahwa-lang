@@ -208,8 +208,22 @@ protected:
         if (!classDecl->modifiers.empty()) str += " ";
         str += "class ";
         str += classDecl->name;
+
+        if (!classDecl->typeParameters.empty()) {
+            str += "<";
+
+            for (int i = 0; i < classDecl->typeParameters.size(); i++) {
+                str += classDecl->typeParameters[i]->toString();
+                if (i != classDecl->typeParameters.size() - 1) {
+                    str += ", ";
+                }
+            }
+
+            str += ">";
+        }
+
         if (!classDecl->superClasses.empty()) {
-            str += ": ";
+            str += " : ";
 
             for (int i = 0; i < classDecl->superClasses.size(); i++) {
                 str += toString(classDecl->superClasses[i]);
@@ -671,6 +685,35 @@ TEST_F(ParserTest, ParsesClassesWithNestedClassesCorrectly) {
         KahwaFileBuilder()
         .with(classDecl3)
         .build());
+
+    expectNoDiagnostics();
+}
+
+TEST_F(ParserTest, ParsesClassWithTypeParametersCorrectly) {
+    std::vector classDecls = {
+        ClassDeclBuilder("MyClass") // MyClass<T>
+        .withTypeParameters({"T"})
+        .build(),
+        ClassDeclBuilder("MyClass") // MyClass<T, U>
+        .withTypeParameters({"T", "U"})
+        .build(),
+        ClassDeclBuilder("MyClass") // MyClass<T, U, V>
+        .withTypeParameters({"T", "U", "V"})
+        .build(),
+        ClassDeclBuilder("MyClass") // MyClass<Multilength, should, be, okay, too>
+        .withTypeParameters({"Multilength", "should", "be", "okay", "too"})
+        .build(),
+    };
+
+    std::vector<std::string> strs{classDecls.size()};
+    std::ranges::transform(classDecls, strs.begin(), [](const ClassDecl* classDecl){ return toString(classDecl); });
+
+    for (int i = 0; i < classDecls.size(); i++) {
+        EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(strs[i]),
+            KahwaFileBuilder()
+            .with(classDecls[i])
+            .build());
+    }
 
     expectNoDiagnostics();
 }
