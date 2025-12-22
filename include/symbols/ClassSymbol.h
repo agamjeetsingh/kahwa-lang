@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "MethodSymbol.h"
+#include "Scope.h"
 #include "../parser/Modifier.h"
 #include "SymbolBuilder.h"
 #include "TypeSymbol.h"
@@ -32,18 +33,23 @@ struct ClassSymbol final : TypeSymbol {
     genericArguments(genericArguments),
     superClasses(superClasses),
     methods(methods),
-    nestedClasses(nestedClasses) {}
+    nestedClasses(nestedClasses) {
+        std::ranges::for_each(genericArguments, [this](auto* t) { scope.table.emplace(t->name, t); });
+        std::ranges::for_each(methods, [this](auto* t) { scope.table.emplace(t->name, t); });
+        std::ranges::for_each(nestedClasses, [this](auto* t) { scope.table.emplace(t->name, t); });
+        std::ranges::for_each(fields, [this](auto* t) { scope.table.emplace(t->name, t); });
+    }
 
     bool isAbstract;
     bool isOpen;
     Modifier visibility;
 
-    const std::vector<TypeParameterSymbol*> genericArguments;
-    const std::vector<Type*> superClasses;
-    const std::vector<MethodSymbol*> methods;
-    const std::vector<ClassSymbol*> nestedClasses;
+    Scope scope;
 
-    static constexpr auto DEFAULT_VISIBILITY = Modifier::PUBLIC;
+    std::vector<TypeParameterSymbol*> genericArguments;
+    std::vector<Type*> superClasses;
+    std::vector<MethodSymbol*> methods;
+    std::vector<ClassSymbol*> nestedClasses;
 
     bool operator==(const ClassSymbol &other) const {
         return this == &other;
@@ -164,7 +170,7 @@ private:
     std::string name;
     bool isAbstract = false;
     bool isOpen = false;
-    Modifier visibility = ClassSymbol::DEFAULT_VISIBILITY;
+    Modifier visibility = Modifier::PUBLIC;
 
     std::vector<TypeParameterSymbol*> genericArguments;
     std::vector<Type*> superClasses;
