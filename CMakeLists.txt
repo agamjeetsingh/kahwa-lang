@@ -80,6 +80,10 @@ add_executable(kahwa_lang main.cpp
         include/symbols/TypeSymbol.h
         include/symbols/Symbol.cpp
         include/symbols/Symbol.h
+        include/symbols/Scope.cpp
+        include/symbols/Scope.h
+        include/symbols/TranslationUnit.cpp
+        include/symbols/TranslationUnit.h
 )
 
 target_link_libraries(kahwa_lang PRIVATE magic_enum::magic_enum)
