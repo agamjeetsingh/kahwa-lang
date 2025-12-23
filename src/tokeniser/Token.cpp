@@ -61,6 +61,8 @@ std::string tokenTypeToString(TokenType type) {
         {TokenType::ABSTRACT, "abstract"},
         {TokenType::INTERFACE, "interface"},
         {TokenType::TYPEDEF, "typedef"},
+        {TokenType::IN, "in"},
+        {TokenType::OUT, "out"},
         {TokenType::RETURN, "return"},
         {TokenType::IF, "if"},
         {TokenType::ELSE, "else"},

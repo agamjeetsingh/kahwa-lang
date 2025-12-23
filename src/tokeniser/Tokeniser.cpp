@@ -296,6 +296,8 @@ const std::unordered_map<std::string, TokenType> Tokeniser::TokeniserWorker::TOK
             {"abstract", TokenType::ABSTRACT},
             {"interface", TokenType::INTERFACE},
             {"typedef", TokenType::TYPEDEF},
+            {"in", TokenType::IN},
+            {"out", TokenType::OUT},
             {"return", TokenType::RETURN},
             {"if", TokenType::IF},
             {"else", TokenType::ELSE},

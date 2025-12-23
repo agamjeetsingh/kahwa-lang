@@ -108,11 +108,13 @@ protected:
         if (cd1 == nullptr && cd2 == nullptr) return true;
         if (cd1 == nullptr || cd2 == nullptr) return false;
         if (!declEqualIgnoreSourceRange(cd1, cd2)) return false;
-        
+
         if (cd1->superClasses.size() != cd2->superClasses.size() ||
             cd1->fields.size() != cd2->fields.size() ||
             cd1->methods.size() != cd2->methods.size() ||
-            cd1->nestedClasses.size() != cd2->nestedClasses.size()) {
+            cd1->nestedClasses.size() != cd2->nestedClasses.size() ||
+            cd1->typeParameters.size() != cd2->typeParameters.size() ||
+            cd1->variances.size() != cd2->variances.size()) {
             return false;
         }
         
@@ -133,6 +135,12 @@ protected:
         for (size_t i = 0; i < cd1->nestedClasses.size(); ++i) {
             if (!classDeclEqualIgnoreSourceRange(cd1->nestedClasses[i], cd2->nestedClasses[i])) return false;
         }
+
+        for (size_t i = 0; i < cd1->typeParameters.size(); ++i) {
+            if (*cd1->typeParameters[i] != *cd2->typeParameters[i]) return false;
+        }
+
+        if (cd1->variances != cd2->variances) return false;
         
         return true;
     }
@@ -213,6 +221,11 @@ protected:
             str += "<";
 
             for (int i = 0; i < classDecl->typeParameters.size(); i++) {
+                if (classDecl->variances[i] == Variance::COVARIANT) {
+                    str += "out ";
+                } else if (classDecl->variances[i] == Variance::CONTRAVARIANT) {
+                    str += "in ";
+                }
                 str += classDecl->typeParameters[i]->toString();
                 if (i != classDecl->typeParameters.size() - 1) {
                     str += ", ";
@@ -709,6 +722,40 @@ TEST_F(ParserTest, ParsesClassWithTypeParametersCorrectly) {
     std::ranges::transform(classDecls, strs.begin(), [](const ClassDecl* classDecl){ return toString(classDecl); });
 
     for (int i = 0; i < classDecls.size(); i++) {
+        EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(strs[i]),
+            KahwaFileBuilder()
+            .with(classDecls[i])
+            .build());
+    }
+
+    expectNoDiagnostics();
+}
+
+TEST_F(ParserTest, ParsesClassWithTypeParametersAndVarianceCorrectly) {
+    std::vector classDecls = {
+        ClassDeclBuilder("MyClass") // MyClass<in T>
+        .withTypeParameters({"T"}, {Variance::CONTRAVARIANT})
+        .build(),
+        ClassDeclBuilder("MyClass") // MyClass<out T, in U>
+        .withTypeParameters({"T", "U"}, {Variance::COVARIANT, Variance::CONTRAVARIANT})
+        .build(),
+        ClassDeclBuilder("MyClass") // MyClass<in T, U, out V>
+        .withTypeParameters({"T", "U", "V"}, {Variance::CONTRAVARIANT, Variance::INVARIANT, Variance::COVARIANT})
+        .build(),
+        ClassDeclBuilder("MyClass") // MyClass<in Multilength, in should, in be, in okay, in too>
+        .withTypeParameters({"Multilength", "should", "be", "okay", "too"}, std::vector(5, Variance::CONTRAVARIANT))
+        .build(),
+    };
+
+    std::vector<std::string> strs{classDecls.size()};
+    std::ranges::transform(classDecls, strs.begin(), [](const ClassDecl* classDecl){ return toString(classDecl); });
+
+    for (int i = 0; i < classDecls.size(); i++) {
+        if (!kahwaFileEqualIgnoreSourceRange(parseFile(strs[i]), KahwaFileBuilder()
+            .with(classDecls[i])
+            .build())) {
+        }
+
         EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange, parseFile(strs[i]),
             KahwaFileBuilder()
             .with(classDecls[i])

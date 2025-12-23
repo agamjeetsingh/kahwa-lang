@@ -7,37 +7,43 @@
 #include <utility>
 #include <vector>
 #include "ASTBuilder.h"
+#include "../types/Variance.h"
 
 struct TypeRef {
     explicit TypeRef(std::string identifier,
     const SourceRange &nameSourceRange,
     const SourceRange &bodyRange,
-    const std::vector<TypeRef*> &args = {}):
+    const std::vector<TypeRef*> &args,
+    const std::vector<Variance> &variances):
     identifier(std::move(identifier)),
     args(args),
+    variances(variances),
     nameSourceRange(nameSourceRange),
     bodyRange(bodyRange) {}
 
     const std::string identifier;
     const std::vector<TypeRef*> args;
+    const std::vector<Variance> variances;
     const SourceRange nameSourceRange;
     const SourceRange bodyRange;
 
     bool operator==(const TypeRef &other) const {
-        if (identifier != other.identifier || args.size() != other.args.size()) {
+        if (identifier != other.identifier || args.size() != other.args.size() || variances.size() != other.variances.size()) {
             return false;
         }
+
+        if (variances != other.variances) return false;
         
         for (size_t i = 0; i < args.size(); ++i) {
             if (args[i] == nullptr && other.args[i] == nullptr) continue;
             if (args[i] == nullptr || other.args[i] == nullptr) return false;
-            if (!(*args[i] == *other.args[i])) return false;
+            if (*args[i] != *other.args[i]) return false;
         }
         
         return true;
     }
 
-    std::string toString() const {
+    [[nodiscard]] std::string toString() const {
         std::string str = identifier;
         if (!args.empty()) {
             str += "<";
@@ -65,16 +71,24 @@ public:
             name,
             nameSourceRange.has_value() ? nameSourceRange.value() : dummy_source,
             bodyRange.has_value() ? bodyRange.value() : dummy_source,
-            typeRefs);
+            typeRefs,
+            variances);
     }
 
-    TypeRefBuilder& with(TypeRef* typeRef) {
+    TypeRefBuilder& with(TypeRef* typeRef, Variance variance = Variance::INVARIANT) {
         typeRefs.push_back(typeRef);
+        variances.push_back(variance);
         return *this;
     }
 
-    TypeRefBuilder& with(std::vector<TypeRef*> typeRefs) {
+    TypeRefBuilder& with(const std::vector<TypeRef*>& typeRefs) {
+        return with(typeRefs, std::vector(typeRefs.size(), Variance::INVARIANT));
+    }
+
+    TypeRefBuilder& with(const std::vector<TypeRef*>& typeRefs, const std::vector<Variance>& variances) {
+        assert(typeRefs.size() == variances.size());
         this->typeRefs.insert(this->typeRefs.end(), typeRefs.begin(), typeRefs.end());
+        this->variances.insert(this->variances.end(), variances.begin(), variances.end());
         return *this;
     }
 
@@ -91,6 +105,7 @@ public:
 private:
     std::string name;
     std::vector<TypeRef*> typeRefs;
+    std::vector<Variance> variances;
     std::optional<SourceRange> nameSourceRange;
     std::optional<SourceRange> bodyRange;
 };
