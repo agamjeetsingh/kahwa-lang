@@ -10,6 +10,8 @@
 
 
 struct TranslationUnit {
+    std::vector<ClassSymbol*> classes;
+
     Scope scope;
 };
 
