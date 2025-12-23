@@ -19,6 +19,12 @@ struct Type;
 struct FunctionSymbol : Symbol {
     explicit FunctionSymbol(
         std::string name,
+        Scope* outerScope): Symbol(std::move(name)) {
+        scope.addOuterScope(outerScope);
+    }
+
+    explicit FunctionSymbol(
+        std::string name,
         bool isAbstract,
         bool isOpen,
         Modifier visibility,
@@ -35,22 +41,28 @@ struct FunctionSymbol : Symbol {
     parameters(parameters),
     block(block),
     genericArguments(genericArguments) {
-        std::ranges::for_each(genericArguments, [this](auto* t) { scope.table.emplace(t->name, t); });
-        std::ranges::for_each(parameters, [this](auto& pair) { scope.table.emplace(pair.second, pair.first); });
-        scope.outerScopes.push_back(outerScope);
+        // scope.defineAll(parameters); // TODO - Problem! Type* are not symbols! Or are they?
     }
 
-    bool isAbstract;
-    bool isOpen;
-    Modifier visibility;
+    bool isAbstract = false;
+    bool isOpen = false;
+    Modifier visibility = Modifier::PUBLIC;
 
     Scope scope;
 
-    Type* returnType;
+    Type* returnType = nullptr;
     std::vector<std::pair<Type*, std::string>> parameters;
-    Block* block;
+    Block* block = nullptr;
 
     std::vector<TypeParameterSymbol*> genericArguments;
+
+    void addGenericArguments(const std::vector<TypeParameterSymbol*>& genericArguments) {
+        this->genericArguments.insert(this->genericArguments.begin(), genericArguments.begin(), genericArguments.end());
+    }
+
+    void addGenericArgument(TypeParameterSymbol* genericArgument) {
+        genericArguments.push_back(genericArgument);
+    }
 };
 
 class FunctionSymbolBuilder : public SymbolBuilder {
