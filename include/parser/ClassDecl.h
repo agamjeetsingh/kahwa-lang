@@ -14,6 +14,9 @@
 #include "Modifier.h"
 #include "TypeRef.h"
 #include "../tokeniser/Token.h"
+#include "../types/Variance.h"
+
+enum class Variance;
 
 struct ClassDecl : Decl {
     ClassDecl(std::string name,
@@ -24,9 +27,8 @@ struct ClassDecl : Decl {
         const std::vector<TypeRef*>& superClasses = {},
         const std::vector<FieldDecl*> &fields = {},
         const std::vector<MethodDecl*> &methods = {},
-        const std::vector<ClassDecl*> &nestedClasses = {}
-        ):
-        const std::vector<TypeRef*>& typeParameters = {},
+        const std::vector<ClassDecl*> &nestedClasses = {},
+        const std::vector<std::pair<TypeRef*, Variance>>& typeParameters = {}):
     Decl(std::move(name), modifiers, nameSourceRange, bodyRange),
     superClasses(superClasses),
     fields(fields),
@@ -39,7 +41,7 @@ struct ClassDecl : Decl {
     const std::vector<FieldDecl*> fields;
     const std::vector<MethodDecl*> methods;
     const std::vector<ClassDecl*> nestedClasses;
-    const std::vector<TypeRef*> typeParameters;
+    const std::vector<std::pair<TypeRef*, Variance>> typeParameters;
 
     const SourceRange classSourceRange;
 
@@ -95,7 +97,6 @@ class ClassDeclBuilder : public ASTBuilder {
                 superClasses,
                 fields,
                 methods,
-                nestedClasses);
                 nestedClasses,
                 typeParameters);
         }
@@ -172,29 +173,39 @@ class ClassDeclBuilder : public ASTBuilder {
             return *this;
         }
 
-        ClassDeclBuilder& withTypeParameter(TypeRef* typeParameter) {
-            typeParameters.push_back(typeParameter);
+        ClassDeclBuilder& withTypeParameter(TypeRef* typeParameter, Variance variance = Variance::INVARIANT) {
+            typeParameters.emplace_back(typeParameter, variance);
             return *this;
         }
 
-        ClassDeclBuilder& withTypeParameter(const std::string &typeParameterName) {
-            typeParameters.push_back(TypeRefBuilder(typeParameterName).build());
+        ClassDeclBuilder& withTypeParameter(const std::string &typeParameterName, Variance variance = Variance::INVARIANT) {
+            typeParameters.emplace_back(TypeRefBuilder(typeParameterName).build(), variance);
             return *this;
         }
 
         ClassDeclBuilder& withTypeParameters(const std::vector<TypeRef*>& typeParameters) {
-            this->typeParameters.insert(this->typeParameters.begin(), typeParameters.begin(), typeParameters.end());
+            return withTypeParameters(typeParameters, std::vector(typeParameters.size(), Variance::INVARIANT));
+        }
+
+        ClassDeclBuilder& withTypeParameters(const std::vector<TypeRef*>& typeParameters, const std::vector<Variance>& variances) {
+            assert(typeParameters.size() == variances.size());
+            for (int i = 0; i < typeParameters.size(); i++) {
+                this->typeParameters.emplace_back(typeParameters[i], variances[i]);
+            }
             return *this;
         }
 
         ClassDeclBuilder& withTypeParameters(const std::vector<std::string>& typeParameterNames) {
+            return withTypeParameters(typeParameterNames, std::vector(typeParameterNames.size(), Variance::INVARIANT));
+        }
+
+        ClassDeclBuilder& withTypeParameters(const std::vector<std::string>& typeParameterNames, const std::vector<Variance>& variances) {
             std::vector<TypeRef*> typeParameters{typeParameterNames.size()};
             std::ranges::transform(typeParameterNames, typeParameters.begin(), [](const std::string& name) {
                 return TypeRefBuilder(name).build();
             });
-            return withTypeParameters(typeParameters);
+            return withTypeParameters(typeParameters, variances);
         }
-
 
     private:
         std::string name;
@@ -203,7 +214,7 @@ class ClassDeclBuilder : public ASTBuilder {
         std::vector<FieldDecl*> fields;
         std::vector<MethodDecl*> methods;
         std::vector<ClassDecl*> nestedClasses;
-        std::vector<TypeRef*> typeParameters;
+        std::vector<std::pair<TypeRef*, Variance>> typeParameters;
         std::optional<SourceRange> classSourceRange;
         std::optional<SourceRange> nameSourceRange;
         std::optional<SourceRange> bodyRange;
