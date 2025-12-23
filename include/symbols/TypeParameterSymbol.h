@@ -23,7 +23,7 @@ struct TypeParameterSymbol final : TypeSymbol {
 
 class TypeParameterSymbolBuilder : public SymbolBuilder {
 public:
-    explicit TypeParameterSymbolBuilder(std::string name): name(std::move(name)) {}
+    explicit TypeParameterSymbolBuilder(std::string name, const Variance variance = Variance::INVARIANT): name(std::move(name)), variance(variance) {}
 
     TypeParameterSymbol* build() {
         return arena->make<TypeParameterSymbol>(name, variance);
