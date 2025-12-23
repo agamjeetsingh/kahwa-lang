@@ -63,6 +63,7 @@ std::string tokenTypeToString(TokenType type) {
         {TokenType::TYPEDEF, "typedef"},
         {TokenType::IN, "in"},
         {TokenType::OUT, "out"},
+        {TokenType::OVERRIDE, "override"},
         {TokenType::RETURN, "return"},
         {TokenType::IF, "if"},
         {TokenType::ELSE, "else"},

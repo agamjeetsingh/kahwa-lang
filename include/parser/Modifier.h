@@ -15,7 +15,8 @@ enum class Modifier {
     PUBLIC,
     PRIVATE,
     PROTECTED,
-    STATIC
+    STATIC,
+    OVERRIDE,
 };
 
 inline bool isModalityModifier(Modifier modifier) {
@@ -35,6 +36,7 @@ inline Modifier tokenTypeToModifier(TokenType tokenType) {
         case TokenType::PRIVATE: return Modifier::PRIVATE;
         case TokenType::PROTECTED: return Modifier::PROTECTED;
         case TokenType::STATIC: return Modifier::STATIC;
+        case TokenType::OVERRIDE: return Modifier::OVERRIDE;
         default:
             throw std::invalid_argument("TokenType is not a modifier");
     }
