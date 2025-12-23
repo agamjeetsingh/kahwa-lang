@@ -33,16 +33,52 @@ struct ClassSymbol final : TypeSymbol {
     genericArguments(genericArguments),
     superClasses(superClasses),
     methods(methods),
-    nestedClasses(nestedClasses) {
-        std::ranges::for_each(genericArguments, [this](auto* t) { scope.table.emplace(t->name, t); });
-        std::ranges::for_each(methods, [this](auto* t) { scope.table.emplace(t->name, t); });
-        std::ranges::for_each(nestedClasses, [this](auto* t) { scope.table.emplace(t->name, t); });
-        std::ranges::for_each(fields, [this](auto* t) { scope.table.emplace(t->name, t); });
+    nestedClasses(nestedClasses) {}
+
+    explicit ClassSymbol(
+        std::string name,
+        Scope* outerScope):
+    TypeSymbol(std::move(name)) {
+        scope.addOuterScope(outerScope);
     }
 
-    bool isAbstract;
-    bool isOpen;
-    Modifier visibility;
+    void addGenericArguments(const std::vector<TypeParameterSymbol*>& genericArguments) {
+        this->genericArguments.insert(this->genericArguments.begin(), genericArguments.begin(), genericArguments.end());
+    }
+
+    void addGenericArgument(TypeParameterSymbol* genericArgument) {
+        genericArguments.push_back(genericArgument);
+    }
+
+    void addSuperClasses(const std::vector<Type*>& superClasses) {
+        this->superClasses.insert(this->superClasses.begin(), superClasses.begin(), superClasses.end());
+    }
+
+    void setModifiers(bool isAbstract, bool isOpen, Modifier visibility) {
+        this->isAbstract = isAbstract;
+        this->isOpen = isOpen;
+        this->visibility = visibility;
+    }
+
+    void addMethods(const std::vector<MethodSymbol*>& methods) {
+        this->methods.insert(this->methods.begin(), methods.begin(), methods.end());
+    }
+
+    void addMethod(MethodSymbol* method) {
+        methods.push_back(method);
+    }
+
+    void addNestedClasses(const std::vector<ClassSymbol*>& nestedClasses) {
+        this->nestedClasses.insert(this->nestedClasses.begin(), nestedClasses.begin(), nestedClasses.end());
+    }
+
+    void addNestedClass(ClassSymbol* nestedClass) {
+        nestedClasses.push_back(nestedClass);
+    }
+
+    bool isAbstract = false;
+    bool isOpen = false;
+    Modifier visibility = Modifier::PUBLIC;
 
     Scope scope;
 
