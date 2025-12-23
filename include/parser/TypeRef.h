@@ -4,6 +4,7 @@
 
 #ifndef TYPEREF_H
 #define TYPEREF_H
+#include <ranges>
 #include <utility>
 #include <vector>
 #include "ASTBuilder.h"
@@ -26,6 +27,14 @@ struct TypeRef {
     const std::vector<Variance> variances;
     const SourceRange nameSourceRange;
     const SourceRange bodyRange;
+
+    bool isVariantLess() const {
+        return std::ranges::all_of(variances, [](const Variance variance) {
+            return variance == Variance::INVARIANT;
+        }) && std::ranges::all_of(args, [](const TypeRef* arg) {
+            return arg->isVariantLess();
+        });
+    }
 
     bool operator==(const TypeRef &other) const {
         if (identifier != other.identifier || args.size() != other.args.size() || variances.size() != other.variances.size()) {
