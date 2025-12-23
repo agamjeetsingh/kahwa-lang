@@ -8,6 +8,11 @@
 
 
 class MethodSymbol final : public FunctionSymbol {
+public:
+    explicit MethodSymbol(
+        std::string name,
+        Scope* outerScope): FunctionSymbol(std::move(name), outerScope) {}
+
     bool operator==(const MethodSymbol &) const {
         return true;
     }
