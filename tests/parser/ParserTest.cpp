@@ -113,8 +113,7 @@ protected:
             cd1->fields.size() != cd2->fields.size() ||
             cd1->methods.size() != cd2->methods.size() ||
             cd1->nestedClasses.size() != cd2->nestedClasses.size() ||
-            cd1->typeParameters.size() != cd2->typeParameters.size() ||
-            cd1->variances.size() != cd2->variances.size()) {
+            cd1->typeParameters.size() != cd2->typeParameters.size()) {
             return false;
         }
         
@@ -137,11 +136,10 @@ protected:
         }
 
         for (size_t i = 0; i < cd1->typeParameters.size(); ++i) {
-            if (*cd1->typeParameters[i] != *cd2->typeParameters[i]) return false;
+            if (*cd1->typeParameters[i].first != *cd2->typeParameters[i].first ||
+                cd1->typeParameters[i].second != cd2->typeParameters[i].second) return false;
         }
 
-        if (cd1->variances != cd2->variances) return false;
-        
         return true;
     }
 
@@ -221,12 +219,12 @@ protected:
             str += "<";
 
             for (int i = 0; i < classDecl->typeParameters.size(); i++) {
-                if (classDecl->variances[i] == Variance::COVARIANT) {
+                if (classDecl->typeParameters[i].second == Variance::COVARIANT) {
                     str += "out ";
-                } else if (classDecl->variances[i] == Variance::CONTRAVARIANT) {
+                } else if (classDecl->typeParameters[i].second == Variance::CONTRAVARIANT) {
                     str += "in ";
                 }
-                str += classDecl->typeParameters[i]->toString();
+                str += classDecl->typeParameters[i].first->toString();
                 if (i != classDecl->typeParameters.size() - 1) {
                     str += ", ";
                 }
