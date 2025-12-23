@@ -19,6 +19,7 @@ struct MethodDecl : Decl {
     TypeRef* returnType,
     const std::vector<std::pair<TypeRef*, std::string>>& parameters,
     Block* block,
+    const std::vector<TypeRef*> &typeParameters,
     const SourceRange &returnTypeSourceRange,
     const SourceRange &nameSourceRange,
     const SourceRange &bodyRange):
@@ -26,11 +27,14 @@ struct MethodDecl : Decl {
     returnType(returnType),
     parameters(parameters),
     block(block),
+    typeParameters(typeParameters),
     returnTypeSourceRange(returnTypeSourceRange) {}
 
     TypeRef* const returnType;
     const std::vector<std::pair<TypeRef*, std::string>> parameters;
     Block* const block;
+
+    const std::vector<TypeRef*> typeParameters;
 
     const SourceRange returnTypeSourceRange;
 
@@ -80,6 +84,7 @@ public:
             returnType,
             parameters,
             block,
+            typeParameters,
             returnTypeSourceRange.has_value() ? returnTypeSourceRange.value() : dummy_source,
             nameSourceRange.has_value() ? nameSourceRange.value() : dummy_source,
             bodyRange.has_value() ? bodyRange.value() : dummy_source);
@@ -117,6 +122,16 @@ public:
         return *this;
     }
 
+    MethodDeclBuilder& with(TypeRef* typeParameter) {
+        typeParameters.push_back(typeParameter);
+        return *this;
+    }
+
+    MethodDeclBuilder& with(const std::vector<TypeRef*>& typeParameters) {
+        this->typeParameters.insert(this->typeParameters.end(), typeParameters.begin(), typeParameters.end());
+        return *this;
+    }
+
     MethodDeclBuilder& withReturnTypeSourceRange(const SourceRange& returnTypeSourceRange) {
         this->returnTypeSourceRange.emplace(returnTypeSourceRange);
         return *this;
@@ -138,6 +153,7 @@ private:
     TypeRef* returnType;
     std::vector<std::pair<TypeRef*, std::string>> parameters;
     Block* block;
+    std::vector<TypeRef*> typeParameters;
 
     std::optional<SourceRange> returnTypeSourceRange;
     std::optional<SourceRange> nameSourceRange;
