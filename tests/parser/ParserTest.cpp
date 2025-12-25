@@ -72,9 +72,9 @@ protected:
         if (fd1 == nullptr || fd2 == nullptr) return false;
         if (!declEqualIgnoreSourceRange(fd1, fd2)) return false;
         
-        if (fd1->type == nullptr && fd2->type == nullptr) return true;
-        if (fd1->type == nullptr || fd2->type == nullptr) return false;
-        return *fd1->type == *fd2->type;
+        if (fd1->typeRef == nullptr && fd2->typeRef == nullptr) return true;
+        if (fd1->typeRef == nullptr || fd2->typeRef == nullptr) return false;
+        return *fd1->typeRef == *fd2->typeRef;
     }
 
     static bool methodDeclEqualIgnoreSourceRange(const MethodDecl* md1, const MethodDecl* md2) {
