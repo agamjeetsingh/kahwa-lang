@@ -150,7 +150,7 @@ public:
     }
 
     ClassSymbolBuilder& with(const std::string& genericArgumentName, const Variance variance = Variance::INVARIANT) {
-        genericArguments.push_back(arena->make<TypeParameterSymbol>(genericArgumentName, variance));
+        genericArguments.push_back(arena->make<TypeParameterSymbol>(genericArgumentName, nullptr, variance)); // TODO
         return *this;
     }
 
@@ -169,7 +169,7 @@ public:
         assert(genericArgumentNames.size() == variances.size());
 
         for (int i = 0; i < genericArgumentNames.size(); i++) {
-            genericArguments.push_back(arena->make<TypeParameterSymbol>(genericArgumentNames[i], variances[i]));
+            genericArguments.push_back(arena->make<TypeParameterSymbol>(genericArgumentNames[i], nullptr, variances[i])); // TODO
         }
         return *this;
     }

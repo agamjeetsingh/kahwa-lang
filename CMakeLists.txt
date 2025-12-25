@@ -159,6 +159,16 @@ add_executable(
         tests/DiagnosticTesting.h
         tests/DiagnosticTesting.cpp
         tests/semantic_analysis/TypeTest.cpp
+        include/symbols/Scope.cpp
+        include/symbols/Scope.h
+        include/symbols/TranslationUnit.cpp
+        include/symbols/TranslationUnit.h
+        include/symbols/VariableSymbol.cpp
+        include/symbols/VariableSymbol.h
+        include/symbols/VisibleVariableSymbol.cpp
+        include/symbols/VisibleVariableSymbol.h
+        include/symbols/FieldSymbol.cpp
+        include/symbols/FieldSymbol.h
 )
 
 target_link_libraries(
