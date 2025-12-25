@@ -12,9 +12,16 @@
 #include "TranslationUnit.h"
 #include "../parser/KahwaFile.h"
 #include "../types/Type.h"
+#include "VisibleVariableSymbol.h"
 
 class DiagnosticEngine;
 
+/**
+ * Building symbol table:
+ * Phase 1: declareFile, which declares all symbols so they can be accessed
+ * Phase 2: analyseFile, which resolves all symbols, including the ones in method bodies. This step also adds all modifiers
+ * Phase 3: Rest of the semantics (like checking subtyping rules, inheritance rules, trying to use a private method etc.)
+ */
 class SemanticAnalyser {
 public:
     explicit SemanticAnalyser(Arena& astArena, DiagnosticEngine& diagnosticEngine):
@@ -25,7 +32,40 @@ public:
 
     ClassSymbol* declareClass(const ClassDecl* classDecl, Scope* scope);
 
+    FunctionSymbol* declareFunction(const MethodDecl* methodDecl, Scope* scope);
+
     MethodSymbol* declareMethod(const MethodDecl* methodDecl, Scope* scope) const;
+
+    template<typename T, typename U, typename V>
+    requires std::derived_from<T, Symbol> && std::derived_from<U, Symbol> && std::derived_from<V, Decl>
+    void registerIt(
+        const U* symbol,
+        const std::vector<V>& decls,
+        std::function<std::pair<T*, SourceRange>(const V&)> declToSymbolAndSourceRange,
+        std::function<void(T*)> registerDecl,
+        bool duplicatesAllowed = false) {
+        std::vector<std::pair<T*, SourceRange>> ts;
+        ts.reserve(decls.size());
+
+        std::ranges::transform(decls, std::back_inserter(ts), declToSymbolAndSourceRange);
+
+        std::ranges::for_each(ts, [this, symbol, duplicatesAllowed, registerDecl](const std::pair<T*, SourceRange>& pair) {
+            if (!duplicatesAllowed && !symbol->scope.searchCurrentUnique(pair.first->name)) {
+                diagnosticEngine.reportProblem(
+                   DiagnosticSeverity::ERROR,
+                   DiagnosticKind::SYMBOL_ALREADY_DECLARED,
+                   pair.second,
+                   toMsg(DiagnosticKind::SYMBOL_ALREADY_DECLARED, pair.first->name));
+            } else {
+                symbol->scope.define(pair.first);
+                registerDecl(pair.first);
+            }
+        });
+    }
+
+    template <typename T>
+    requires (std::is_same_v<T, VariableSymbol> || std::is_same_v<T, VisibleVariableSymbol> || std::is_same_v<T, FieldSymbol>)
+    T* declareVariable(const FieldDecl* variableDecl, Scope* scope);
 
     TranslationUnit* declareFile(const KahwaFile* kahwaFile);
 
@@ -84,12 +124,12 @@ public:
     }
 
     Type* analyseType(const TypeRef* typeRef, Scope* scope) {
-        auto* symbol = scope->search(typeRef->identifier);
+        const auto& symbol = scope->searchUnique(typeRef->identifier);
         if (!symbol) {
             // TODO - Send some diagnostics
             return nullptr;
         }
-        auto typeSymbol = dynamic_cast<TypeSymbol*>(symbol);
+        auto typeSymbol = dynamic_cast<TypeSymbol*>(symbol.value());
         if (!typeSymbol) {
             // TODO - Send some diagnostics
             return nullptr;
