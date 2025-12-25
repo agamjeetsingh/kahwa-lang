@@ -84,6 +84,12 @@ add_executable(kahwa_lang main.cpp
         include/symbols/Scope.h
         include/symbols/TranslationUnit.cpp
         include/symbols/TranslationUnit.h
+        include/symbols/VariableSymbol.cpp
+        include/symbols/VariableSymbol.h
+        include/symbols/VisibleVariableSymbol.cpp
+        include/symbols/VisibleVariableSymbol.h
+        include/symbols/FieldSymbol.cpp
+        include/symbols/FieldSymbol.h
 )
 
 target_link_libraries(kahwa_lang PRIVATE magic_enum::magic_enum)
