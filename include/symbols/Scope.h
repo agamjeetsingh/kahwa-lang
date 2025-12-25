@@ -14,7 +14,7 @@ typedef std::unordered_map<std::string, std::vector<Symbol*>> SymbolTable;
 struct Scope {
     [[nodiscard]] const std::vector<Symbol*>& searchCurrent(const std::string& name);
 
-    [[nodiscard]] std::optional<Symbol*> searchCurrentUnique(const std::string& name);
+    [[nodiscard]] std::optional<Symbol*> searchCurrentUnique(const std::string& name) const;
 
     [[nodiscard]] std::optional<Symbol*> searchUnique(const std::string& name) const;
 

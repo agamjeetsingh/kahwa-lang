@@ -12,154 +12,48 @@ ClassSymbol *SemanticAnalyser::declareClass(const ClassDecl *classDecl, Scope *s
 
     // ===== TypeParameterSymbols and Variances ======
 
-    // Convert ClassDecl's TypeRefs to TypeParameterSymbols
-    std::vector<std::pair<TypeParameterSymbol*, SourceRange>> typeParameters;
-    typeParameters.reserve(classDecl->typeParameters.size());
-
-    std::ranges::transform(
-        classDecl->typeParameters,
-        std::back_inserter(typeParameters),
-        [](const std::pair<TypeRef*, Variance>& pair) {
+    registerIt<TypeParameterSymbol>(classSymbol, classDecl->typeParameters, [](const std::pair<TypeRef*, Variance>& pair) {
             assert(pair.first->args.empty()); // Parser shouldn't allow any generic type parameters
             return std::pair{TypeParameterSymbolBuilder(pair.first->identifier, pair.second).build(), pair.first->bodyRange};
-        }
-    );
-
-    // Register all the typeParameters to the scope, reporting duplicates to the diagnostic engine
-    std::ranges::for_each(typeParameters, [classSymbol, this](const std::pair<TypeParameterSymbol*, SourceRange>& pair) {
-       if (!classSymbol->scope.searchCurrentUnique(pair.first->name)) {
-           diagnosticEngine.reportProblem(
-               DiagnosticSeverity::ERROR,
-               DiagnosticKind::SYMBOL_ALREADY_DECLARED,
-               pair.second,
-               toMsg(DiagnosticKind::SYMBOL_ALREADY_DECLARED, pair.first->name));
-       } else {
-           classSymbol->scope.define(pair.first);
-           classSymbol->addGenericArgument(pair.first);
-       }
-    });
-
+        }, [classSymbol](TypeParameterSymbol* typeParameter) { classSymbol->addGenericArgument(typeParameter); });
     // ===== Nested Classes =====
 
-    // Convert ClassDecl's nestedClasses ClassDecl*s to ClassSymbol*s
-    std::vector<std::pair<ClassSymbol*, SourceRange>> nestedClasses;
-    nestedClasses.reserve(classDecl->nestedClasses.size());
-    std::ranges::transform(classDecl->nestedClasses, std::back_inserter(nestedClasses), [this, classSymbol](const ClassDecl* classDecl) {
-        return std::pair<ClassSymbol*, SourceRange>{declareClass(classDecl, &classSymbol->scope), classDecl->nameSourceRange};
-    });
-
-    // Register all the nested classes to the scope, reporting duplicates to the diagnostic engine
-    std::ranges::for_each(nestedClasses, [classSymbol, this](const std::pair<ClassSymbol*, SourceRange>& pair) {
-       if (!classSymbol->scope.searchCurrentUnique(pair.first->name)) {
-           diagnosticEngine.reportProblem(
-               DiagnosticSeverity::ERROR,
-               DiagnosticKind::SYMBOL_ALREADY_DECLARED,
-               pair.second,
-               toMsg(DiagnosticKind::SYMBOL_ALREADY_DECLARED, pair.first->name));
-       } else {
-           classSymbol->scope.define(pair.first);
-           classSymbol->addNestedClass(pair.first);
-       }
-    });
+    registerIt<ClassSymbol>(classSymbol, classDecl->nestedClasses, [this, classSymbol](const ClassDecl* classDecl) {
+        return std::pair{declareClass(classDecl, &classSymbol->scope), classDecl->nameSourceRange};
+    }, [classSymbol](ClassSymbol* nestedClass){ classSymbol->addNestedClass(nestedClass); });
 
     // ===== Methods =====
 
-    // Convert ClassDecl's MethodDecl*s to MethodSymbol*s
-    std::vector<std::pair<MethodSymbol*, SourceRange>> methods;
-    methods.reserve(classDecl->methods.size());
-    std::ranges::transform(classDecl->methods, std::back_inserter(methods), [classSymbol, this](const MethodDecl* methodDecl) {
-        return std::pair<MethodSymbol*, SourceRange>{declareMethod(methodDecl, &classSymbol->scope), methodDecl->nameSourceRange};
-    });
-
-    // Register all the methods to the scope
-    std::ranges::for_each(methods, [classSymbol, this](const std::pair<MethodSymbol*, SourceRange>& pair) {
-        // Different methods with the same names are allowed because of method overloading
-        classSymbol->scope.define(pair.first);
-        classSymbol->addMethod(pair.first);
-    });
+    // Different methods with the same names are allowed because of method overloading
+    registerIt<MethodSymbol>(classSymbol, classDecl->methods, [classSymbol, this](const MethodDecl* methodDecl) {
+        return std::pair{declareFunction<MethodSymbol>(methodDecl, &classSymbol->scope), methodDecl->nameSourceRange};
+    }, [classSymbol](MethodSymbol* method){ classSymbol->addMethod(method); }, true);
 
     // ===== Fields =====
 
-    // Convert ClassDecl's FieldDecl*s to FieldSymbol*s
-    std::vector<std::pair<FieldSymbol*, SourceRange>> fields;
-    fields.reserve(classDecl->fields.size());
-    std::ranges::transform(classDecl->fields, std::back_inserter(fields), [classSymbol, this](const FieldDecl* fieldDecl) {
-       return std::pair<FieldSymbol*, SourceRange>{declareVariable<FieldSymbol>(fieldDecl, &classSymbol->scope), fieldDecl->nameSourceRange};
-    });
-
-    // Register all the fields to the scope
-    std::ranges::for_each(fields, [classSymbol, this](const std::pair<FieldSymbol*, SourceRange>& pair) {
-       if (!classSymbol->scope.searchCurrentUnique(pair.first->name)) {
-           diagnosticEngine.reportProblem(
-               DiagnosticSeverity::ERROR,
-               DiagnosticKind::SYMBOL_ALREADY_DECLARED,
-               pair.second,
-               toMsg(DiagnosticKind::SYMBOL_ALREADY_DECLARED, pair.first->name));
-       } else {
-           classSymbol->scope.define(pair.first);
-           classSymbol->addField(pair.first);
-       }
-    });
+    registerIt<FieldSymbol>(classSymbol, classDecl->fields, [classSymbol, this](const FieldDecl* fieldDecl) {
+       return std::pair{declareVariable<FieldSymbol>(fieldDecl, &classSymbol->scope), fieldDecl->nameSourceRange};
+    }, [classSymbol](FieldSymbol* fieldSymbol){ classSymbol->addField(fieldSymbol); });
 
     return classSymbol;
 }
 
-MethodSymbol *SemanticAnalyser::declareMethod(const MethodDecl *methodDecl, Scope *scope) const {
-    auto methodSymbol = astArena.make<MethodSymbol>(methodDecl->name, scope);
+template<typename FunctionLikeSymbol> requires std::is_same_v<FunctionLikeSymbol, FunctionSymbol> || std::is_same_v<FunctionLikeSymbol, MethodSymbol>
+FunctionLikeSymbol *SemanticAnalyser::declareFunction(const MethodDecl *methodDecl, Scope *scope) {
+    auto methodSymbol = astArena.make<FunctionLikeSymbol>(methodDecl->name, scope);
 
     // ===== TypeParameterSymbols ======
 
-    // Convert MethodDecl's TypeRef*s to TypeParameterSymbol*s
-    std::vector<std::pair<TypeParameterSymbol*, SourceRange>> typeParameters;
-    typeParameters.reserve(methodDecl->typeParameters.size());
-
-    std::ranges::transform(
-        methodDecl->typeParameters,
-        std::back_inserter(typeParameters),
-        [](const TypeRef* typeParameter) {
-            assert(typeParameter->args.empty()); // Parser shouldn't allow any generic type parameters
-            // TODO - Don't TypeParameterSymbols need a scope?
-            return std::pair{TypeParameterSymbolBuilder(typeParameter->identifier).build(), typeParameter->bodyRange};
-        }
-    );
-
-    // Register all the typeParameters to the scope, reporting duplicates to the diagnostic engine
-    std::ranges::for_each(typeParameters, [methodSymbol, this](const std::pair<TypeParameterSymbol*, SourceRange>& pair) {
-       if (!methodSymbol->scope.searchCurrentUnique(pair.first->name)) {
-           diagnosticEngine.reportProblem(
-               DiagnosticSeverity::ERROR,
-               DiagnosticKind::SYMBOL_ALREADY_DECLARED,
-               pair.second,
-               toMsg(DiagnosticKind::SYMBOL_ALREADY_DECLARED, pair.first->name));
-       } else {
-           methodSymbol->scope.define(pair.first);
-           methodSymbol->addGenericArgument(pair.first);
-       }
-    });
+    registerIt<TypeParameterSymbol>(methodSymbol, methodDecl->typeParameters, [](const TypeRef* typeParameter) {
+           assert(typeParameter->args.empty()); // Parser shouldn't allow any generic type parameters
+           return std::pair{TypeParameterSymbolBuilder(typeParameter->identifier).build(), typeParameter->bodyRange};
+       }, [methodSymbol](TypeParameterSymbol* typeParameter) { methodSymbol->addGenericArgument(typeParameter); });
 
     // ===== Function Parameters =====
 
-    // Convert FieldDecl*s to VariableSymbol*s
-    std::vector<std::pair<VariableSymbol*, SourceRange>> parameters;
-    parameters.reserve(methodDecl->parameters.size());
-
-    std::ranges::transform(methodDecl->parameters, std::back_inserter(parameters), [this, methodSymbol](const std::pair<TypeRef *, std::string>& pair) {
-       return std::pair<VariableSymbol*, SourceRange>{astArena.make<VariableSymbol>(pair.second, &methodSymbol->scope), pair.first->nameSourceRange}; // TODO - Need source range of parameter name too
-    });
-
-    // Register all the fields to the scope, reporting duplicates to the diagnostic engine
-    std::ranges::for_each(parameters, [methodSymbol, this](const std::pair<VariableSymbol*, SourceRange>& pair) {
-        if (!methodSymbol->scope.searchCurrentUnique(pair.first->name)) {
-           diagnosticEngine.reportProblem(
-               DiagnosticSeverity::ERROR,
-               DiagnosticKind::SYMBOL_ALREADY_DECLARED,
-               pair.second,
-               toMsg(DiagnosticKind::SYMBOL_ALREADY_DECLARED, pair.first->name));
-       } else {
-           methodSymbol->scope.define(pair.first);
-           methodSymbol->addParameter(pair.first);
-       }
-    });
+    registerIt<VariableSymbol>(methodSymbol, methodDecl->parameters, [this, methodSymbol](const std::pair<TypeRef *, std::string>& pair) {
+       return std::pair{astArena.make<VariableSymbol>(pair.second, &methodSymbol->scope), pair.first->nameSourceRange}; // TODO - Need source range of parameter name too
+    }, [methodSymbol](VariableSymbol* variableSymbol){ methodSymbol->addParameter(variableSymbol); });
 
     return methodSymbol;
 }
@@ -168,70 +62,20 @@ TranslationUnit *SemanticAnalyser::declareFile(const KahwaFile *kahwaFile) {
     // Ideally, all the symbols are in sorted order according to their position in the file
     auto* translationUnit = astArena.make<TranslationUnit>();
 
-    // Convert the ClassDecl*s to ClassSymbol*s
-    std::vector<std::pair<ClassSymbol*, SourceRange>> classes;
-    classes.reserve(kahwaFile->classDecls.size());
-    std::ranges::transform(kahwaFile->classDecls, std::back_inserter(classes), [this, translationUnit](const ClassDecl* classDecl) {
+    // ===== Classes =====
+    registerIt<ClassSymbol>(translationUnit, kahwaFile->classDecls, [this, translationUnit](const ClassDecl* classDecl) {
         return std::pair{declareClass(classDecl, &translationUnit->scope), classDecl->nameSourceRange};
-    });
+    }, [translationUnit](ClassSymbol* classSymbol){ translationUnit->addClass(classSymbol); });
 
-    // Register all the classes to the scope, reporting duplicates to the diagnostic engine
-    std::ranges::for_each(classes, [translationUnit, this](const std::pair<ClassSymbol*, SourceRange>& pair) {
-       if (!translationUnit->scope.searchCurrentUnique(pair.first->name)) {
-           diagnosticEngine.reportProblem(
-               DiagnosticSeverity::ERROR,
-               DiagnosticKind::SYMBOL_ALREADY_DECLARED,
-               pair.second,
-               toMsg(DiagnosticKind::SYMBOL_ALREADY_DECLARED, pair.first->name));
-       } else {
-           translationUnit->scope.define(pair.first);
-           translationUnit->addClass(pair.first);
-       }
-    });
+    // ===== Functions =====
+    registerIt<FunctionSymbol>(translationUnit, kahwaFile->functionDecls, [this, translationUnit](const MethodDecl* functionDecl) {
+        return std::pair{declareFunction<FunctionSymbol>(functionDecl, &translationUnit->scope), functionDecl->nameSourceRange};
+    }, [translationUnit](FunctionSymbol* functionSymbol){ translationUnit->addFunction(functionSymbol); });
 
-    // Convert the MethodDecl*s to FunctionSymbol*s
-    std::vector<std::pair<MethodSymbol*, SourceRange>> functions;
-    functions.reserve(kahwaFile->functionDecls.size());
-    std::ranges::transform(kahwaFile->functionDecls, std::back_inserter(functions), [this, translationUnit](const MethodDecl* functionDecl) {
-        return std::pair{declareMethod(functionDecl, &translationUnit->scope), functionDecl->nameSourceRange};
-    });
-
-    // Register all the functions to the scope
-    std::ranges::for_each(functions, [translationUnit, this](const std::pair<MethodSymbol*, SourceRange>& pair) {
-        if (!translationUnit->scope.searchCurrentUnique(pair.first->name)) {
-            diagnosticEngine.reportProblem(
-               DiagnosticSeverity::ERROR,
-               DiagnosticKind::SYMBOL_ALREADY_DECLARED,
-               pair.second,
-               toMsg(DiagnosticKind::SYMBOL_ALREADY_DECLARED, pair.first->name));
-        } else {
-            // Different functions with the same names are allowed because of method overloading
-            translationUnit->scope.define(pair.first);
-            translationUnit->addFunction(pair.first);
-        }
-    });
-
-    // Convert the FieldDecl*s to VisibleVariableDecl*s
-    std::vector<std::pair<VisibleVariableSymbol*, SourceRange>> variables;
-    variables.reserve(kahwaFile->variableDecls.size());
-    std::ranges::transform(kahwaFile->variableDecls, std::back_inserter(variables), [this, translationUnit](const FieldDecl* variableDecl) {
+    // ===== Top level variables =====
+    registerIt<VisibleVariableSymbol>(translationUnit, kahwaFile->variableDecls, [this, translationUnit](const FieldDecl* variableDecl) {
         return std::pair{declareVariable<VisibleVariableSymbol>(variableDecl, &translationUnit->scope), variableDecl->nameSourceRange};
-    });
-
-    // Register all the variables to the scope
-    std::ranges::for_each(variables, [translationUnit, this](std::pair<VisibleVariableSymbol*, SourceRange>& pair) {
-        if (!translationUnit->scope.searchCurrentUnique(pair.first->name)) {
-            diagnosticEngine.reportProblem(
-               DiagnosticSeverity::ERROR,
-               DiagnosticKind::SYMBOL_ALREADY_DECLARED,
-               pair.second,
-               toMsg(DiagnosticKind::SYMBOL_ALREADY_DECLARED, pair.first->name));
-        } else {
-            // Different functions with the same names are allowed because of method overloading
-            translationUnit->scope.define(pair.first);
-            translationUnit->addVariable(pair.first);
-        }
-    });
+    }, [translationUnit](VisibleVariableSymbol* variableSymbol){ translationUnit->addVariable(variableSymbol); });
 
     // Typedefs in Phase 2
 

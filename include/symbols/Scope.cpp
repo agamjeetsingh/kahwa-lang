@@ -10,8 +10,9 @@ const std::vector<Symbol *> &Scope::searchCurrent(const std::string &name) {
     return table[name];
 }
 
-std::optional<Symbol *> Scope::searchCurrentUnique(const std::string &name) {
-    const auto& symbols = table[name];
+std::optional<Symbol *> Scope::searchCurrentUnique(const std::string &name) const {
+    if (!table.contains(name)) return std::nullopt;
+    const auto& symbols = table.at(name);
     return symbols.size() == 1 ? std::optional(symbols[0]) : std::nullopt;
 }
 

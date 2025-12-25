@@ -32,24 +32,28 @@ public:
 
     ClassSymbol* declareClass(const ClassDecl* classDecl, Scope* scope);
 
-    FunctionSymbol* declareFunction(const MethodDecl* methodDecl, Scope* scope);
+    template<typename FunctionLikeSymbol>
+    requires std::is_same_v<FunctionLikeSymbol, FunctionSymbol> || std::is_same_v<FunctionLikeSymbol, MethodSymbol>
+    FunctionLikeSymbol* declareFunction(const MethodDecl* methodDecl, Scope* scope);
 
-    MethodSymbol* declareMethod(const MethodDecl* methodDecl, Scope* scope) const;
-
-    template<typename T, typename U, typename V>
-    requires std::derived_from<T, Symbol> && std::derived_from<U, Symbol> && std::derived_from<V, Decl>
+    template<typename ChildSymbol, typename ParentSymbol, typename DeclLike, typename F1, typename F2>
+    requires std::derived_from<ChildSymbol, Symbol> && requires(ParentSymbol t) {
+        { t.scope } -> std::same_as<Scope&>;  // Ensure scope is a field
+    } &&
+                std::invocable<F1, const DeclLike&> && std::same_as<std::invoke_result_t<F1, const DeclLike&>, std::pair<ChildSymbol*, SourceRange>> &&
+                    std::invocable<F2, ChildSymbol*> && std::same_as<std::invoke_result_t<F2, ChildSymbol*>, void>
     void registerIt(
-        const U* symbol,
-        const std::vector<V>& decls,
-        std::function<std::pair<T*, SourceRange>(const V&)> declToSymbolAndSourceRange,
-        std::function<void(T*)> registerDecl,
-        bool duplicatesAllowed = false) {
-        std::vector<std::pair<T*, SourceRange>> ts;
+        ParentSymbol* symbol,
+        const std::vector<DeclLike>& decls,
+        F1&& declToSymbolAndSourceRange,
+        F2&& registerSymbol,
+        bool duplicatesAllowed = false) const {
+        std::vector<std::pair<ChildSymbol*, SourceRange>> ts;
         ts.reserve(decls.size());
 
         std::ranges::transform(decls, std::back_inserter(ts), declToSymbolAndSourceRange);
 
-        std::ranges::for_each(ts, [this, symbol, duplicatesAllowed, registerDecl](const std::pair<T*, SourceRange>& pair) {
+        std::ranges::for_each(ts, [this, &symbol, duplicatesAllowed, registerSymbol](const std::pair<ChildSymbol*, SourceRange>& pair) {
             if (!duplicatesAllowed && !symbol->scope.searchCurrentUnique(pair.first->name)) {
                 diagnosticEngine.reportProblem(
                    DiagnosticSeverity::ERROR,
@@ -58,7 +62,7 @@ public:
                    toMsg(DiagnosticKind::SYMBOL_ALREADY_DECLARED, pair.first->name));
             } else {
                 symbol->scope.define(pair.first);
-                registerDecl(pair.first);
+                registerSymbol(pair.first);
             }
         });
     }
