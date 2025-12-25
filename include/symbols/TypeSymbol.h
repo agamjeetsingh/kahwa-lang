@@ -9,7 +9,7 @@
 
 class TypeSymbol : public Symbol {
 public:
-    explicit TypeSymbol(std::string name): Symbol(std::move(name)) {}
+    explicit TypeSymbol(std::string name, Scope* outerScope): Symbol(std::move(name), outerScope) {}
 };
 
 

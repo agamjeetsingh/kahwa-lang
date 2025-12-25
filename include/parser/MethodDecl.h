@@ -12,7 +12,7 @@
 #include "TypeRef.h"
 #include "../source/SourceRange.h"
 
-
+// Functions and Methods are identical at the AST level (but not in symbols)
 struct MethodDecl : Decl {
     MethodDecl(std::string name,
     const std::vector<ModifierNode> &modifiers,

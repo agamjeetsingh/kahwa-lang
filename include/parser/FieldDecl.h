@@ -12,20 +12,20 @@
 #include "TypeRef.h"
 #include "../source/SourceRange.h"
 
-
+// Top-level variables, class fields and local variables are identical at the AST level (but not in symbols)
 struct FieldDecl : Decl {
     FieldDecl(
     std::string name,
     const std::vector<ModifierNode> &modifiers,
-    TypeRef* type,
+    TypeRef* typeRef,
     const SourceRange &typeSourceRange,
     const SourceRange &nameSourceRange,
     const SourceRange &bodyRange):
     Decl(std::move(name), modifiers, nameSourceRange, bodyRange),
-    type(type),
+    typeRef(typeRef),
     typeSourceRange(typeSourceRange) {}
 
-    TypeRef* const type;
+    TypeRef* const typeRef;
     // TODO - Initialiser expression (optional)
 
     const SourceRange typeSourceRange;
@@ -33,13 +33,14 @@ struct FieldDecl : Decl {
     bool operator==(const FieldDecl &other) const {
         if (!Decl::operator==(other)) return false;
         
-        if (type == nullptr && other.type == nullptr) {
+        if (typeRef == nullptr && other.typeRef == nullptr) {
             return typeSourceRange == other.typeSourceRange;
         }
-        if (type == nullptr || other.type == nullptr) {
+        if (typeRef == nullptr || other.typeRef == nullptr) {
             return false;
         }
-        return *type == *other.type && typeSourceRange == other.typeSourceRange;
+        
+        return *typeRef == *other.typeRef && typeSourceRange == other.typeSourceRange;
     }
 };
 

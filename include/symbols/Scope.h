@@ -16,7 +16,12 @@ struct Scope {
         return table[name];
     }
 
-    [[nodiscard]] std::optional<Symbol*> searchCurrentUnique(const std::string& name) const {
+    [[nodiscard]] std::optional<Symbol*> searchCurrentUnique(const std::string& name) {
+        const auto& symbols = table[name];
+        return symbols.size() == 1 ? std::optional(symbols[0]) : std::nullopt;
+    }
+
+    [[nodiscard]] std::optional<Symbol*> searchUnique(const std::string& name) const {
         const auto& symbols = search(name);
         return symbols.size() == 1 ? std::optional(symbols[0]) : std::nullopt;
     }

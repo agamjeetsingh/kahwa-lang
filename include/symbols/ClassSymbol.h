@@ -6,6 +6,7 @@
 #define CLASSSYMBOL_H
 #include <vector>
 
+#include "FieldSymbol.h"
 #include "MethodSymbol.h"
 #include "Scope.h"
 #include "../parser/Modifier.h"
@@ -25,8 +26,9 @@ struct ClassSymbol final : TypeSymbol {
         const std::vector<TypeParameterSymbol*>& genericArguments,
         const std::vector<Type*>& superClasses,
         const std::vector<MethodSymbol*>& methods,
-        const std::vector<ClassSymbol*>& nestedClasses):
-    TypeSymbol(std::move(name)),
+        const std::vector<ClassSymbol*>& nestedClasses,
+        Scope* outerScope = nullptr): // TODO
+    TypeSymbol(std::move(name), outerScope),
     isAbstract(isAbstract),
     isOpen(isOpen),
     visibility(visibility),
@@ -38,9 +40,7 @@ struct ClassSymbol final : TypeSymbol {
     explicit ClassSymbol(
         std::string name,
         Scope* outerScope):
-    TypeSymbol(std::move(name)) {
-        scope.addOuterScope(outerScope);
-    }
+    TypeSymbol(std::move(name), outerScope) {}
 
     void addGenericArguments(const std::vector<TypeParameterSymbol*>& genericArguments) {
         this->genericArguments.insert(this->genericArguments.begin(), genericArguments.begin(), genericArguments.end());
@@ -68,6 +68,14 @@ struct ClassSymbol final : TypeSymbol {
         methods.push_back(method);
     }
 
+    void addFields(const std::vector<FieldSymbol*>& fields) {
+        this->fields.insert(this->fields.begin(), fields.begin(), fields.end());
+    }
+
+    void addField(FieldSymbol* field) {
+        fields.push_back(field);
+    }
+
     void addNestedClasses(const std::vector<ClassSymbol*>& nestedClasses) {
         this->nestedClasses.insert(this->nestedClasses.begin(), nestedClasses.begin(), nestedClasses.end());
     }
@@ -80,11 +88,10 @@ struct ClassSymbol final : TypeSymbol {
     bool isOpen = false;
     Modifier visibility = Modifier::PUBLIC;
 
-    Scope scope;
-
     std::vector<TypeParameterSymbol*> genericArguments;
     std::vector<Type*> superClasses;
     std::vector<MethodSymbol*> methods;
+    std::vector<FieldSymbol*> fields;
     std::vector<ClassSymbol*> nestedClasses;
 
     bool operator==(const ClassSymbol &other) const {

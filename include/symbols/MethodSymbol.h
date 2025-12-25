@@ -16,6 +16,9 @@ public:
     bool operator==(const MethodSymbol &) const {
         return true;
     }
+
+    bool isAbstract = false;
+    bool isOpen = false;
 };
 
 

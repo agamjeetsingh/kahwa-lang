@@ -6,11 +6,16 @@
 #define SYMBOL_H
 #include <string>
 
+#include "Scope.h"
+
 
 struct Symbol {
-    explicit Symbol(std::string name): name(std::move(name)) {}
+    explicit Symbol(std::string name, Scope* outerScope): name(std::move(name)) {
+        scope.addOuterScope(outerScope);
+    }
 
     const std::string name;
+    Scope scope;
 
     virtual ~Symbol() noexcept = default;
 };

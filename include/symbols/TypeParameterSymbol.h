@@ -12,7 +12,7 @@
 
 
 struct TypeParameterSymbol final : TypeSymbol {
-    explicit TypeParameterSymbol(std::string name, const Variance variance = Variance::INVARIANT): TypeSymbol(std::move(name)), variance(variance) {}
+    explicit TypeParameterSymbol(std::string name, Scope* outerScope, const Variance variance = Variance::INVARIANT): TypeSymbol(std::move(name), outerScope), variance(variance) {}
 
     const Variance variance;
 
@@ -26,7 +26,7 @@ public:
     explicit TypeParameterSymbolBuilder(std::string name, const Variance variance = Variance::INVARIANT): name(std::move(name)), variance(variance) {}
 
     TypeParameterSymbol* build() {
-        return arena->make<TypeParameterSymbol>(name, variance);
+        return arena->make<TypeParameterSymbol>(name, nullptr, variance); // TODO
     }
 
     TypeParameterSymbolBuilder& with(Variance variance) {

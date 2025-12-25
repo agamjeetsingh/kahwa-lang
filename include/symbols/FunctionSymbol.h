@@ -10,6 +10,7 @@
 #include "Scope.h"
 #include "Symbol.h"
 #include "TypeParameterSymbol.h"
+#include "VariableSymbol.h"
 #include "../parser/Modifier.h"
 
 enum class Modifier;
@@ -19,49 +20,45 @@ struct Type;
 struct FunctionSymbol : Symbol {
     explicit FunctionSymbol(
         std::string name,
-        Scope* outerScope): Symbol(std::move(name)) {
-        scope.addOuterScope(outerScope);
-    }
+        Scope* outerScope): Symbol(std::move(name), outerScope) {}
 
     explicit FunctionSymbol(
         std::string name,
-        bool isAbstract,
-        bool isOpen,
         Modifier visibility,
         const std::vector<TypeParameterSymbol*>& genericArguments,
         Type* returnType,
         Scope* outerScope,
-        const std::vector<std::pair<Type*, std::string>>& parameters,
+        const std::vector<VariableSymbol*>& parameters,
         Block* block):
-    Symbol(std::move(name)),
-    isAbstract(isAbstract),
-    isOpen(isOpen),
+    Symbol(std::move(name), outerScope),
     visibility(visibility),
     returnType(returnType),
     parameters(parameters),
     block(block),
-    genericArguments(genericArguments) {
-        // scope.defineAll(parameters); // TODO - Problem! Type* are not symbols! Or are they?
-    }
+    genericArguments(genericArguments) {}
 
-    bool isAbstract = false;
-    bool isOpen = false;
     Modifier visibility = Modifier::PUBLIC;
 
-    Scope scope;
-
     Type* returnType = nullptr;
-    std::vector<std::pair<Type*, std::string>> parameters;
+    std::vector<VariableSymbol*> parameters;
     Block* block = nullptr;
 
     std::vector<TypeParameterSymbol*> genericArguments;
 
     void addGenericArguments(const std::vector<TypeParameterSymbol*>& genericArguments) {
-        this->genericArguments.insert(this->genericArguments.begin(), genericArguments.begin(), genericArguments.end());
+        this->genericArguments.insert(this->genericArguments.end(), genericArguments.begin(), genericArguments.end());
     }
 
     void addGenericArgument(TypeParameterSymbol* genericArgument) {
         genericArguments.push_back(genericArgument);
+    }
+
+    void addParameters(const std::vector<VariableSymbol*>& parameters) {
+        this->parameters.insert(this->parameters.end(), parameters.begin(), parameters.end());
+    }
+
+    void addParameter(VariableSymbol* parameter) {
+        parameters.push_back(parameter);
     }
 };
 
@@ -110,7 +107,7 @@ public:
     }
 
     FunctionSymbolBuilder& with(const std::string& genericArgumentName, const Variance variance = Variance::INVARIANT) {
-        genericArguments.push_back(arena->make<TypeParameterSymbol>(genericArgumentName, variance));
+        genericArguments.push_back(arena->make<TypeParameterSymbol>(genericArgumentName, nullptr, variance)); // TODO
         return *this;
     }
 
@@ -129,7 +126,7 @@ public:
         assert(genericArgumentNames.size() == variances.size());
 
         for (int i = 0; i < genericArgumentNames.size(); i++) {
-            genericArguments.push_back(arena->make<TypeParameterSymbol>(genericArgumentNames[i], variances[i]));
+            genericArguments.push_back(arena->make<TypeParameterSymbol>(genericArgumentNames[i], nullptr, variances[i])); // TODO
         }
         return *this;
     }
