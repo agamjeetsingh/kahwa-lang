@@ -187,7 +187,7 @@ void SemanticAnalyser::resolveTypes(TranslationUnit *translationUnit) {
 
 void SemanticAnalyser::resolveTypes(ClassSymbol *classSymbol) {
     std::ranges::for_each(dynamic_cast<ClassDecl*>(symbolToDecl[classSymbol])->superClasses, [this, classSymbol](TypeRef* superClass) {
-        classSymbol->addSuperClass(analyseType(superClass, &classSymbol->scope));
+        classSymbol->addSuperClass(resolveType(superClass, &classSymbol->scope));
     });
 
     std::ranges::for_each(classSymbol->nestedClasses, [this](ClassSymbol* nestedClass) {
@@ -217,6 +217,54 @@ void SemanticAnalyser::resolveTypes(FunctionLikeSymbol *functionSymbol) {
 template<typename T> requires (std::is_same_v<T, VariableSymbol> || std::is_same_v<T, VisibleVariableSymbol> || std::is_same_v<T, FieldSymbol>)
 void SemanticAnalyser::resolveTypes(T *variableSymbol) {
     variableSymbol->type = analyseType(dynamic_cast<FieldDecl*>(symbolToDecl[variableSymbol]->typeRef), variableSymbol->scope);
+}
+
+Type *SemanticAnalyser::resolveType(const TypeRef *typeRef, Scope *scope) {
+    const auto& symbols = scope->search(typeRef->identifier);
+    if (symbols.empty()) {
+        diagnosticEngine.reportProblem(
+            DiagnosticSeverity::ERROR,
+            DiagnosticKind::CANNOT_RESOLVE_SYMBOL,
+            typeRef->bodyRange,
+            toMsg(DiagnosticKind::CANNOT_RESOLVE_SYMBOL, typeRef->identifier));
+        return nullptr;
+    }
+    auto* symbol = symbols[0];
+    auto typeSymbol = dynamic_cast<TypeSymbol*>(symbol);
+    if (!typeSymbol) {
+        diagnosticEngine.reportProblem(
+            DiagnosticSeverity::ERROR,
+            DiagnosticKind::SYMBOL_MISMATCH,
+            typeRef->bodyRange,
+            toMsg(DiagnosticKind::SYMBOL_MISMATCH, Symbol::toString(symbol), "type"));
+        return nullptr;
+    }
+
+    auto builder = TypeBuilder(typeSymbol);
+
+    std::size_t expectedGenericsArgs = 0;
+    if (auto classSymbol = dynamic_cast<ClassSymbol*>(typeSymbol)) {
+        expectedGenericsArgs = classSymbol->genericArguments.size();
+    }
+
+    if (expectedGenericsArgs != typeRef->args.size()) {
+        diagnosticEngine.reportProblem(
+            DiagnosticSeverity::ERROR,
+            DiagnosticKind::INCORRECT_NUMBER_OF_TYPE_PARAMETERS,
+            typeRef->bodyRange,
+            toMsg(DiagnosticKind::INCORRECT_NUMBER_OF_TYPE_PARAMETERS, expectedGenericsArgs, Symbol::toString(symbol), typeRef->args.size()));
+        return nullptr;
+    }
+
+    for (auto arg: typeRef->args) {
+        if (auto argType = resolveType(arg, scope)) {
+            builder.with(argType);
+        } else {
+            return nullptr;
+        }
+    }
+
+    return builder.build();
 }
 
 

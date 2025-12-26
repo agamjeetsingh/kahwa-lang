@@ -32,7 +32,10 @@ enum class DiagnosticKind {
     ILLEGAL_MODIFIER_COMBINATION,
     MODIFIER_NOT_ALLOWED,
     TYPE_PARAMETERS_CANNOT_HAVE_GENERIC_ARGUMENTS,
-    SYMBOL_ALREADY_DECLARED
+    SYMBOL_ALREADY_DECLARED,
+    CANNOT_RESOLVE_SYMBOL,
+    SYMBOL_MISMATCH,
+    INCORRECT_NUMBER_OF_TYPE_PARAMETERS
 };
 
 inline DiagnosticKind expectedTokenTypeToDiagnosticKind(const TokenType tokenType) {
@@ -106,13 +109,31 @@ inline std::optional<std::string> notValidModifierDiagnosticToMsg(const Diagnost
     return "'" + toString(modifier.value()) + "' is not a valid modifier for " + target;
 }
 
+inline std::string toMsg(const DiagnosticKind kind, const std::string &str1, const std::string &str2) {
+    assert(kind == DiagnosticKind::SYMBOL_MISMATCH);
+
+    return "Cannot use " + str1 + " as a " + str2;
+}
+
+inline std::string toMsg(const DiagnosticKind kind, int expected, const std::string &str, int actual) {
+    assert(kind == DiagnosticKind::INCORRECT_NUMBER_OF_TYPE_PARAMETERS);
+
+    return std::to_string(expected) + "type parameters expected for " + str + " but found " + std::to_string(actual);
+}
+
 inline std::string toMsg(const DiagnosticKind kind, const std::string &str) {
-    assert(kind == DiagnosticKind::TYPE_PARAMETERS_CANNOT_HAVE_GENERIC_ARGUMENTS || kind == DiagnosticKind::SYMBOL_ALREADY_DECLARED);
+    assert(kind == DiagnosticKind::TYPE_PARAMETERS_CANNOT_HAVE_GENERIC_ARGUMENTS ||
+        kind == DiagnosticKind::SYMBOL_ALREADY_DECLARED ||
+        kind == DiagnosticKind::CANNOT_RESOLVE_SYMBOL);
 
     if (kind == DiagnosticKind::TYPE_PARAMETERS_CANNOT_HAVE_GENERIC_ARGUMENTS)
         return "Type parameter " + str + " has generic arguments, which are not allowed";
 
-    return "Symbol '" + str + "' has already been declared";
+    if (kind == DiagnosticKind::SYMBOL_ALREADY_DECLARED) {
+        return "Symbol '" + str + "' has already been declared";
+    }
+
+    return "Cannot resolve symbol '" + str + "'";
 }
 
 inline std::string toMsg(const DiagnosticKind kind, Modifier modifier) {

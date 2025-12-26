@@ -61,49 +61,10 @@ public:
 
     std::unordered_map<Symbol*, Decl*> symbolToDecl;
 
+    Type* resolveType(const TypeRef* typeRef, Scope* scope);
+
     // ===== Phase 3 =====
 
-    MethodSymbol* analyseMethod(const MethodDecl* methodDecl, Scope* scope) {
-
-
-        return nullptr; // TODO
-    }
-
-    Type* analyseType(const TypeRef* typeRef, Scope* scope) {
-        const auto& symbol = scope->searchUnique(typeRef->identifier);
-        if (!symbol) {
-            // TODO - Send some diagnostics
-            return nullptr;
-        }
-        auto typeSymbol = dynamic_cast<TypeSymbol*>(symbol.value());
-        if (!typeSymbol) {
-            // TODO - Send some diagnostics
-            return nullptr;
-        }
-
-        auto builder = TypeBuilder(typeSymbol);
-
-        std::size_t expectedGenericsArgs = 0;
-        if (auto classSymbol = dynamic_cast<ClassSymbol*>(typeSymbol)) {
-            expectedGenericsArgs = classSymbol->genericArguments.size();
-        }
-
-        if (expectedGenericsArgs != typeRef->args.size()) {
-            // TODO - Send some diagnostics
-            return nullptr;
-        }
-
-        for (auto arg: typeRef->args) {
-            if (auto argType = analyseType(arg, scope)) {
-                builder.with(argType);
-            } else {
-                // TODO - Send some diagnostics
-                return nullptr;
-            }
-        }
-
-        return builder.build();
-    }
 
 private:
     Arena& astArena;

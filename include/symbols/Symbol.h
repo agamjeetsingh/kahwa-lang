@@ -17,6 +17,10 @@ struct Symbol {
     const std::string name;
     Scope scope;
 
+    static std::string toString(Symbol* symbol) {
+        // TODO
+    }
+
     virtual ~Symbol() noexcept = default;
 };
 
