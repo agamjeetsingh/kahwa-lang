@@ -54,6 +54,10 @@ struct ClassSymbol final : TypeSymbol {
         this->superClasses.insert(this->superClasses.begin(), superClasses.begin(), superClasses.end());
     }
 
+    void addSuperClass(Type* superClass) {
+        superClasses.push_back(superClass);
+    }
+
     void setModifiers(bool isAbstract, bool isOpen, Modifier visibility) {
         this->isAbstract = isAbstract;
         this->isOpen = isOpen;

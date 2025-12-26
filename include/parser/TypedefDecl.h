@@ -8,7 +8,7 @@
 #include <utility>
 
 #include "TypeRef.h"
-
+#include "Decl.h"
 
 struct TypedefDecl : Decl {
     TypedefDecl(

@@ -21,6 +21,8 @@ struct Decl {
     nameSourceRange(nameSourceRange),
     bodyRange(bodyRange) {}
 
+    virtual ~Decl() = default;
+
     const std::string name;
     const std::vector<ModifierNode> modifiers;
 

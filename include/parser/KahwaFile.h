@@ -9,7 +9,7 @@
 #include "ASTBuilder.h"
 #include "TypedefDecl.h"
 #include "../arena/Arena.h"
-
+#include "ClassDecl.h"
 
 struct KahwaFile {
     explicit KahwaFile(const std::vector<TypedefDecl*> &typedefDecls = {},

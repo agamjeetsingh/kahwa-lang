@@ -11,8 +11,6 @@
 struct VisibleVariableSymbol : VariableSymbol {
     VisibleVariableSymbol(std::string name, Scope* outerScope): VariableSymbol(std::move(name), outerScope) {}
 
-    ~VisibleVariableSymbol() noexcept override = default;
-
     Modifier visibility = Modifier::PUBLIC;
 
     void setVisibility(Modifier visibility) {
