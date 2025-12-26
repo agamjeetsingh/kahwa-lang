@@ -58,9 +58,28 @@ struct ClassSymbol final : TypeSymbol {
         superClasses.push_back(superClass);
     }
 
-    void setModifiers(bool isAbstract, bool isOpen, Modifier visibility) {
-        this->isAbstract = isAbstract;
-        this->isOpen = isOpen;
+    void setModality(Modifier modifier) {
+        assert(isModalityModifier(modifier));
+        switch (modifier) {
+            case Modifier::FINAL:
+                isAbstract = false;
+                isOpen = false;
+                break;
+            case Modifier::OPEN:
+                isAbstract = false;
+                isOpen = true;
+                break;
+            case Modifier::ABSTRACT:
+                isAbstract = true;
+                isOpen = true;
+                break;
+            default:
+                throw std::runtime_error("Unreachable");
+        }
+    }
+
+    void setVisibility(Modifier visibility) {
+        assert(isVisibilityModifier(visibility));
         this->visibility = visibility;
     }
 

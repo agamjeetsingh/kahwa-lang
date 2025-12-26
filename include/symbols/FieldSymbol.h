@@ -13,6 +13,26 @@
 struct FieldSymbol : VisibleVariableSymbol {
     FieldSymbol(std::string name, Scope* outerScope): VisibleVariableSymbol(std::move(name), outerScope) {}
 
+    void setModality(Modifier modifier) {
+        assert(isModalityModifier(modifier));
+        switch (modifier) {
+            case Modifier::FINAL:
+                isAbstract = false;
+                isOpen = false;
+                break;
+            case Modifier::OPEN:
+                isAbstract = false;
+                isOpen = true;
+                break;
+            case Modifier::ABSTRACT:
+                isAbstract = true;
+                isOpen = true;
+                break;
+            default:
+                throw std::runtime_error("Unreachable");
+        }
+    }
+
     bool isAbstract = false;
     bool isOpen = false;
 };

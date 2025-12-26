@@ -15,6 +15,12 @@ struct VariableSymbol : Symbol {
 
     ~VariableSymbol() noexcept override = default;
 
+    bool isStatic = false;
+
+    void setStatic(bool isStatic) {
+        this->isStatic = isStatic;
+    }
+
     Type* type = nullptr;
 
     void setType(Type* type) {
