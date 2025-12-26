@@ -17,6 +17,10 @@ public:
         return true;
     }
 
+    void setOverride(bool isAnOverride) {
+        this->isAnOverride = isAnOverride;
+    }
+
     void setModality(Modifier modifier) {
         assert(isModalityModifier(modifier));
         switch (modifier) {
@@ -39,6 +43,7 @@ public:
 
     bool isAbstract = false;
     bool isOpen = false;
+    bool isAnOverride = false;
 };
 
 

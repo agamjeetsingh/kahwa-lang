@@ -13,6 +13,10 @@
 struct FieldSymbol : VisibleVariableSymbol {
     FieldSymbol(std::string name, Scope* outerScope): VisibleVariableSymbol(std::move(name), outerScope) {}
 
+    void setOverride(bool isAnOverride) {
+        this->isAnOverride = isAnOverride;
+    }
+
     void setModality(Modifier modifier) {
         assert(isModalityModifier(modifier));
         switch (modifier) {
@@ -35,6 +39,7 @@ struct FieldSymbol : VisibleVariableSymbol {
 
     bool isAbstract = false;
     bool isOpen = false;
+    bool isAnOverride = false;
 };
 
 

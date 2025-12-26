@@ -62,10 +62,7 @@ ClassSymbol *SemanticAnalyser::declareClass(const ClassDecl *classDecl, Scope *s
        return std::pair{declareVariable<FieldSymbol>(fieldDecl, &classSymbol->scope), fieldDecl->nameSourceRange};
     }, [classSymbol](FieldSymbol* fieldSymbol){ classSymbol->addField(fieldSymbol); });
 
-    // Setting effective visibility
-    auto visibilityModifiers = classDecl->modifiers | std::ranges::views::filter([](const ModifierNode& modifier) {
-        return isVisibilityModifier(modifier.modifier);
-    });
+    // ===== Modifiers =====
     classSymbol->setVisibility(resolveVisibility(classDecl->modifiers, topLevel));
 
     // Static and Override keyword aren't allowed. Emitting diagnostics for each occurrence.
@@ -73,10 +70,7 @@ ClassSymbol *SemanticAnalyser::declareClass(const ClassDecl *classDecl, Scope *s
     modifierNotAllowed(classDecl->modifiers, Modifier::OVERRIDE);
 
     // Setting effective modality
-    auto modalityModifiers = classDecl->modifiers | std::ranges::views::filter([](const ModifierNode& modifier) {
-        return isModalityModifier(modifier.modifier);
-    });
-    classSymbol->setModality(resolveModality(std::vector(modalityModifiers.begin(), modalityModifiers.end())));
+    classSymbol->setModality(resolveModality(classDecl->modifiers));
 
     return classSymbol;
 }
@@ -98,17 +92,22 @@ FunctionLikeSymbol *SemanticAnalyser::declareFunction(const MethodDecl *methodDe
        return std::pair{astArena.make<VariableSymbol>(pair.second, &methodSymbol->scope), pair.first->nameSourceRange}; // TODO - Need source range of parameter name too
     }, [methodSymbol](VariableSymbol* variableSymbol){ methodSymbol->addParameter(variableSymbol); });
 
+    // ===== Modifiers =====
+
     methodSymbol->setVisibility(resolveVisibility(methodDecl->modifiers, topLevel));
+    methodSymbol->setStatic(hasModifier(methodDecl->modifiers, Modifier::STATIC));
 
     if constexpr (std::is_same_v<FunctionLikeSymbol, FunctionSymbol>) {
         assert(topLevel);
 
         modifierNotAllowed(methodDecl->modifiers, isModalityModifier);
+        modifierNotAllowed(methodDecl->modifiers, Modifier::OVERRIDE);
     }
     if constexpr (std::is_same_v<FunctionLikeSymbol, MethodSymbol>) {
         assert(!topLevel);
 
         methodSymbol->setModality(resolveModality(methodDecl->modifiers));
+        methodSymbol->setOverride(hasModifier(methodDecl->modifiers, Modifier::OVERRIDE));
     }
 
     return methodSymbol;
@@ -166,6 +165,7 @@ T *SemanticAnalyser::declareVariable(const FieldDecl *variableDecl, Scope *scope
     static_assert(std::is_same_v<T, FieldSymbol>);
     assert(!topLevel);
     variableSymbol->setModality(resolveModality(variableDecl->modifiers));
+    variableSymbol->setOverride(hasModifier(variableDecl->modifiers, Modifier::OVERRIDE));
     return variableSymbol;
 }
 

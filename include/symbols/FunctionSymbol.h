@@ -42,6 +42,7 @@ struct FunctionSymbol : Symbol {
     Type* returnType = nullptr;
     std::vector<VariableSymbol*> parameters;
     Block* block = nullptr;
+    bool isStatic = false;
 
     std::vector<TypeParameterSymbol*> genericArguments;
 
@@ -64,6 +65,10 @@ struct FunctionSymbol : Symbol {
     void setVisibility(Modifier visibility) {
         assert(isVisibilityModifier(visibility));
         this->visibility = visibility;
+    }
+
+    void setStatic(bool isStatic) {
+        this->isStatic = isStatic;
     }
 };
 
