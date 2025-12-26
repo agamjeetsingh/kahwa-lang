@@ -7,6 +7,33 @@
 #include "../../include/symbols/VisibleVariableSymbol.h"
 #include "../../include/symbols/VariableSymbol.h"
 
+template<typename ChildSymbol, typename ParentSymbol, typename DeclLike, typename F1, typename F2> requires std::derived_from<ChildSymbol, Symbol> && requires(ParentSymbol t) { { t.scope } -> std::same_as<Scope &>; } && std::invocable<F1, const DeclLike &> && std::same_as<std::invoke_result_t<F1, const DeclLike &>, std::pair<ChildSymbol *, SourceRange> > && std::invocable<F2, ChildSymbol *> && std::same_as<std::invoke_result_t<F2, ChildSymbol *>, void>
+void SemanticAnalyser::registerIt(ParentSymbol *symbol, const std::vector<DeclLike> &decls, F1 &&declToSymbolAndSourceRange, F2 &&registerSymbol, bool duplicatesAllowed) {
+    std::vector<std::tuple<ChildSymbol*, SourceRange, DeclLike>> ts;
+    ts.reserve(decls.size());
+
+    std::ranges::transform(decls, std::back_inserter(ts), [declToSymbolAndSourceRange](const DeclLike& declLike) {
+        auto pair = declToSymbolAndSourceRange(declLike);
+        return std::tuple<ChildSymbol*, SourceRange, DeclLike>{pair.first, pair.second, declLike};
+    });
+
+    std::ranges::for_each(ts, [this, &symbol, duplicatesAllowed, registerSymbol](const std::tuple<ChildSymbol*, SourceRange, DeclLike>& triple) {
+        if (!duplicatesAllowed && !symbol->scope.searchCurrent(std::get<0>(triple)->name).empty()) {
+            diagnosticEngine.reportProblem(
+               DiagnosticSeverity::ERROR,
+               DiagnosticKind::SYMBOL_ALREADY_DECLARED,
+               std::get<1>(triple),
+               toMsg(DiagnosticKind::SYMBOL_ALREADY_DECLARED, std::get<0>(triple)->name));
+        } else {
+            symbol->scope.define(std::get<0>(triple));
+            registerSymbol(std::get<0>(triple));
+            if constexpr (std::derived_from<std::remove_pointer_t<DeclLike>, Decl>) {
+                symbolToDecl[std::get<0>(triple)] = std::get<2>(triple);
+            }
+        }
+    });
+}
+
 ClassSymbol *SemanticAnalyser::declareClass(const ClassDecl *classDecl, Scope *scope) {
     auto classSymbol = astArena.make<ClassSymbol>(classDecl->name, scope);
 
@@ -70,7 +97,7 @@ TranslationUnit *SemanticAnalyser::declareFile(const KahwaFile *kahwaFile) {
     // ===== Functions =====
     registerIt<FunctionSymbol>(translationUnit, kahwaFile->functionDecls, [this, translationUnit](const MethodDecl* functionDecl) {
         return std::pair{declareFunction<FunctionSymbol>(functionDecl, &translationUnit->scope), functionDecl->nameSourceRange};
-    }, [translationUnit](FunctionSymbol* functionSymbol){ translationUnit->addFunction(functionSymbol); });
+    }, [translationUnit](FunctionSymbol* functionSymbol){ translationUnit->addFunction(functionSymbol); }, true);
 
     // ===== Top level variables =====
     registerIt<VisibleVariableSymbol>(translationUnit, kahwaFile->variableDecls, [this, translationUnit](const FieldDecl* variableDecl) {
@@ -85,6 +112,56 @@ TranslationUnit *SemanticAnalyser::declareFile(const KahwaFile *kahwaFile) {
 template<typename T> requires (std::is_same_v<T, VariableSymbol> || std::is_same_v<T, VisibleVariableSymbol> || std::is_same_v<T, FieldSymbol>)
 T *SemanticAnalyser::declareVariable(const FieldDecl *variableDecl, Scope *scope) {
     return astArena.make<T>(variableDecl->name, scope);
+}
+
+void SemanticAnalyser::resolveTypes(TranslationUnit *translationUnit) {
+    // TODO - typedefs
+
+    std::ranges::for_each(translationUnit->classes, [this](ClassSymbol* classSymbol) {
+       resolveTypes(classSymbol);
+    });
+
+    std::ranges::for_each(translationUnit->functions, [this](FunctionSymbol* functionSymbol) {
+       resolveTypes(functionSymbol);
+    });
+
+    std::ranges::for_each(translationUnit->variables, [this](VisibleVariableSymbol* variableSymbol) {
+        resolveTypes(variableSymbol);
+    });
+}
+
+void SemanticAnalyser::resolveTypes(ClassSymbol *classSymbol) {
+    std::ranges::for_each(dynamic_cast<ClassDecl*>(symbolToDecl[classSymbol])->superClasses, [this, classSymbol](TypeRef* superClass) {
+        classSymbol->addSuperClass(analyseType(superClass, &classSymbol->scope));
+    });
+
+    std::ranges::for_each(classSymbol->nestedClasses, [this](ClassSymbol* nestedClass) {
+       resolveTypes(nestedClass);
+    });
+
+    std::ranges::for_each(classSymbol->fields, [this](FieldSymbol* field) {
+       resolveTypes(field);
+    });
+
+    std::ranges::for_each(classSymbol->methods, [this](MethodSymbol* method) {
+       resolveTypes(method);
+    });
+}
+
+template<typename FunctionLikeSymbol> requires std::is_same_v<FunctionLikeSymbol, FunctionSymbol> || std::is_same_v<FunctionLikeSymbol, MethodSymbol>
+void SemanticAnalyser::resolveTypes(FunctionLikeSymbol *functionSymbol) {
+    functionSymbol->returnType = analyseType(dynamic_cast<MethodDecl*>(symbolToDecl[functionSymbol])->returnType, functionSymbol->scope);
+
+    std::ranges::for_each(functionSymbol->parameters, [this](VariableSymbol* variableSymbol) {
+       resolveTypes(variableSymbol);
+    });
+
+    // TODO - Body
+}
+
+template<typename T> requires (std::is_same_v<T, VariableSymbol> || std::is_same_v<T, VisibleVariableSymbol> || std::is_same_v<T, FieldSymbol>)
+void SemanticAnalyser::resolveTypes(T *variableSymbol) {
+    variableSymbol->type = analyseType(dynamic_cast<FieldDecl*>(symbolToDecl[variableSymbol]->typeRef), variableSymbol->scope);
 }
 
 

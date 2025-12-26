@@ -30,48 +30,38 @@ public:
         SymbolBuilder::setArena(&astArena);
     }
 
+    // ===== Phase 1 =====
+    // TODO - Method Bodies
+
     ClassSymbol* declareClass(const ClassDecl* classDecl, Scope* scope);
 
     template<typename FunctionLikeSymbol>
     requires std::is_same_v<FunctionLikeSymbol, FunctionSymbol> || std::is_same_v<FunctionLikeSymbol, MethodSymbol>
     FunctionLikeSymbol* declareFunction(const MethodDecl* methodDecl, Scope* scope);
 
-    template<typename ChildSymbol, typename ParentSymbol, typename DeclLike, typename F1, typename F2>
-    requires std::derived_from<ChildSymbol, Symbol> && requires(ParentSymbol t) {
-        { t.scope } -> std::same_as<Scope&>;  // Ensure scope is a field
-    } &&
-                std::invocable<F1, const DeclLike&> && std::same_as<std::invoke_result_t<F1, const DeclLike&>, std::pair<ChildSymbol*, SourceRange>> &&
-                    std::invocable<F2, ChildSymbol*> && std::same_as<std::invoke_result_t<F2, ChildSymbol*>, void>
-    void registerIt(
-        ParentSymbol* symbol,
-        const std::vector<DeclLike>& decls,
-        F1&& declToSymbolAndSourceRange,
-        F2&& registerSymbol,
-        bool duplicatesAllowed = false) const {
-        std::vector<std::pair<ChildSymbol*, SourceRange>> ts;
-        ts.reserve(decls.size());
-
-        std::ranges::transform(decls, std::back_inserter(ts), declToSymbolAndSourceRange);
-
-        std::ranges::for_each(ts, [this, &symbol, duplicatesAllowed, registerSymbol](const std::pair<ChildSymbol*, SourceRange>& pair) {
-            if (!duplicatesAllowed && !symbol->scope.searchCurrentUnique(pair.first->name)) {
-                diagnosticEngine.reportProblem(
-                   DiagnosticSeverity::ERROR,
-                   DiagnosticKind::SYMBOL_ALREADY_DECLARED,
-                   pair.second,
-                   toMsg(DiagnosticKind::SYMBOL_ALREADY_DECLARED, pair.first->name));
-            } else {
-                symbol->scope.define(pair.first);
-                registerSymbol(pair.first);
-            }
-        });
-    }
-
     template <typename T>
     requires (std::is_same_v<T, VariableSymbol> || std::is_same_v<T, VisibleVariableSymbol> || std::is_same_v<T, FieldSymbol>)
     T* declareVariable(const FieldDecl* variableDecl, Scope* scope);
 
     TranslationUnit* declareFile(const KahwaFile* kahwaFile);
+
+    // ===== Phase 2 =====
+
+    void resolveTypes(TranslationUnit* translationUnit);
+
+    void resolveTypes(ClassSymbol* classSymbol);
+
+    template<typename FunctionLikeSymbol>
+    requires std::is_same_v<FunctionLikeSymbol, FunctionSymbol> || std::is_same_v<FunctionLikeSymbol, MethodSymbol>
+    void resolveTypes(FunctionLikeSymbol* functionSymbol);
+
+    template <typename T>
+    requires (std::is_same_v<T, VariableSymbol> || std::is_same_v<T, VisibleVariableSymbol> || std::is_same_v<T, FieldSymbol>)
+    void resolveTypes(T* variableSymbol);
+
+    std::unordered_map<Symbol*, Decl*> symbolToDecl;
+
+    // ===== Phase 3 =====
 
     ClassSymbol* analyseClass(const ClassDecl* classDecl, Scope* scope, bool topLevel = true) {
         auto classSymbol = astArena.make<ClassSymbol>(classDecl->name, scope);
@@ -170,6 +160,21 @@ private:
     [[nodiscard]] Modifier resolveModality(const std::vector<ModifierNode> &modalityModifiers) const;
 
     [[nodiscard]] Modifier resolveVisibility(const std::vector<ModifierNode> &visibilityModifiers, bool topLevel) const;
+
+    template<typename ChildSymbol, typename ParentSymbol, typename DeclLike, typename F1, typename F2>
+    requires std::derived_from<ChildSymbol, Symbol> && requires(ParentSymbol t) {
+        { t.scope } -> std::same_as<Scope&>;  // Ensure scope is a field
+    } && std::invocable<F1, const DeclLike&> &&
+         std::same_as<std::invoke_result_t<F1, const DeclLike&>, std::pair<ChildSymbol*, SourceRange>> &&
+         std::invocable<F2, ChildSymbol*> && std::same_as<std::invoke_result_t<F2, ChildSymbol*>, void>
+    void registerIt(
+        ParentSymbol* symbol,
+        const std::vector<DeclLike>& decls,
+        F1&& declToSymbolAndSourceRange,
+        F2&& registerSymbol,
+        bool duplicatesAllowed = false);
+
+
 };
 
 
