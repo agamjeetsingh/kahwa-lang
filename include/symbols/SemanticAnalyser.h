@@ -33,15 +33,15 @@ public:
     // ===== Phase 1 =====
     // TODO - Method Bodies
 
-    ClassSymbol* declareClass(const ClassDecl* classDecl, Scope* scope);
+    ClassSymbol* declareClass(const ClassDecl* classDecl, Scope* scope, bool topLevel = false);
 
     template<typename FunctionLikeSymbol>
     requires std::is_same_v<FunctionLikeSymbol, FunctionSymbol> || std::is_same_v<FunctionLikeSymbol, MethodSymbol>
-    FunctionLikeSymbol* declareFunction(const MethodDecl* methodDecl, Scope* scope);
+    FunctionLikeSymbol* declareFunction(const MethodDecl* methodDecl, Scope* scope, bool topLevel = false);
 
     template <typename T>
     requires (std::is_same_v<T, VariableSymbol> || std::is_same_v<T, VisibleVariableSymbol> || std::is_same_v<T, FieldSymbol>)
-    T* declareVariable(const FieldDecl* variableDecl, Scope* scope);
+    T* declareVariable(const FieldDecl* variableDecl, Scope* scope, bool topLevel = false);
 
     TranslationUnit* declareFile(const KahwaFile* kahwaFile);
 
@@ -62,54 +62,6 @@ public:
     std::unordered_map<Symbol*, Decl*> symbolToDecl;
 
     // ===== Phase 3 =====
-
-    ClassSymbol* analyseClass(const ClassDecl* classDecl, Scope* scope, bool topLevel = true) {
-        auto classSymbol = astArena.make<ClassSymbol>(classDecl->name, scope);
-
-        // Actually first I might need to add all symbols onto my classSymbol's scope so that they can reference each other...
-
-        return classSymbol; // TODO
-        // Adding all methods
-        std::vector<MethodSymbol*> methods{classDecl->methods.size()};
-        std::ranges::transform(classDecl->methods, methods.begin(), [this, &classSymbol](const MethodDecl* methodDecl) {
-            return analyseMethod(methodDecl, &classSymbol->scope);
-        });
-        // builder.with(methods);
-
-        // Adding all nested classes (recursively)
-        std::vector<ClassSymbol*> nestedClasses{classDecl->nestedClasses.size()};
-        // std::ranges::transform(classDecl->nestedClasses, nestedClasses.begin(), [this](const ClassDecl* nestedClass) {
-        //     return analyseClass(nestedClass, false);
-        // });
-        // builder.withNestedClasses(nestedClasses);
-
-        // Setting effective visibility
-        auto visibilityModifiers = classDecl->modifiers | std::ranges::views::filter([](const ModifierNode& modifier) {
-            return isVisibilityModifier(modifier.modifier);
-        });
-        // builder.setVisibility(resolveVisibility(std::vector(visibilityModifiers.begin(), visibilityModifiers.end()), topLevel));
-
-        // Static keyword isn't allowed. Emitting diagnostics for each occurrence.
-        for (auto staticModifier : classDecl->modifiers |
-            std::ranges::views::filter([](const ModifierNode& modifier) {
-                return modifier.modifier == Modifier::STATIC;
-            })) {
-            diagnosticEngine.reportProblem(
-                DiagnosticSeverity::ERROR,
-                DiagnosticKind::MODIFIER_NOT_ALLOWED,
-                staticModifier.sourceRange,
-                toMsg(DiagnosticKind::MODIFIER_NOT_ALLOWED, staticModifier.modifier));
-        }
-
-        // Setting effective modality
-        auto modalityModifiers = classDecl->modifiers | std::ranges::views::filter([](const ModifierNode& modifier) {
-            return isModalityModifier(modifier.modifier);
-        });
-        // builder.setModality(resolveModality(std::vector(modalityModifiers.begin(), modalityModifiers.end())));
-
-        // return builder.build();
-    }
-
 
     MethodSymbol* analyseMethod(const MethodDecl* methodDecl, Scope* scope) {
 
@@ -157,9 +109,11 @@ private:
     Arena& astArena;
     DiagnosticEngine& diagnosticEngine;
 
-    [[nodiscard]] Modifier resolveModality(const std::vector<ModifierNode> &modalityModifiers) const;
+    [[nodiscard]] Modifier resolveModality(const std::vector<ModifierNode>& modifiers) const;
 
-    [[nodiscard]] Modifier resolveVisibility(const std::vector<ModifierNode> &visibilityModifiers, bool topLevel) const;
+    [[nodiscard]] Modifier resolveVisibility(const std::vector<ModifierNode>& modifiers, bool topLevel) const;
+
+    [[nodiscard]] bool hasModifier(const std::vector<ModifierNode>& modifiers, Modifier modifier) const;
 
     template<typename ChildSymbol, typename ParentSymbol, typename DeclLike, typename F1, typename F2>
     requires std::derived_from<ChildSymbol, Symbol> && requires(ParentSymbol t) {
@@ -174,7 +128,9 @@ private:
         F2&& registerSymbol,
         bool duplicatesAllowed = false);
 
+    void modifierNotAllowed(const std::vector<ModifierNode>& modifiers, Modifier notAllowed) const;
 
+    void modifierNotAllowed(const std::vector<ModifierNode>& modifiers, std::function<bool(Modifier)> pred) const;
 };
 
 

@@ -34,7 +34,7 @@ void SemanticAnalyser::registerIt(ParentSymbol *symbol, const std::vector<DeclLi
     });
 }
 
-ClassSymbol *SemanticAnalyser::declareClass(const ClassDecl *classDecl, Scope *scope) {
+ClassSymbol *SemanticAnalyser::declareClass(const ClassDecl *classDecl, Scope *scope, bool topLevel) {
     auto classSymbol = astArena.make<ClassSymbol>(classDecl->name, scope);
 
     // ===== TypeParameterSymbols and Variances ======
@@ -62,11 +62,27 @@ ClassSymbol *SemanticAnalyser::declareClass(const ClassDecl *classDecl, Scope *s
        return std::pair{declareVariable<FieldSymbol>(fieldDecl, &classSymbol->scope), fieldDecl->nameSourceRange};
     }, [classSymbol](FieldSymbol* fieldSymbol){ classSymbol->addField(fieldSymbol); });
 
+    // Setting effective visibility
+    auto visibilityModifiers = classDecl->modifiers | std::ranges::views::filter([](const ModifierNode& modifier) {
+        return isVisibilityModifier(modifier.modifier);
+    });
+    classSymbol->setVisibility(resolveVisibility(classDecl->modifiers, topLevel));
+
+    // Static and Override keyword aren't allowed. Emitting diagnostics for each occurrence.
+    modifierNotAllowed(classDecl->modifiers, Modifier::STATIC);
+    modifierNotAllowed(classDecl->modifiers, Modifier::OVERRIDE);
+
+    // Setting effective modality
+    auto modalityModifiers = classDecl->modifiers | std::ranges::views::filter([](const ModifierNode& modifier) {
+        return isModalityModifier(modifier.modifier);
+    });
+    classSymbol->setModality(resolveModality(std::vector(modalityModifiers.begin(), modalityModifiers.end())));
+
     return classSymbol;
 }
 
 template<typename FunctionLikeSymbol> requires std::is_same_v<FunctionLikeSymbol, FunctionSymbol> || std::is_same_v<FunctionLikeSymbol, MethodSymbol>
-FunctionLikeSymbol *SemanticAnalyser::declareFunction(const MethodDecl *methodDecl, Scope *scope) {
+FunctionLikeSymbol *SemanticAnalyser::declareFunction(const MethodDecl *methodDecl, Scope *scope, bool topLevel) {
     auto methodSymbol = astArena.make<FunctionLikeSymbol>(methodDecl->name, scope);
 
     // ===== TypeParameterSymbols ======
@@ -82,6 +98,19 @@ FunctionLikeSymbol *SemanticAnalyser::declareFunction(const MethodDecl *methodDe
        return std::pair{astArena.make<VariableSymbol>(pair.second, &methodSymbol->scope), pair.first->nameSourceRange}; // TODO - Need source range of parameter name too
     }, [methodSymbol](VariableSymbol* variableSymbol){ methodSymbol->addParameter(variableSymbol); });
 
+    methodSymbol->setVisibility(resolveVisibility(methodDecl->modifiers, topLevel));
+
+    if constexpr (std::is_same_v<FunctionLikeSymbol, FunctionSymbol>) {
+        assert(topLevel);
+
+        modifierNotAllowed(methodDecl->modifiers, isModalityModifier);
+    }
+    if constexpr (std::is_same_v<FunctionLikeSymbol, MethodSymbol>) {
+        assert(!topLevel);
+
+        methodSymbol->setModality(resolveModality(methodDecl->modifiers));
+    }
+
     return methodSymbol;
 }
 
@@ -91,17 +120,17 @@ TranslationUnit *SemanticAnalyser::declareFile(const KahwaFile *kahwaFile) {
 
     // ===== Classes =====
     registerIt<ClassSymbol>(translationUnit, kahwaFile->classDecls, [this, translationUnit](const ClassDecl* classDecl) {
-        return std::pair{declareClass(classDecl, &translationUnit->scope), classDecl->nameSourceRange};
+        return std::pair{declareClass(classDecl, &translationUnit->scope, true), classDecl->nameSourceRange};
     }, [translationUnit](ClassSymbol* classSymbol){ translationUnit->addClass(classSymbol); });
 
     // ===== Functions =====
     registerIt<FunctionSymbol>(translationUnit, kahwaFile->functionDecls, [this, translationUnit](const MethodDecl* functionDecl) {
-        return std::pair{declareFunction<FunctionSymbol>(functionDecl, &translationUnit->scope), functionDecl->nameSourceRange};
+        return std::pair{declareFunction<FunctionSymbol>(functionDecl, &translationUnit->scope, true), functionDecl->nameSourceRange};
     }, [translationUnit](FunctionSymbol* functionSymbol){ translationUnit->addFunction(functionSymbol); }, true);
 
     // ===== Top level variables =====
     registerIt<VisibleVariableSymbol>(translationUnit, kahwaFile->variableDecls, [this, translationUnit](const FieldDecl* variableDecl) {
-        return std::pair{declareVariable<VisibleVariableSymbol>(variableDecl, &translationUnit->scope), variableDecl->nameSourceRange};
+        return std::pair{declareVariable<VisibleVariableSymbol>(variableDecl, &translationUnit->scope, true), variableDecl->nameSourceRange};
     }, [translationUnit](VisibleVariableSymbol* variableSymbol){ translationUnit->addVariable(variableSymbol); });
 
     // Typedefs in Phase 2
@@ -110,8 +139,34 @@ TranslationUnit *SemanticAnalyser::declareFile(const KahwaFile *kahwaFile) {
 }
 
 template<typename T> requires (std::is_same_v<T, VariableSymbol> || std::is_same_v<T, VisibleVariableSymbol> || std::is_same_v<T, FieldSymbol>)
-T *SemanticAnalyser::declareVariable(const FieldDecl *variableDecl, Scope *scope) {
-    return astArena.make<T>(variableDecl->name, scope);
+T *SemanticAnalyser::declareVariable(const FieldDecl *variableDecl, Scope *scope, bool topLevel) {
+    auto variableSymbol = astArena.make<T>(variableDecl->name, scope);
+
+    variableSymbol->setStatic(hasModifier(variableDecl->modifiers, Modifier::STATIC));
+
+    if constexpr (std::is_same_v<T, VariableSymbol>) {
+        assert(!topLevel);
+
+        modifierNotAllowed(variableDecl->modifiers, [](Modifier modifier){ return modifier != Modifier::STATIC; });
+
+        return variableSymbol;
+    }
+
+    variableSymbol->setVisibility(resolveVisibility(variableDecl->modifiers, topLevel));
+
+    if constexpr (std::is_same_v<T, VisibleVariableSymbol>) {
+        assert(topLevel);
+
+        modifierNotAllowed(variableDecl->modifiers, isModalityModifier);
+        modifierNotAllowed(variableDecl->modifiers, Modifier::OVERRIDE);
+
+        return variableSymbol;
+    }
+
+    static_assert(std::is_same_v<T, FieldSymbol>);
+    assert(!topLevel);
+    variableSymbol->setModality(resolveModality(variableDecl->modifiers));
+    return variableSymbol;
 }
 
 void SemanticAnalyser::resolveTypes(TranslationUnit *translationUnit) {
@@ -165,7 +220,13 @@ void SemanticAnalyser::resolveTypes(T *variableSymbol) {
 }
 
 
-Modifier SemanticAnalyser::resolveModality(const std::vector<ModifierNode> &modalityModifiers) const {
+Modifier SemanticAnalyser::resolveModality(const std::vector<ModifierNode>& modifiers) const {
+    auto modalityModifiersView = modifiers | std::ranges::views::filter([](const ModifierNode& modifier) {
+        return isModalityModifier(modifier.modifier);
+    });
+
+    std::vector<ModifierNode> modalityModifiers = std::vector(modalityModifiersView.begin(), modalityModifiersView.end());
+
     Modifier effectiveModality = Modifier::FINAL;
     if (!modalityModifiers.empty()) {
         if (std::ranges::any_of(modalityModifiers, [](const ModifierNode& modifierNode) {
@@ -242,7 +303,13 @@ Modifier SemanticAnalyser::resolveModality(const std::vector<ModifierNode> &moda
     return effectiveModality;
 }
 
-Modifier SemanticAnalyser::resolveVisibility(const std::vector<ModifierNode> &visibilityModifiers, bool topLevel) const {
+Modifier SemanticAnalyser::resolveVisibility(const std::vector<ModifierNode>& modifiers, bool topLevel) const {
+    auto visibilityModifiersView = modifiers | std::ranges::views::filter([](const ModifierNode& modifier) {
+        return isVisibilityModifier(modifier.modifier);
+    });
+
+    auto visibilityModifiers = std::vector(visibilityModifiersView.begin(), visibilityModifiersView.end());
+
     Modifier res;
 
     if (visibilityModifiers.empty()) {
@@ -321,4 +388,41 @@ Modifier SemanticAnalyser::resolveVisibility(const std::vector<ModifierNode> &vi
     }
 
     return res;
+}
+
+bool SemanticAnalyser::hasModifier(const std::vector<ModifierNode> &modifiers, Modifier modifier) const {
+    bool found = false;
+    for (auto desiredModifier : modifiers |
+        std::ranges::views::filter([modifier](const ModifierNode& modifierNode) {
+            return modifierNode.modifier == modifier;
+        })) {
+        if (!found) {
+            found = true;
+        } else {
+            diagnosticEngine.reportProblem(
+            DiagnosticSeverity::ERROR,
+            DiagnosticKind::REPEATED_MODIFIER,
+            desiredModifier.sourceRange,
+            toMsg(DiagnosticKind::MODIFIER_NOT_ALLOWED, desiredModifier.modifier));
+        }
+        }
+    return found;
+}
+
+
+void SemanticAnalyser::modifierNotAllowed(const std::vector<ModifierNode> &modifiers, Modifier notAllowed) const {
+    modifierNotAllowed(modifiers, [notAllowed](Modifier modifier){ return modifier == notAllowed; });
+}
+
+void SemanticAnalyser::modifierNotAllowed(const std::vector<ModifierNode> &modifiers, std::function<bool(Modifier)> pred) const {
+    for (auto notAllowedModifier : modifiers |
+        std::ranges::views::filter([pred](const ModifierNode& modifier) {
+            return pred(modifier.modifier);
+        })) {
+        diagnosticEngine.reportProblem(
+            DiagnosticSeverity::ERROR,
+            DiagnosticKind::MODIFIER_NOT_ALLOWED,
+            notAllowedModifier.sourceRange,
+            toMsg(DiagnosticKind::MODIFIER_NOT_ALLOWED, notAllowedModifier.modifier));
+        }
 }
