@@ -60,6 +60,11 @@ struct FunctionSymbol : Symbol {
     void addParameter(VariableSymbol* parameter) {
         parameters.push_back(parameter);
     }
+
+    void setVisibility(Modifier visibility) {
+        assert(isVisibilityModifier(visibility));
+        this->visibility = visibility;
+    }
 };
 
 class FunctionSymbolBuilder : public SymbolBuilder {
