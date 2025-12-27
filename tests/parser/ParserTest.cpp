@@ -10,6 +10,19 @@
 #include "../../include/tokeniser/Tokeniser.h"
 #include "../../include/parser/Modifier.h"
 #include "../../include/parser/ASTBuilder.h"
+#include "../../include/parser/expr/BinaryExpr.h"
+#include "../../include/parser/expr/BinaryOp.h"
+#include "../../include/parser/expr/CallExpr.h"
+#include "../../include/parser/expr/IdentifierRef.h"
+#include "../../include/parser/expr/MemberAccessExpr.h"
+#include "../../include/parser/expr/TernaryExpr.h"
+#include "../../include/parser/expr/UnaryExpr.h"
+#include "../../include/parser/expr/UnaryOp.h"
+#include "../../include/parser/expr/literals/BoolLiteral.h"
+#include "../../include/parser/expr/literals/FloatLiteral.h"
+#include "../../include/parser/expr/literals/IntegerLiteral.h"
+#include "../../include/parser/expr/literals/NullLiteral.h"
+#include "../../include/parser/expr/literals/StringLiteral.h"
 
 class ParserTest : public testing::Test, public DiagnosticTesting {
 protected:
@@ -26,6 +39,18 @@ protected:
 
     [[nodiscard]] TypeRef* parseTypeRef(const std::string &str) const {
         return parser.parseTypeRef(tokeniser.tokenise(0, str));
+    }
+
+    [[nodiscard]] Expr* parseExpr(const std::string &str) const {
+        return parser.parseExpr(tokeniser.tokenise(0, str));
+    }
+
+    void testExprs(const std::vector<std::pair<std::string, Expr*>>& tests) const {
+        for (auto& [str, expectedExpr]: tests) {
+            auto parsedExpr = parseExpr(str);
+            EXPECT_PRED2(exprEqualIgnoreSourceRange, parsedExpr, expectedExpr);
+            std::cout << "parsedExpr: " << toString(parsedExpr) << "\nexpectedExpr: " << toString(expectedExpr) << "\n--------" << std::endl;
+        }
     }
 
     static bool declEqualIgnoreSourceRange(const Decl* d1, const Decl* d2) {
@@ -173,6 +198,107 @@ protected:
         return true;
     }
 
+    static bool exprEqualIgnoreSourceRange(const Expr* e1, const Expr* e2) {
+        if (e1->kind != e2->kind) return false;
+
+        switch (e1->kind) {
+            case ExprKind::BOOL_LITERAL:
+                return dynamic_cast<const BoolLiteral*>(e1)->val == dynamic_cast<const BoolLiteral*>(e2)->val;
+            case ExprKind::FLOAT_LITERAL:
+                return dynamic_cast<const FloatLiteral*>(e1)->val == dynamic_cast<const FloatLiteral*>(e2)->val;
+            case ExprKind::INTEGER_LITERAL:
+                return dynamic_cast<const IntegerLiteral*>(e1)->val == dynamic_cast<const IntegerLiteral*>(e2)->val;
+            case ExprKind::NULL_LITERAL:
+                return true;
+            case ExprKind::STRING_LITERAL:
+                return dynamic_cast<const StringLiteral*>(e1)->val == dynamic_cast<const StringLiteral*>(e2)->val;
+            case ExprKind::BINARY_EXPR: {
+                auto be1 = dynamic_cast<const BinaryExpr*>(e1);
+                auto be2 = dynamic_cast<const BinaryExpr*>(e2);
+                return be1->op == be2->op && exprEqualIgnoreSourceRange(be1->expr1, be2->expr1) && exprEqualIgnoreSourceRange(be1->expr2, be2->expr2);
+            }
+            case ExprKind::CALL_EXPR: {
+                auto ce1 = dynamic_cast<const CallExpr*>(e1);
+                auto ce2 = dynamic_cast<const CallExpr*>(e2);
+                if (!exprEqualIgnoreSourceRange(ce1->callee, ce2->callee) || ce1->args.size() != ce2->args.size()) return false;
+
+                for (int i = 0; i < ce1->args.size(); i++) {
+                    if (!exprEqualIgnoreSourceRange(ce1->args[i], ce2->args[i])) return false;
+                }
+                return true;
+            }
+            case ExprKind::IDENTIFIER_REF: {
+                return dynamic_cast<const IdentifierRef*>(e1)->name == dynamic_cast<const IdentifierRef*>(e2)->name;
+            }
+            case ExprKind::MEMBER_ACCESS_EXPR: {
+                auto me1 = dynamic_cast<const MemberAccessExpr*>(e1);
+                auto me2 = dynamic_cast<const MemberAccessExpr*>(e2);
+
+                return me1->member == me2->member && exprEqualIgnoreSourceRange(me1->base, me2->base);
+            }
+            case ExprKind::TERNARY_EXPR: {
+                auto te1 = dynamic_cast<const TernaryExpr*>(e1);
+                auto te2 = dynamic_cast<const TernaryExpr*>(e2);
+
+                return exprEqualIgnoreSourceRange(te1->cond, te2->cond) &&
+                    exprEqualIgnoreSourceRange(te1->expr1, te2->expr1) &&
+                        exprEqualIgnoreSourceRange(te1->expr2, te2->expr2);
+            }
+            case ExprKind::UNARY_EXPR: {
+                auto ue1 = dynamic_cast<const UnaryExpr*>(e1);
+                auto ue2 = dynamic_cast<const UnaryExpr*>(e2);
+
+                return ue1->op == ue2->op && exprEqualIgnoreSourceRange(ue1->expr, ue2->expr);
+            }
+            case ExprKind::EXPR:
+                return true;
+        }
+    }
+
+    static BoolLiteral* boolLiteral(bool val) {
+        return astArena.make<BoolLiteral>(val, dummy_source);
+    }
+
+    static FloatLiteral* floatLiteral(float val) {
+        return astArena.make<FloatLiteral>(val, dummy_source);
+    }
+
+    static IntegerLiteral* integerLiteral(int val) {
+        return astArena.make<IntegerLiteral>(val, dummy_source);
+    }
+
+    static NullLiteral* nullLiteral() {
+        return astArena.make<NullLiteral>(dummy_source);
+    }
+
+    static StringLiteral* stringLiteral(const std::string& val) {
+        return astArena.make<StringLiteral>(val, dummy_source);
+    }
+
+    static BinaryExpr* binaryExpr(Expr* expr1, Expr* expr2, BinaryOp op) {
+        return astArena.make<BinaryExpr>(expr1, expr2, op, dummy_source);
+    }
+
+    static CallExpr* callExpr(Expr* callee, const std::vector<Expr*>& args) {
+        return astArena.make<CallExpr>(callee, args, dummy_source);
+    }
+
+    static IdentifierRef* identifierRef(const std::string& name) {
+        return astArena.make<IdentifierRef>(name, dummy_source);
+    }
+
+    static MemberAccessExpr* memberAccessExpr(Expr* base, const std::string& member) {
+        return astArena.make<MemberAccessExpr>(base, member, dummy_source);
+    }
+
+    static TernaryExpr* ternaryExpr(Expr* cond, Expr* expr1, Expr* expr2) {
+        return astArena.make<TernaryExpr>(cond, expr1, expr2, dummy_source);
+    }
+
+    static UnaryExpr* unaryExpr(Expr* expr, UnaryOp op) {
+        return astArena.make<UnaryExpr>(expr, op, dummy_source);
+    }
+
     static std::string toString(const std::vector<ModifierNode>& modifiers) {
         std::string str;
         for (int i = 0; i < modifiers.size(); i++) {
@@ -287,7 +413,66 @@ protected:
     }
 
     static std::string toString(const Block* block) {
-        return "{\n}"; // TODO
+        std::string str = "{\n";
+        for (auto stmt: block->stmts) {
+            str += toString(stmt);
+            str += "\n";
+        }
+        str += "\n}";
+        return str;
+    }
+
+    static std::string toString(const Stmt* stmt) {
+        return ""; // TODO
+    }
+
+    static std::string toString(const Expr* expr) {
+        switch (expr->kind) {
+            case ExprKind::BOOL_LITERAL:
+                return dynamic_cast<const BoolLiteral*>(expr)->val ? "true" : "false";
+            case ExprKind::FLOAT_LITERAL:
+                return std::to_string(dynamic_cast<const FloatLiteral*>(expr)->val);
+            case ExprKind::INTEGER_LITERAL:
+                return std::to_string(dynamic_cast<const IntegerLiteral*>(expr)->val);
+            case ExprKind::NULL_LITERAL:
+                return "null";
+            case ExprKind::STRING_LITERAL:
+                return dynamic_cast<const StringLiteral*>(expr)->val;
+            case ExprKind::BINARY_EXPR: {
+                auto be = dynamic_cast<const BinaryExpr*>(expr);
+                return "(" + toString(be->expr1) + " " + ::toString(be->op) + " " + toString(be->expr2) + ")";
+            }
+            case ExprKind::CALL_EXPR: {
+                auto ce = dynamic_cast<const CallExpr*>(expr);
+                std::string str = "(" + toString(ce->callee) + "(";
+                for (int i = 0; i < ce->args.size(); i++) {
+                    str += toString(ce->args[i]);
+                    if (i != ce->args.size() - 1) {
+                        str += ", ";
+                    }
+                }
+                str += "))";
+                return str;
+            }
+            case ExprKind::IDENTIFIER_REF: {
+                return dynamic_cast<const IdentifierRef*>(expr)->name;
+            }
+            case ExprKind::MEMBER_ACCESS_EXPR: {
+                auto me = dynamic_cast<const MemberAccessExpr*>(expr);
+                return "(" + toString(me->base) + "." + me->member + ")";
+            }
+            case ExprKind::TERNARY_EXPR: {
+                auto te = dynamic_cast<const TernaryExpr*>(expr);
+                return "(" + toString(te->cond) + " ? " + toString(te->expr1) + " : " + toString(te->expr2) + ")";
+            }
+            case ExprKind::UNARY_EXPR: {
+                auto ue = dynamic_cast<const UnaryExpr*>(expr); // TODO - Assuming prefix
+                return "(" + ::toString(ue->op) + toString(ue->expr) + ")";
+            }
+            case ExprKind::EXPR:
+                return "dummy_expression";
+        }
+        return "unknown_expression";
     }
 };
 
@@ -798,6 +983,94 @@ TEST_F(ParserTest, ParsesTopLevelMethodsCorrectly) {
     EXPECT_PRED2(kahwaFileEqualIgnoreSourceRange,
         parseFile(str1 + str2),
         KahwaFileBuilder().with({methodDecl1, methodDecl2}).build());
+
+    expectNoDiagnostics();
+}
+
+TEST_F(ParserTest, ParsesLiteralsCorrectly) {
+    std::vector<std::pair<std::string, Expr*>> strs = {
+        {"123", integerLiteral(123)},
+        {"true", boolLiteral(true)},
+        {"false", boolLiteral(false)},
+        {"3.14", floatLiteral(3.14)},
+        {"null", nullLiteral()},
+        {"\"\"", stringLiteral("")},
+        {"\"a string!\"", stringLiteral("a string!")},
+        {"abcdef_123", identifierRef("abcdef_123")}
+    };
+
+    testExprs(strs);
+
+    expectNoDiagnostics();
+}
+
+TEST_F(ParserTest, ParsesBinaryExpressionsCorrectly) {
+    std::vector<std::pair<std::string, Expr*>> strs1 = {
+        {"1 + 2", binaryExpr(integerLiteral(1), integerLiteral(2), BinaryOp::PLUS)},
+        {"1 + 2 + 3", binaryExpr(
+            binaryExpr(integerLiteral(1), integerLiteral(2), BinaryOp::PLUS),
+            integerLiteral(3),
+            BinaryOp::PLUS)},
+        {"1 + 2 * 3", binaryExpr(
+            integerLiteral(1),
+            binaryExpr(integerLiteral(2), integerLiteral(3), BinaryOp::STAR),
+            BinaryOp::PLUS)},
+        {"1 * 2 + 3", binaryExpr(
+            binaryExpr(integerLiteral(1), integerLiteral(2), BinaryOp::STAR),
+            integerLiteral(3),
+            BinaryOp::PLUS)},
+        {"1 - 2 - 3 - 4", binaryExpr(
+            binaryExpr(
+                binaryExpr(integerLiteral(1), integerLiteral(2), BinaryOp::MINUS),
+                integerLiteral(3),
+                BinaryOp::MINUS),
+            integerLiteral(4),
+            BinaryOp::MINUS)},
+        {"1 + 2 - 3", binaryExpr(
+            binaryExpr(integerLiteral(1), integerLiteral(2), BinaryOp::PLUS),
+            integerLiteral(3),
+            BinaryOp::MINUS)},
+        {"true * abc + null", binaryExpr(
+            binaryExpr(boolLiteral(true), identifierRef("abc"), BinaryOp::STAR),
+            nullLiteral(),
+            BinaryOp::PLUS)},
+        {"a * b * c", binaryExpr(
+            binaryExpr(identifierRef("a"), identifierRef("b"), BinaryOp::STAR),
+            identifierRef("c"),
+            BinaryOp::STAR)}
+    };
+
+    testExprs(strs1);
+
+    expectNoDiagnostics();
+}
+
+TEST_F(ParserTest, ParsesExpressionsWithParenthesisCorrectly) {
+    std::vector<std::pair<std::string, Expr*>> strs = {
+        {"1 + (2 + 3)", binaryExpr(
+            integerLiteral(1),
+            binaryExpr(integerLiteral(2), integerLiteral(3), BinaryOp::PLUS),
+            BinaryOp::PLUS)},
+        {"(1 + 2) * 3", binaryExpr(
+            binaryExpr(integerLiteral(1), integerLiteral(2), BinaryOp::PLUS),
+            integerLiteral(3),
+            BinaryOp::STAR)},
+        {"1 + (2 + (3 + 4))", binaryExpr(
+            integerLiteral(1),
+            binaryExpr(
+                integerLiteral(2),
+                binaryExpr(integerLiteral(3), integerLiteral(4), BinaryOp::PLUS),
+                BinaryOp::PLUS),
+            BinaryOp::PLUS)},
+        {"((1))", integerLiteral(1)},
+        {"((1) + 2)", binaryExpr(integerLiteral(1), integerLiteral(2), BinaryOp::PLUS)},
+        {"1 / (2 + 3)", binaryExpr(
+            integerLiteral(1),
+            binaryExpr(integerLiteral(2), integerLiteral(3), BinaryOp::PLUS),
+            BinaryOp::SLASH)}
+    };
+
+    testExprs(strs);
 
     expectNoDiagnostics();
 }
