@@ -4,6 +4,14 @@
 
 #include "../../include/parser/Parser.h"
 #include "../../include/parser/Modifier.h"
+#include "../../include/parser/expr/BinaryOp.h"
+#include "../../include/parser/stmt/BreakStmt.h"
+#include "../../include/parser/stmt/ContinueStmt.h"
+#include "../../include/parser/stmt/ExprStmt.h"
+#include "../../include/parser/stmt/ForLoop.h"
+#include "../../include/parser/stmt/IfStmt.h"
+#include "../../include/parser/stmt/ReturnStmt.h"
+#include "../../include/parser/stmt/WhileLoop.h"
 #include "../../include/symbols/TypeParameterSymbol.h"
 
 KahwaFile *Parser::parseFile(const std::vector<Token> &tokens) const {
@@ -363,10 +371,103 @@ MethodDecl *Parser::ParserWorker::parseMethod(const safePointFunc& isSafePoint) 
     return methodDeclBuilder.build();
 }
 
-Block *Parser::ParserWorker::parseBlock() {
-    // TODO
-    idx += 2;
-    return BlockBuilder().build();
+Block *Parser::ParserWorker::parseBlock(const safePointFunc& isSafePoint) {
+    idx++; // Move past '{'
+
+    auto blockBuilder = BlockBuilder();
+
+    while (!next_is(TokenType::RIGHT_CURLY_BRACE)) {
+        if (auto* stmt = parseStmt(isSafePoint)) {
+            blockBuilder.with(stmt);
+        } else {
+            return nullptr; // TODO, maybe don't discard the whole block
+        }
+    }
+
+    idx++; // Move past '}'
+
+    return blockBuilder.build();
+}
+
+Stmt *Parser::ParserWorker::parseStmt(const safePointFunc &isSafePoint) {
+    switch (const auto& nextTok = tokens[idx].type) {
+        case TokenType::BREAK: {
+            // Skip past 'break'
+            auto breakStmt = astArena.make<BreakStmt>(tokens[idx++].source_range);
+            if (!expect(TokenType::SEMI_COLON, skipNothing, false)) {
+                return nullptr;
+            }
+            idx++; // Skip past ';'
+            return breakStmt;
+        }
+        case TokenType::CONTINUE: {
+            auto continueStmt = astArena.make<ContinueStmt>(tokens[idx++].source_range);
+            if (!expect(TokenType::SEMI_COLON, skipNothing, false)) {
+                return nullptr;
+            }
+            idx++; // Skip past ';'
+            return continueStmt;
+        }
+        case TokenType::FOR: {
+            SourceRange forRange = tokens[idx++].source_range;
+            expect(TokenType::LEFT_PAREN, skipNothing);
+            Stmt *init;
+            if (init = parseStmt(isSafePoint); !init) return nullptr;
+            Expr *cond;
+            if (cond = parseExpr(isSafePoint); !cond) return nullptr;
+            Stmt *step;
+            if (step = parseStmt(isSafePoint); !step) return nullptr;
+            SourceRange bodyRange = SourceRange{0, 0}; // TODO
+            Block *body;
+            if (body = parseBlock(isSafePoint); !body) return nullptr;
+            return astArena.make<ForLoop>(init, cond, step, body, bodyRange, forRange);
+        }
+        case TokenType::IF: {
+            SourceRange ifRange = tokens[idx++].source_range;
+            expect(TokenType::LEFT_PAREN, skipNothing);
+            Expr* cond;
+            if (cond = parseExpr(isSafePoint); !cond) return nullptr;
+            expect(TokenType::RIGHT_PAREN, skipNothing);
+            Block* ifBlock;
+            if (ifBlock = parseBlock(isSafePoint); !ifBlock) return nullptr;
+            Block* elseBlock;
+            if (next_is(TokenType::ELSE)) {
+                idx++; // Skip past the 'else'
+                if (elseBlock = parseBlock(isSafePoint); elseBlock) return nullptr;
+            }
+            SourceRange bodyRange = SourceRange{0, 0}; // TODO
+
+            return astArena.make<IfStmt>(cond, ifBlock, elseBlock, bodyRange, ifRange);
+        }
+        case TokenType::RETURN: {
+            SourceRange returnRange = tokens[idx++].source_range;
+            Expr* expr;
+            if (expr = parseExpr(isSafePoint); !expr) return nullptr;
+            SourceRange bodyRange = SourceRange{0, 0}; // TODO
+
+            return astArena.make<ReturnStmt>(expr, bodyRange, returnRange);
+        }
+        case TokenType::WHILE: {
+            SourceRange whileRange = tokens[idx++].source_range;
+            Expr* cond;
+            if (cond = parseExpr(isSafePoint); !cond) return nullptr;
+            Block* body;
+            if (body = parseBlock(isSafePoint); !body) return nullptr;
+            SourceRange bodyRange = SourceRange{0, 0}; // TODO
+
+            return astArena.make<WhileLoop>(cond, body, bodyRange, whileRange);
+        }
+        default: {
+            Expr* expr = parseExpr(isSafePoint);
+            if (!expr) return nullptr;
+
+            return astArena.make<ExprStmt>(expr, expr->bodyRange);
+        }
+    }
+}
+
+Expr *Parser::ParserWorker::parseExpr(const safePointFunc &isSafePoint) {
+
 }
 
 
@@ -474,5 +575,22 @@ std::vector<Modifier> Parser::ParserWorker::getModifierList() {
     std::ranges::transform(modifierTokens, modifiers.begin(), [](const Token& token){ return tokenTypeToModifier(token.type); });
 
     return modifiers;
+}
+
+std::optional<std::pair<int, int>> Parser::ParserWorker::infixBindingPower(TokenType tokenType) {
+    switch (tokenType) {
+        case TokenType::EQUALS:
+            return std::pair{2, 1};
+        case TokenType::PLUS:
+        case TokenType::MINUS:
+            return std::pair{5, 6};
+        case TokenType::STAR:
+        case TokenType::SLASH:
+            return std::pair{7, 8};
+        case TokenType::DOT:
+            return std::pair{14, 13};
+        default:
+            return std::nullopt;
+    }
 }
 

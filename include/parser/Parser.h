@@ -41,7 +41,11 @@ public:
 
         MethodDecl* parseMethod(const safePointFunc& isSafePoint = isSafePointForFile);
 
-        Block* parseBlock();
+        Block* parseBlock(const safePointFunc &isSafePoint = isSafePointForStmt);
+
+        Stmt* parseStmt(const safePointFunc& isSafePoint = isSafePointForStmt);
+
+        Expr* parseExpr(const safePointFunc& isSafePoint = isSafePointForStmt);
 
     private:
         std::vector<Token> tokens;
@@ -82,7 +86,17 @@ public:
 
         static inline const safePointFunc skipNothing = [](const Token& token) { return true; };
 
+        static inline const safePointFunc isSafePointForStmt = [](const Token& token) {
+            return token.type == TokenType::STATIC || token.type == TokenType::RIGHT_CURLY_BRACE || token.type == TokenType::SEMI_COLON;
+        };
+
         void assertTokenSequence(const std::vector<TokenType> &expectedTypes) const;
+
+        static std::optional<std::pair<int, int>> prefixBindingPower(TokenType tokenType);
+
+        static std::optional<std::pair<int, int>> postfixBindingPower(TokenType tokenType);
+
+        static std::optional<std::pair<int, int>> infixBindingPower(TokenType tokenType);
     };
 
 private:
