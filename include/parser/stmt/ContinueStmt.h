@@ -8,7 +8,7 @@
 
 
 struct ContinueStmt : Stmt {
-
+    explicit ContinueStmt(const SourceRange& bodyRange): Stmt(bodyRange) {}
 };
 
 

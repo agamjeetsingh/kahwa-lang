@@ -11,10 +11,19 @@
 struct Block;
 
 struct ForLoop : Stmt {
+    ForLoop(Stmt* init, Expr* cond, Stmt* step, Block* body, const SourceRange& bodyRange, const SourceRange &forRange):
+    Stmt(bodyRange),
+    init(init),
+    cond(cond),
+    step(step),
+    body(body),
+    forRange(forRange) {}
+
     Stmt* init;
     Expr* cond;
     Stmt* step;
     Block* body;
+    SourceRange forRange;
 };
 
 

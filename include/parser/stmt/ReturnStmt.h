@@ -9,7 +9,11 @@
 
 
 struct ReturnStmt : Stmt {
+    ReturnStmt(Expr* expr, const SourceRange& bodyRange, const SourceRange& returnRange):
+    Stmt(bodyRange), expr(expr), returnRange(returnRange) {}
+
     Expr* expr;
+    SourceRange returnRange;
 };
 
 
