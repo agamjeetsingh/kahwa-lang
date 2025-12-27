@@ -25,6 +25,8 @@ public:
 
     [[nodiscard]] TypeRef* parseTypeRef(const std::vector<Token> &tokens) const;
 
+    [[nodiscard]] Expr* parseExpr(const std::vector<Token> &tokens) const;
+
     class ParserWorker {
     public:
         explicit ParserWorker(const std::vector<Token> &tokens, Arena& astArena, DiagnosticEngine& diagnostic_engine): tokens(tokens), astArena(astArena), diagnostic_engine(diagnostic_engine) {}
@@ -45,7 +47,7 @@ public:
 
         Stmt* parseStmt(const safePointFunc& isSafePoint = isSafePointForStmt);
 
-        Expr* parseExpr(const safePointFunc& isSafePoint = isSafePointForStmt);
+        Expr* parseExpr(const safePointFunc& isSafePoint = isSafePointForStmt, int min_bp = 0);
 
     private:
         std::vector<Token> tokens;

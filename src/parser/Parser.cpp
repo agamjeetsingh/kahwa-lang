@@ -4,7 +4,14 @@
 
 #include "../../include/parser/Parser.h"
 #include "../../include/parser/Modifier.h"
+#include "../../include/parser/expr/BinaryExpr.h"
 #include "../../include/parser/expr/BinaryOp.h"
+#include "../../include/parser/expr/IdentifierRef.h"
+#include "../../include/parser/expr/literals/BoolLiteral.h"
+#include "../../include/parser/expr/literals/FloatLiteral.h"
+#include "../../include/parser/expr/literals/IntegerLiteral.h"
+#include "../../include/parser/expr/literals/NullLiteral.h"
+#include "../../include/parser/expr/literals/StringLiteral.h"
 #include "../../include/parser/stmt/BreakStmt.h"
 #include "../../include/parser/stmt/ContinueStmt.h"
 #include "../../include/parser/stmt/ExprStmt.h"
@@ -25,6 +32,11 @@ TypedefDecl *Parser::parseTypedef(const std::vector<Token> &tokens) const {
 TypeRef* Parser::parseTypeRef(const std::vector<Token> &tokens) const {
     return ParserWorker(tokens, astArena, diagnostic_engine).parseTypeRef();
 }
+
+Expr *Parser::parseExpr(const std::vector<Token> &tokens) const {
+    return ParserWorker(tokens, astArena, diagnostic_engine).parseExpr();
+}
+
 
 KahwaFile *Parser::ParserWorker::parseFile() {
     auto kahwaFileBuilder = KahwaFileBuilder();
@@ -466,8 +478,72 @@ Stmt *Parser::ParserWorker::parseStmt(const safePointFunc &isSafePoint) {
     }
 }
 
-Expr *Parser::ParserWorker::parseExpr(const safePointFunc &isSafePoint) {
+Expr *Parser::ParserWorker::parseExpr(const safePointFunc &isSafePoint, int min_bp) {
+    auto lhs = [this, isSafePoint]()->Expr* {
+        switch (tokens[idx].type) {
+            case TokenType::TRUE:
+                return astArena.make<BoolLiteral>(true, tokens[idx++].source_range);
 
+            case TokenType::FALSE:
+                return astArena.make<BoolLiteral>(false, tokens[idx++].source_range);
+
+            case TokenType::FLOAT:
+                return astArena.make<FloatLiteral>(
+                    *tokens[idx].getIf<float>(),
+                    tokens[idx++].source_range
+                );
+
+            case TokenType::INTEGER:
+                return astArena.make<IntegerLiteral>(
+                    *tokens[idx].getIf<int>(),
+                    tokens[idx++].source_range
+                );
+
+            case TokenType::NULL_LITERAL:
+                return astArena.make<NullLiteral>(tokens[idx++].source_range);
+
+            case TokenType::STRING_LITERAL:
+                return astArena.make<StringLiteral>(
+                    *tokens[idx].getIf<std::string>(),
+                    tokens[idx++].source_range
+                );
+
+            case TokenType::LEFT_PAREN: {
+                idx++;
+                auto inner_lhs = parseExpr(isSafePoint, 0);
+                expect(TokenType::RIGHT_PAREN, skipNothing, false);
+                return inner_lhs;
+            }
+
+            case TokenType::IDENTIFIER: {
+                return astArena.make<IdentifierRef>(*tokens[idx].getIf<std::string>(), tokens[idx++].source_range);
+            }
+
+            default: ;
+        }
+    }();
+
+    while (!next(1).empty()) {
+        auto tok = tokens[idx];
+        if (auto maybeBindingPower = infixBindingPower(tok.type)) {
+            auto [l_bp, r_bp] = maybeBindingPower.value();
+            if (l_bp < min_bp) break;
+
+            idx++;
+
+            auto rhs = parseExpr(isSafePoint, r_bp);
+            if (!rhs) return nullptr;
+
+            SourceRange bodyRange = SourceRange{0, 0}; // TODO
+
+            lhs = astArena.make<BinaryExpr>(lhs, rhs, tokenTypeToBinaryOp(tok.type).value(), bodyRange);
+            continue;
+        }
+
+        break;
+    }
+
+    return lhs;
 }
 
 
