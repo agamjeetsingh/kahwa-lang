@@ -8,7 +8,7 @@
 
 #include <magic_enum.hpp>
 #include "../../tokeniser/TokenType.h"
-
+#include "../../tokeniser/Token.h"
 
 enum class BinaryOp {
     EQUALS, // "="
@@ -42,13 +42,22 @@ enum class BinaryOp {
     RIGHT_SHIFT, // ">>"
 };
 
-inline std::optional<BinaryOp> tokenTypeToBinaryOp(TokenType value)
-{
-    auto name = magic_enum::enum_name(value);
-    if (name.empty())
-        return std::nullopt;
+inline std::optional<BinaryOp> tokenTypeToBinaryOp(TokenType type) {
+    auto name = magic_enum::enum_name(type);
+    if (name.empty()) return std::nullopt;
 
     return magic_enum::enum_cast<BinaryOp>(name);
+}
+
+inline TokenType binaryOpToTokenType(BinaryOp op) {
+    auto name = magic_enum::enum_name(op);
+    assert(!name.empty());
+
+    return magic_enum::enum_cast<TokenType>(name).value();
+}
+
+inline std::string toString(BinaryOp op) {
+    return tokenTypeToString(binaryOpToTokenType(op));
 }
 
 
