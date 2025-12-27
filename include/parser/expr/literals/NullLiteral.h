@@ -8,7 +8,7 @@
 
 
 struct NullLiteral : Expr {
-
+    NullLiteral(const SourceRange& bodyRange): Expr(bodyRange) {}
 };
 
 

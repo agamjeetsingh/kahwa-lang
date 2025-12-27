@@ -10,6 +10,8 @@
 
 
 struct StringLiteral : Expr {
+    StringLiteral(std::string val, const SourceRange& bodyRange): Expr(bodyRange), val(val) {}
+
     std::string val;
 };
 

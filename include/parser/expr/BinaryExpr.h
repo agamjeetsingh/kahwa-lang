@@ -9,6 +9,9 @@
 
 
 struct BinaryExpr : Expr {
+    BinaryExpr(Expr* expr1, Expr* expr2, BinaryOp op, const SourceRange& bodyRange):
+    Expr(bodyRange), expr1(expr1), expr2(expr2), op(op) {}
+
     Expr* expr1;
     Expr* expr2;
     BinaryOp op;

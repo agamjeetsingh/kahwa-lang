@@ -10,6 +10,8 @@
 
 
 struct IdentifierRef : Expr {
+    IdentifierRef(const std::string& name, const SourceRange& bodyRange): Expr(bodyRange), name(name) {}
+
     std::string name;
 };
 

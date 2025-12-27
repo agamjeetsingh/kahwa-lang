@@ -9,6 +9,10 @@
 
 
 struct Expr {
+    Expr(const SourceRange& bodyRange): bodyRange(bodyRange) {}
+
+    virtual ~Expr() = default;
+
     const SourceRange bodyRange;
 };
 

@@ -8,6 +8,8 @@
 
 
 struct BoolLiteral : Expr {
+    BoolLiteral(bool val, const SourceRange& bodyRange): Expr(bodyRange), val(val) {}
+
     bool val;
 };
 

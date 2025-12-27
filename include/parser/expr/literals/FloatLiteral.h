@@ -8,6 +8,8 @@
 
 
 struct FloatLiteral : Expr {
+    FloatLiteral(float val, const SourceRange& bodyRange): Expr(bodyRange), val(val) {}
+
     float val;
 };
 

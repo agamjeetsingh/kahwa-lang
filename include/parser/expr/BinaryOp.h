@@ -4,7 +4,10 @@
 
 #ifndef BINARYOP_H
 #define BINARYOP_H
+#include <optional>
 
+#include <magic_enum.hpp>
+#include "../../tokeniser/TokenType.h"
 
 
 enum class BinaryOp {
@@ -39,6 +42,14 @@ enum class BinaryOp {
     RIGHT_SHIFT, // ">>"
 };
 
+inline std::optional<BinaryOp> tokenTypeToBinaryOp(TokenType value)
+{
+    auto name = magic_enum::enum_name(value);
+    if (name.empty())
+        return std::nullopt;
+
+    return magic_enum::enum_cast<BinaryOp>(name);
+}
 
 
 #endif //BINARYOP_H
