@@ -94,9 +94,9 @@ public:
 
         void assertTokenSequence(const std::vector<TokenType> &expectedTypes) const;
 
-        static std::optional<std::pair<int, int>> prefixBindingPower(TokenType tokenType);
+        static std::optional<int> prefixBindingPower(TokenType tokenType);
 
-        static std::optional<std::pair<int, int>> postfixBindingPower(TokenType tokenType);
+        static std::optional<int> postfixBindingPower(TokenType tokenType);
 
         static std::optional<std::pair<int, int>> infixBindingPower(TokenType tokenType);
     };

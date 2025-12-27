@@ -6,7 +6,9 @@
 #include "../../include/parser/Modifier.h"
 #include "../../include/parser/expr/BinaryExpr.h"
 #include "../../include/parser/expr/BinaryOp.h"
+#include "../../include/parser/expr/CallExpr.h"
 #include "../../include/parser/expr/IdentifierRef.h"
+#include "../../include/parser/expr/UnaryExpr.h"
 #include "../../include/parser/expr/literals/BoolLiteral.h"
 #include "../../include/parser/expr/literals/FloatLiteral.h"
 #include "../../include/parser/expr/literals/IntegerLiteral.h"
@@ -479,6 +481,7 @@ Stmt *Parser::ParserWorker::parseStmt(const safePointFunc &isSafePoint) {
 }
 
 Expr *Parser::ParserWorker::parseExpr(const safePointFunc &isSafePoint, int min_bp) {
+    // Handling atoms, brackets '(' and prefix operators
     auto lhs = [this, isSafePoint]()->Expr* {
         switch (tokens[idx].type) {
             case TokenType::TRUE:
@@ -511,12 +514,27 @@ Expr *Parser::ParserWorker::parseExpr(const safePointFunc &isSafePoint, int min_
             case TokenType::LEFT_PAREN: {
                 idx++;
                 auto inner_lhs = parseExpr(isSafePoint, 0);
-                expect(TokenType::RIGHT_PAREN, skipNothing, false);
+                if (expect(TokenType::RIGHT_PAREN, skipNothing, false)) idx++;
                 return inner_lhs;
             }
 
             case TokenType::IDENTIFIER: {
                 return astArena.make<IdentifierRef>(*tokens[idx].getIf<std::string>(), tokens[idx++].source_range);
+            }
+
+            case TokenType::PLUS:
+            case TokenType::MINUS:
+            case TokenType::NOT:
+            case TokenType::INCREMENT:
+            case TokenType::DECREMENT: {
+                auto tokType = tokens[idx].type;
+                auto r_bp = prefixBindingPower(tokType).value();
+                idx++;
+
+                SourceRange bodyRange = SourceRange{0, 0}; // TODO
+
+                auto rhs = parseExpr(isSafePoint, r_bp);
+                return astArena.make<UnaryExpr>(rhs, tokenTypeToPrefixUnaryOp(tokType), bodyRange);
             }
 
             default: ;
@@ -525,8 +543,46 @@ Expr *Parser::ParserWorker::parseExpr(const safePointFunc &isSafePoint, int min_
 
     while (!next(1).empty()) {
         auto tok = tokens[idx];
-        if (auto maybeBindingPower = infixBindingPower(tok.type)) {
-            auto [l_bp, r_bp] = maybeBindingPower.value();
+
+        if (auto bp = postfixBindingPower(tok.type)) {
+            auto l_bp = bp.value();
+            if (l_bp < min_bp) break;
+
+            idx++;
+
+            SourceRange bodyRange = SourceRange{0, 0}; // TODO
+
+            if (tok.type == TokenType::LEFT_BRACKET) {
+                // indexing with '['
+
+                auto rhs = parseExpr(isSafePoint, 0);
+                // TODO - Actually should be a call-expression like new struct
+                lhs = astArena.make<BinaryExpr>(lhs, rhs, tokenTypeToBinaryOp(tok.type).value(), bodyRange);
+            } else if (tok.type == TokenType::LEFT_PAREN) {
+                // call expressions with '('
+
+                std::vector<Expr*> args;
+
+                if (!next_is(TokenType::RIGHT_PAREN)) {
+                    args.push_back(parseExpr(isSafePoint, 0));
+                }
+
+                while (next_is(TokenType::COMMA)) {
+                    idx++; // Skip the comma
+                    args.push_back(parseExpr(isSafePoint, 0));
+                }
+
+                if (expect(TokenType::RIGHT_PAREN, skipNothing)) idx++;
+
+                lhs = astArena.make<CallExpr>(lhs, args, bodyRange);
+            } else {
+                lhs = astArena.make<UnaryExpr>(lhs, tokenTypeToPostfixUnaryOp(tok.type), bodyRange);
+            }
+            continue;
+        }
+
+        if (auto bp = infixBindingPower(tok.type)) {
+            auto [l_bp, r_bp] = bp.value();
             if (l_bp < min_bp) break;
 
             idx++;
@@ -652,6 +708,32 @@ std::vector<Modifier> Parser::ParserWorker::getModifierList() {
 
     return modifiers;
 }
+
+std::optional<int> Parser::ParserWorker::prefixBindingPower(TokenType tokenType) {
+    switch (tokenType) {
+        case TokenType::PLUS:
+        case TokenType::MINUS:
+        case TokenType::NOT:
+        case TokenType::INCREMENT:
+        case TokenType::DECREMENT:
+            return 9;
+        default:
+            return std::nullopt;
+    }
+}
+
+std::optional<int> Parser::ParserWorker::postfixBindingPower(TokenType tokenType) {
+    switch (tokenType) {
+        case TokenType::INCREMENT:
+        case TokenType::DECREMENT:
+        case TokenType::LEFT_PAREN: // '(' for call expressions
+        case TokenType::LEFT_BRACKET: // '[' for indexing
+            return 11;
+        default:
+            return std::nullopt;
+    }
+}
+
 
 std::optional<std::pair<int, int>> Parser::ParserWorker::infixBindingPower(TokenType tokenType) {
     switch (tokenType) {

@@ -1074,3 +1074,81 @@ TEST_F(ParserTest, ParsesExpressionsWithParenthesisCorrectly) {
 
     expectNoDiagnostics();
 }
+
+TEST_F(ParserTest, ParsesExpressionsWithUnaryOperatorsCorrectly) {
+    std::vector<std::pair<std::string, Expr*>> strs = {
+        {"+1", unaryExpr(integerLiteral(1), UnaryOp::PLUS)},
+        {"-2", unaryExpr(integerLiteral(2), UnaryOp::MINUS)},
+        {"!xyz", unaryExpr(identifierRef("xyz"), UnaryOp::NOT)},
+        {"++x", unaryExpr(identifierRef("x"), UnaryOp::PRE_INCREMENT)},
+        {"--x", unaryExpr(identifierRef("x"), UnaryOp::PRE_DECREMENT)},
+        {"!(a + b)", unaryExpr(binaryExpr(
+            identifierRef("a"),
+            identifierRef("b"),
+            BinaryOp::PLUS),
+            UnaryOp::NOT)},
+        {"!a + b", binaryExpr(
+            unaryExpr(identifierRef("a"), UnaryOp::NOT),
+            identifierRef("b"),
+            BinaryOp::PLUS)},
+        {"-(!a + b)", unaryExpr(parseExpr("!a + b"), UnaryOp::MINUS)},
+        {"-1 + 2 + (-3)", binaryExpr(
+        binaryExpr(unaryExpr(integerLiteral(1), UnaryOp::MINUS),
+        integerLiteral(2),
+        BinaryOp::PLUS),
+        unaryExpr(integerLiteral(3), UnaryOp::MINUS),
+        BinaryOp::PLUS)},
+        {"++x - ++y * --z", binaryExpr(
+            unaryExpr(identifierRef("x"), UnaryOp::PRE_INCREMENT), // ++x
+            binaryExpr(
+                unaryExpr(identifierRef("y"), UnaryOp::PRE_INCREMENT), // ++y
+                unaryExpr(identifierRef("z"), UnaryOp::PRE_DECREMENT), // --z
+                BinaryOp::STAR),
+            BinaryOp::MINUS)},
+        {"x++", unaryExpr(identifierRef("x"), UnaryOp::POST_INCREMENT)},
+        {"y--", unaryExpr(identifierRef("y"), UnaryOp::POST_DECREMENT)},
+        {"(x++ - !y) * --z", binaryExpr(
+            binaryExpr(
+            unaryExpr(identifierRef("x"), UnaryOp::POST_INCREMENT), // x++
+                unaryExpr(identifierRef("y"), UnaryOp::NOT), // !y
+                BinaryOp::MINUS),
+            unaryExpr(identifierRef("z"), UnaryOp::PRE_DECREMENT), // --z
+            BinaryOp::STAR)}
+    };
+
+    testExprs(strs);
+
+    expectNoDiagnostics();
+}
+
+TEST_F(ParserTest, ParsesIndexingExpressionsCorrectly) {
+    std::vector<std::pair<std::string, Expr*>> strs = {
+
+    };
+
+    testExprs(strs);
+
+    expectNoDiagnostics();
+}
+
+TEST_F(ParserTest, ParsesCallExpressionCorrectly) {
+    std::vector<std::pair<std::string, Expr*>> strs = {
+        {"a()", callExpr(identifierRef("a"), {})},
+        {"!a()", unaryExpr(callExpr(identifierRef("a"), {}), UnaryOp::NOT)},
+        {"a(x)", callExpr(identifierRef("a"), {identifierRef("x")})},
+        {"b(x, y++, 1, --z)", callExpr(identifierRef("b"), {
+            identifierRef("x"),
+            unaryExpr(identifierRef("y"), UnaryOp::POST_INCREMENT),
+            integerLiteral(1),
+            unaryExpr(identifierRef("z"), UnaryOp::PRE_DECREMENT)
+        })},
+        {"a(x, y) + b(x--, z)++", binaryExpr(
+            callExpr(identifierRef("a"), {identifierRef("x"), identifierRef("y")}),
+            unaryExpr(callExpr(identifierRef("b"), {unaryExpr(identifierRef("x"), UnaryOp::POST_INCREMENT), identifierRef("z")}), UnaryOp::POST_INCREMENT),
+            BinaryOp::PLUS)}
+    };
+
+    testExprs(strs);
+
+    expectNoDiagnostics();
+}
