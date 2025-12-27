@@ -162,11 +162,12 @@ T *SemanticAnalyser::declareVariable(const FieldDecl *variableDecl, Scope *scope
         return variableSymbol;
     }
 
-    static_assert(std::is_same_v<T, FieldSymbol>);
-    assert(!topLevel);
-    variableSymbol->setModality(resolveModality(variableDecl->modifiers));
-    variableSymbol->setOverride(hasModifier(variableDecl->modifiers, Modifier::OVERRIDE));
-    return variableSymbol;
+    if constexpr (std::is_same_v<T, FieldSymbol>) {
+        assert(!topLevel);
+        variableSymbol->setModality(resolveModality(variableDecl->modifiers));
+        variableSymbol->setOverride(hasModifier(variableDecl->modifiers, Modifier::OVERRIDE));
+        return variableSymbol;
+    }
 }
 
 void SemanticAnalyser::resolveTypes(TranslationUnit *translationUnit) {
@@ -205,7 +206,7 @@ void SemanticAnalyser::resolveTypes(ClassSymbol *classSymbol) {
 
 template<typename FunctionLikeSymbol> requires std::is_same_v<FunctionLikeSymbol, FunctionSymbol> || std::is_same_v<FunctionLikeSymbol, MethodSymbol>
 void SemanticAnalyser::resolveTypes(FunctionLikeSymbol *functionSymbol) {
-    functionSymbol->returnType = analyseType(dynamic_cast<MethodDecl*>(symbolToDecl[functionSymbol])->returnType, functionSymbol->scope);
+    functionSymbol->returnType = resolveType(dynamic_cast<MethodDecl*>(symbolToDecl[functionSymbol])->returnType, &functionSymbol->scope);
 
     std::ranges::for_each(functionSymbol->parameters, [this](VariableSymbol* variableSymbol) {
        resolveTypes(variableSymbol);
@@ -216,7 +217,7 @@ void SemanticAnalyser::resolveTypes(FunctionLikeSymbol *functionSymbol) {
 
 template<typename T> requires (std::is_same_v<T, VariableSymbol> || std::is_same_v<T, VisibleVariableSymbol> || std::is_same_v<T, FieldSymbol>)
 void SemanticAnalyser::resolveTypes(T *variableSymbol) {
-    variableSymbol->type = analyseType(dynamic_cast<FieldDecl*>(symbolToDecl[variableSymbol]->typeRef), variableSymbol->scope);
+    variableSymbol->type = resolveType(dynamic_cast<FieldDecl*>(symbolToDecl[variableSymbol])->typeRef, &variableSymbol->scope);
 }
 
 Type *SemanticAnalyser::resolveType(const TypeRef *typeRef, Scope *scope) {
