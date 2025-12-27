@@ -11,9 +11,11 @@
 #include "Modifier.h"
 #include "TypeRef.h"
 #include "../source/SourceRange.h"
+#include "expr/Expr.h"
+#include "expr/Stmt.h"
 
 // Top-level variables, class fields and local variables are identical at the AST level (but not in symbols)
-struct FieldDecl : Decl {
+struct FieldDecl : Decl, Stmt {
     FieldDecl(
     std::string name,
     const std::vector<ModifierNode> &modifiers,
@@ -22,11 +24,12 @@ struct FieldDecl : Decl {
     const SourceRange &nameSourceRange,
     const SourceRange &bodyRange):
     Decl(std::move(name), modifiers, nameSourceRange, bodyRange),
+    Stmt(bodyRange),
     typeRef(typeRef),
     typeSourceRange(typeSourceRange) {}
 
     TypeRef* const typeRef;
-    // TODO - Initialiser expression (optional)
+    Expr* initExpr = nullptr;
 
     const SourceRange typeSourceRange;
 
