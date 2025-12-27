@@ -127,6 +127,8 @@ add_executable(kahwa_lang main.cpp
         include/parser/expr/CallExpr.h
         include/parser/stmt/ExprStmt.cpp
         include/parser/stmt/ExprStmt.h
+        include/parser/expr/ExprKind.cpp
+        include/parser/expr/ExprKind.h
 )
 
 target_link_libraries(kahwa_lang PRIVATE magic_enum::magic_enum)
@@ -206,6 +208,51 @@ add_executable(
         include/symbols/VisibleVariableSymbol.h
         include/symbols/FieldSymbol.cpp
         include/symbols/FieldSymbol.h
+        src/parser/Block.cpp
+        include/parser/Block.h
+        src/parser/Stmt.cpp
+        include/parser/expr/Stmt.h
+        src/parser/Decl.cpp
+        include/parser/Decl.h
+        include/parser/expr/Expr.cpp
+        include/parser/expr/Expr.h
+        include/parser/expr/BinaryExpr.cpp
+        include/parser/expr/BinaryExpr.h
+        include/parser/expr/BinaryOp.h
+        include/parser/expr/UnaryOp.h
+        include/parser/expr/UnaryExpr.cpp
+        include/parser/expr/UnaryExpr.h
+        include/parser/expr/TernaryExpr.cpp
+        include/parser/expr/TernaryExpr.h
+        include/parser/expr/literals/IntegerLiteral.h
+        include/parser/expr/literals/FloatLiteral.h
+        include/parser/expr/literals/BoolLiteral.h
+        include/parser/expr/literals/StringLiteral.h
+        include/parser/expr/literals/NullLiteral.h
+        include/parser/expr/IdentifierRef.cpp
+        include/parser/expr/IdentifierRef.h
+        include/parser/expr/FunctionCall.cpp
+        include/parser/expr/FunctionCall.h
+        include/parser/stmt/IfStmt.cpp
+        include/parser/stmt/IfStmt.h
+        include/parser/stmt/WhileLoop.cpp
+        include/parser/stmt/WhileLoop.h
+        include/parser/stmt/ForLoop.cpp
+        include/parser/stmt/ForLoop.h
+        include/parser/stmt/ReturnStmt.cpp
+        include/parser/stmt/ReturnStmt.h
+        include/parser/stmt/BreakStmt.cpp
+        include/parser/stmt/BreakStmt.h
+        include/parser/stmt/ContinueStmt.cpp
+        include/parser/stmt/ContinueStmt.h
+        include/parser/expr/MemberAccessExpr.cpp
+        include/parser/expr/MemberAccessExpr.h
+        include/parser/expr/CallExpr.cpp
+        include/parser/expr/CallExpr.h
+        include/parser/stmt/ExprStmt.cpp
+        include/parser/stmt/ExprStmt.h
+        include/parser/expr/ExprKind.cpp
+        include/parser/expr/ExprKind.h
 )
 
 target_link_libraries(

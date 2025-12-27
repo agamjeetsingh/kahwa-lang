@@ -10,6 +10,11 @@
 
 
 struct CallExpr : Expr {
+    CallExpr(Expr* callee, const std::vector<Expr*>& args, const SourceRange& bodyRange):
+    Expr(bodyRange, ExprKind::CALL_EXPR),
+    callee(callee),
+    args(args) {}
+
     Expr* callee;
     std::vector<Expr*> args;
 };

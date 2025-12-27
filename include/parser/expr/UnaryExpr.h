@@ -9,6 +9,9 @@
 
 
 struct UnaryExpr : Expr {
+    UnaryExpr(Expr* expr, UnaryOp op, const SourceRange& bodyRange):
+    Expr(bodyRange, ExprKind::UNARY_EXPR), expr(expr), op(op) {}
+
     Expr* expr;
     UnaryOp op;
 };

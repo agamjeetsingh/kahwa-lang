@@ -8,7 +8,7 @@
 
 
 struct IntegerLiteral : Expr {
-    IntegerLiteral(float val, const SourceRange& bodyRange): Expr(bodyRange), val(val) {}
+    IntegerLiteral(float val, const SourceRange& bodyRange): Expr(bodyRange, ExprKind::INTEGER_LITERAL), val(val) {}
 
     int val;
 };

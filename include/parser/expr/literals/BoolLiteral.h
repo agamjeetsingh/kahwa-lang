@@ -8,7 +8,7 @@
 
 
 struct BoolLiteral : Expr {
-    BoolLiteral(bool val, const SourceRange& bodyRange): Expr(bodyRange), val(val) {}
+    BoolLiteral(bool val, const SourceRange& bodyRange): Expr(bodyRange, ExprKind::BOOL_LITERAL), val(val) {}
 
     bool val;
 };

@@ -10,6 +10,9 @@
 
 
 struct MemberAccessExpr : Expr {
+    MemberAccessExpr(Expr* base, const std::string& member, const SourceRange& bodyRange):
+    Expr(bodyRange, ExprKind::MEMBER_ACCESS_EXPR), base(base), member(member) {}
+
     Expr* base;
     std::string member;
 };

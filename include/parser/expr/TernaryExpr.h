@@ -8,6 +8,9 @@
 
 
 struct TernaryExpr : Expr {
+    TernaryExpr(Expr* cond, Expr* expr1, Expr* expr2, const SourceRange& bodyRange):
+    Expr(bodyRange, ExprKind::TERNARY_EXPR), cond(cond), expr1(expr1), expr2(expr2) {}
+
     Expr* cond;
     Expr* expr1;
     Expr* expr2;

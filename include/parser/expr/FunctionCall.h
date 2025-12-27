@@ -7,8 +7,8 @@
 
 
 
-class FunctionCall {
-
+struct FunctionCall {
+    // TODO - ???
 };
 
 
