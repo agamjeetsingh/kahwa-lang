@@ -125,6 +125,8 @@ add_executable(kahwa_lang main.cpp
         include/parser/expr/MemberAccessExpr.h
         include/parser/expr/CallExpr.cpp
         include/parser/expr/CallExpr.h
+        include/parser/stmt/ExprStmt.cpp
+        include/parser/stmt/ExprStmt.h
 )
 
 target_link_libraries(kahwa_lang PRIVATE magic_enum::magic_enum)

@@ -8,7 +8,7 @@
 #include "../../source/SourceRange.h"
 
 
-struct Expr : Stmt {
+struct Expr {
     const SourceRange bodyRange;
 };
 
