@@ -572,7 +572,7 @@ Expr *Parser::ParserWorker::parseExpr(const safePointFunc &isSafePoint, int min_
                     args.push_back(parseExpr(isSafePoint, 0));
                 }
 
-                if (expect(TokenType::RIGHT_PAREN, skipNothing)) idx++;
+                if (expect(TokenType::RIGHT_PAREN, skipNothing, false)) idx++;
 
                 lhs = astArena.make<CallExpr>(lhs, args, bodyRange);
             } else {

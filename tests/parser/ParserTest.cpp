@@ -466,7 +466,10 @@ protected:
                 return "(" + toString(te->cond) + " ? " + toString(te->expr1) + " : " + toString(te->expr2) + ")";
             }
             case ExprKind::UNARY_EXPR: {
-                auto ue = dynamic_cast<const UnaryExpr*>(expr); // TODO - Assuming prefix
+                auto ue = dynamic_cast<const UnaryExpr*>(expr);
+                if (ue->op == UnaryOp::POST_INCREMENT || ue->op == UnaryOp::POST_DECREMENT) {
+                    return "("  + toString(ue->expr) + ::toString(ue->op) + ")";
+                }
                 return "(" + ::toString(ue->op) + toString(ue->expr) + ")";
             }
             case ExprKind::EXPR:
@@ -1142,9 +1145,13 @@ TEST_F(ParserTest, ParsesCallExpressionCorrectly) {
             integerLiteral(1),
             unaryExpr(identifierRef("z"), UnaryOp::PRE_DECREMENT)
         })},
+        {"a(x) + b(y)", binaryExpr(
+            callExpr(identifierRef("a"), {identifierRef("x")}),
+            callExpr(identifierRef("b"), {identifierRef("y")}),
+            BinaryOp::PLUS)},
         {"a(x, y) + b(x--, z)++", binaryExpr(
             callExpr(identifierRef("a"), {identifierRef("x"), identifierRef("y")}),
-            unaryExpr(callExpr(identifierRef("b"), {unaryExpr(identifierRef("x"), UnaryOp::POST_INCREMENT), identifierRef("z")}), UnaryOp::POST_INCREMENT),
+            unaryExpr(callExpr(identifierRef("b"), {unaryExpr(identifierRef("x"), UnaryOp::POST_DECREMENT), identifierRef("z")}), UnaryOp::POST_INCREMENT),
             BinaryOp::PLUS)}
     };
 
