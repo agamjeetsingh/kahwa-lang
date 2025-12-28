@@ -13,6 +13,7 @@
 #include "../parser/KahwaFile.h"
 #include "../types/Type.h"
 #include "VisibleVariableSymbol.h"
+#include "boundexprs/BoundExpr.h"
 
 class DiagnosticEngine;
 
@@ -65,6 +66,15 @@ public:
 
     // ===== Phase 3 =====
 
+    // Resolve method bodies
+
+    void resolveTypes(Block* block, Scope* scope);
+
+    void resolveTypes(Stmt* stmt, Scope* scope);
+
+    BoundExpr* resolveTypes(Expr* expr, Scope* scope);
+
+    void analyseClass(ClassSymbol* classSymbol);
 
 private:
     Arena& astArena;
@@ -92,6 +102,10 @@ private:
     void modifierNotAllowed(const std::vector<ModifierNode>& modifiers, Modifier notAllowed) const;
 
     void modifierNotAllowed(const std::vector<ModifierNode>& modifiers, std::function<bool(Modifier)> pred) const;
+
+    std::optional<MethodSymbol*> searchMethod(const ClassSymbol* classSymbol, const std::string& methodName, const std::vector<const Type*>& parameterTypes, const SourceRange& sourceRange);
+
+    std::optional<MethodSymbol*> searchField(const ClassSymbol* classSymbol, const std::string& fieldName);
 };
 
 

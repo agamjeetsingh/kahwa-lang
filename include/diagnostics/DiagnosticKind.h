@@ -37,7 +37,9 @@ enum class DiagnosticKind {
     SYMBOL_ALREADY_DECLARED,
     CANNOT_RESOLVE_SYMBOL,
     SYMBOL_MISMATCH,
-    INCORRECT_NUMBER_OF_TYPE_PARAMETERS
+    INCORRECT_NUMBER_OF_TYPE_PARAMETERS,
+    EXPRESSION_NOT_CALLABLE,
+    AMBIGUOUS_FUNCTION_CALL
 };
 
 inline DiagnosticKind expectedTokenTypeToDiagnosticKind(const TokenType tokenType) {
@@ -126,16 +128,19 @@ inline std::string toMsg(const DiagnosticKind kind, int expected, const std::str
 inline std::string toMsg(const DiagnosticKind kind, const std::string &str) {
     assert(kind == DiagnosticKind::TYPE_PARAMETERS_CANNOT_HAVE_GENERIC_ARGUMENTS ||
         kind == DiagnosticKind::SYMBOL_ALREADY_DECLARED ||
-        kind == DiagnosticKind::CANNOT_RESOLVE_SYMBOL);
+        kind == DiagnosticKind::CANNOT_RESOLVE_SYMBOL ||
+        kind == DiagnosticKind::EXPRESSION_NOT_CALLABLE);
 
     if (kind == DiagnosticKind::TYPE_PARAMETERS_CANNOT_HAVE_GENERIC_ARGUMENTS)
         return "Type parameter " + str + " has generic arguments, which are not allowed";
 
-    if (kind == DiagnosticKind::SYMBOL_ALREADY_DECLARED) {
+    if (kind == DiagnosticKind::SYMBOL_ALREADY_DECLARED)
         return "Symbol '" + str + "' has already been declared";
-    }
 
-    return "Cannot resolve symbol '" + str + "'";
+    if (kind == DiagnosticKind::CANNOT_RESOLVE_SYMBOL)
+        return "Cannot resolve symbol '" + str + "'";
+
+    return "Expression of type " + str + "is not callable";
 }
 
 inline std::string toMsg(const DiagnosticKind kind, Modifier modifier) {
@@ -147,6 +152,24 @@ inline std::string toMsg(const DiagnosticKind kind, Modifier modifier) {
 inline std::string toMsg(const DiagnosticKind kind, Modifier modifier1, Modifier modifier2) {
     assert(kind == DiagnosticKind::ILLEGAL_MODIFIER_COMBINATION);
     return "Illegal combination of modifiers '" + toString(modifier1) + "' and '" + toString(modifier2) + "'";
+}
+
+inline std::string toMsg(const DiagnosticKind kind, const std::vector<std::string>& typeNames, const std::vector<std::string>& viableFunctions) {
+    assert(kind == DiagnosticKind::AMBIGUOUS_FUNCTION_CALL);
+
+    std::string str = "Ambiguous function call.\nArgument types: ";
+    for (int i = 0; i < typeNames.size(); i++) {
+        str += typeNames[i];
+        if (i != typeNames.size() - 1) str += ", ";
+    }
+    str += "\nViable candidates:";
+
+    for (int i = 0; i < viableFunctions.size(); i++) {
+        str += viableFunctions[i];
+        if (i != typeNames.size() - 1) str += "\n";
+    }
+
+    return str;
 }
 
 inline std::string toMsg(const DiagnosticKind kind) {

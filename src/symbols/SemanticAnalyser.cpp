@@ -3,9 +3,14 @@
 //
 
 #include "../../include/symbols/SemanticAnalyser.h"
+
+#include "../../include/parser/expr/CallExpr.h"
+#include "../../include/parser/expr/IdentifierRef.h"
+#include "../../include/parser/expr/MemberAccessExpr.h"
 #include "../../include/symbols/Symbol.h"
 #include "../../include/symbols/VisibleVariableSymbol.h"
 #include "../../include/symbols/VariableSymbol.h"
+#include "../../include/symbols/boundexprs/BoundMethodCallExpr.h"
 
 template<typename ChildSymbol, typename ParentSymbol, typename DeclLike, typename F1, typename F2> requires std::derived_from<ChildSymbol, Symbol> && requires(ParentSymbol t) { { t.scope } -> std::same_as<Scope &>; } && std::invocable<F1, const DeclLike &> && std::same_as<std::invoke_result_t<F1, const DeclLike &>, std::pair<ChildSymbol *, SourceRange> > && std::invocable<F2, ChildSymbol *> && std::same_as<std::invoke_result_t<F2, ChildSymbol *>, void>
 void SemanticAnalyser::registerIt(ParentSymbol *symbol, const std::vector<DeclLike> &decls, F1 &&declToSymbolAndSourceRange, F2 &&registerSymbol, bool duplicatesAllowed) {
@@ -211,8 +216,6 @@ void SemanticAnalyser::resolveTypes(FunctionLikeSymbol *functionSymbol) {
     std::ranges::for_each(functionSymbol->parameters, [this](VariableSymbol* variableSymbol) {
        resolveTypes(variableSymbol);
     });
-
-    // TODO - Body
 }
 
 template<typename T> requires (std::is_same_v<T, VariableSymbol> || std::is_same_v<T, VisibleVariableSymbol> || std::is_same_v<T, FieldSymbol>)
@@ -267,6 +270,105 @@ Type *SemanticAnalyser::resolveType(const TypeRef *typeRef, Scope *scope) {
 
     return builder.build();
 }
+
+void SemanticAnalyser::resolveTypes(Block *block, Scope *scope) {
+    for (auto* stmt: block->stmts) {
+        resolveTypes(stmt, scope);
+    }
+}
+
+void SemanticAnalyser::resolveTypes(Stmt *stmt, Scope *scope) {
+
+}
+
+BoundExpr *SemanticAnalyser::resolveTypes(Expr *expr, Scope *scope) {
+    switch (expr->kind) {
+        case ExprKind::BOOL_LITERAL:
+            break;
+        case ExprKind::FLOAT_LITERAL:
+            break;
+        case ExprKind::INTEGER_LITERAL:
+            break;
+        case ExprKind::NULL_LITERAL:
+            break;
+        case ExprKind::STRING_LITERAL:
+            break;
+        case ExprKind::BINARY_EXPR:
+            break;
+        case ExprKind::CALL_EXPR: {
+            // a.b(c, d)
+            auto* callExpr = dynamic_cast<CallExpr*>(expr);
+
+            // c, d
+            std::vector<BoundExpr*> boundArgs;
+            for (auto* arg : callExpr->args) {
+                boundArgs.push_back(resolveTypes(arg, scope));
+            }
+
+            if (callExpr->callee->kind == ExprKind::MEMBER_ACCESS_EXPR) {
+                // a.b
+                auto *memAccess = dynamic_cast<MemberAccessExpr*>(callExpr->callee);
+
+                // a
+                BoundExpr* object = resolveTypes(memAccess->base, scope);
+                // "b"
+                std::string name = memAccess->member;
+
+                auto typeSymbol = object->type->typeSymbol;
+
+                if (auto classSymbol = dynamic_cast<const ClassSymbol*>(typeSymbol)) {
+                    std::vector<const Type*> argTypes;
+                    argTypes.reserve(boundArgs.size());
+
+                    std::ranges::transform(boundArgs, std::back_inserter(argTypes), [](const BoundExpr* boundExpr) {
+                        return boundExpr->type;
+                    });
+                    // should return method even if there is overload conflict, as no method -> emission of "cannot resolve symbol"
+                    if (auto method = searchMethod(classSymbol, name, argTypes, memAccess->bodyRange)) {
+                        return astArena.make<BoundMethodCallExpr>(object, method.value(), boundArgs);
+                    } else if (auto field = searchField(classSymbol, name)) {
+                        // TODO - Check if its a function pointer or not
+                    } else {
+                        diagnosticEngine.reportProblem(
+                            DiagnosticSeverity::ERROR,
+                            DiagnosticKind::CANNOT_RESOLVE_SYMBOL,
+                            memAccess->bodyRange, // TODO - Maybe should keep specific source range for "b"
+                            toMsg(DiagnosticKind::CANNOT_RESOLVE_SYMBOL, name));
+                        return nullptr;
+                    }
+                } else {
+                    // TODO - Not sure what to do if typeSymbol is a type parameter
+                    // TODO - Probably cannot do nothing until I implement bounded types
+                }
+            } else if (callExpr->callee->kind == ExprKind::IDENTIFIER_REF) {
+                auto* idRef = dynamic_cast<IdentifierRef*>(callExpr->callee);
+                std::string name = idRef->name;
+
+                auto symbols = scope->search(name);
+            }
+        }
+        case ExprKind::IDENTIFIER_REF:
+            break;
+        case ExprKind::MEMBER_ACCESS_EXPR:
+            break;
+        case ExprKind::TERNARY_EXPR:
+            break;
+        case ExprKind::UNARY_EXPR:
+            break;
+        case ExprKind::EXPR:
+            break;
+        case ExprKind::INDEX_EXPR:
+            break;
+    }
+}
+
+
+void SemanticAnalyser::analyseClass(ClassSymbol *classSymbol) {
+    // Check for duplicate classes in inheritance like :B<T, int>, B<int, T>
+
+    // Implement interfaces
+}
+
 
 
 Modifier SemanticAnalyser::resolveModality(const std::vector<ModifierNode>& modifiers) const {
@@ -475,3 +577,71 @@ void SemanticAnalyser::modifierNotAllowed(const std::vector<ModifierNode> &modif
             toMsg(DiagnosticKind::MODIFIER_NOT_ALLOWED, notAllowedModifier.modifier));
         }
 }
+
+std::optional<MethodSymbol *> SemanticAnalyser::searchMethod(const ClassSymbol *classSymbol, const std::string &methodName, const std::vector<const Type *> &parameterTypes, const SourceRange& sourceRange) {
+    std::vector<MethodSymbol*> candidates;
+    for (auto methodSymbol : classSymbol->methods) {
+        if (methodSymbol->name != methodName || methodSymbol->parameters.size() != parameterTypes.size()) continue;
+
+        bool typeConflict = false;
+
+        for (int i = 0; i < methodSymbol->parameters.size(); i++) {
+            if (!parameterTypes[i]->isSubtypeOf(methodSymbol->parameters[i]->type)) {
+                typeConflict = true;
+                break;
+            }
+        }
+
+        if (!typeConflict) candidates.push_back(methodSymbol);
+    }
+
+    if (candidates.empty()) return std::nullopt;
+
+    // Do resolution
+
+    const auto clear_winner_it = std::ranges::find_if(candidates, [&candidates](const MethodSymbol* candidate) {
+       return std::ranges::all_of(candidates, [&candidate](const MethodSymbol* contestant) {
+           if (contestant == candidate) return true;
+
+           assert(contestant->parameters.size() == candidate->parameters.size());
+
+           bool strictFound = false;
+
+           for (int i = 0; i < contestant->parameters.size(); i++) {
+               const Type* candType = candidate->parameters[i]->type;
+               const Type* contType = contestant->parameters[i]->type;
+
+               // Candidate must be at least as specific as Contestant for ALL params
+               if (!candType->isSubtypeOf(contType)) return false;
+
+               // Track if it is strictly more specific
+               if (*candType != *contType) strictFound = true;
+           }
+
+           return strictFound;
+       });
+    });
+
+    if (clear_winner_it != candidates.end()) {
+        return *clear_winner_it;
+    } else {
+        std::vector<std::string> typeNames;
+        typeNames.reserve(parameterTypes.size());
+        std::ranges::transform(parameterTypes, std::back_inserter(typeNames), [](const Type* type) {
+            return type->toString;
+        });
+        std::vector<std::string> viableFunctionNames;
+        viableFunctionNames.reserve(candidates.size());
+        std::ranges::transform(candidates, std::back_inserter(viableFunctionNames), [](const FunctionSymbol* functionSymbol) {
+            return functionSymbol->functionSignatureToString();
+        });
+        diagnosticEngine.reportProblem(
+            DiagnosticSeverity::ERROR,
+            DiagnosticKind::AMBIGUOUS_FUNCTION_CALL,
+            sourceRange,
+            toMsg(DiagnosticKind::AMBIGUOUS_FUNCTION_CALL, typeNames, viableFunctionNames));
+
+        return candidates[0];
+    }
+}
+
