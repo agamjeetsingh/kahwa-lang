@@ -46,6 +46,10 @@ struct FunctionSymbol : Symbol {
 
     std::vector<TypeParameterSymbol*> genericArguments;
 
+    std::string functionSignatureToString() const {
+        // TODO
+    }
+
     void addGenericArguments(const std::vector<TypeParameterSymbol*>& genericArguments) {
         this->genericArguments.insert(this->genericArguments.end(), genericArguments.begin(), genericArguments.end());
     }

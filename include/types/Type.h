@@ -89,7 +89,6 @@ struct Type {
 
     static Type* substitute(const std::vector<TypeParameterSymbol*>& subTypeBluePrint, const Type* superType, const Type* actualSubType);
 
-private:
     std::string toString;
 };
 
