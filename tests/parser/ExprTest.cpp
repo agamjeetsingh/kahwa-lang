@@ -196,3 +196,36 @@ TEST_F(ExprTestFixture, ParsesCallExpressionCorrectly) {
 
     expectNoDiagnostics();
 }
+
+TEST_F(ExprTestFixture, ParsesMemberAccessCorrectly) {
+    std::vector<std::pair<std::string, Expr*>> strs = {
+        {"a.b", memberAccessExpr(identifierRef("a"), "b")},
+        {"a.c()", callExpr(
+            memberAccessExpr(identifierRef("a"), "c"),
+            {})},
+        {"a.b().c", memberAccessExpr(
+            callExpr(memberAccessExpr(identifierRef("a"), "b"), {}),
+            "c")},
+        {"a.b* c.d", binaryExpr(
+            memberAccessExpr(identifierRef("a"), "b"),
+            memberAccessExpr(identifierRef("c"), "d"),
+            BinaryOp::MINUS)},
+        {"(a+b).c", memberAccessExpr(
+            binaryExpr(identifierRef("a"), identifierRef("b"), BinaryOp::PLUS),
+            "c")},
+        {"a(b.c())", callExpr(
+            identifierRef("a"), {callExpr(memberAccessExpr(identifierRef("b"), "c"),
+                {})})},
+        {"a.b.c + d(e.f, g.h)", binaryExpr(
+            memberAccessExpr(memberAccessExpr(identifierRef("a"), "b"), "c"),
+            callExpr(identifierRef("d"), {
+                memberAccessExpr(identifierRef("e"), "f"),
+                memberAccessExpr(identifierRef("g"), "h")
+            }),
+            BinaryOp::PLUS)}
+    };
+
+    testExprs(strs);
+
+    expectNoDiagnostics();
+}
