@@ -39,6 +39,11 @@ Expr *Parser::parseExpr(const std::vector<Token> &tokens) const {
     return ParserWorker(tokens, astArena, diagnostic_engine).parseExpr();
 }
 
+Stmt *Parser::parseStmt(const std::vector<Token> &tokens) const {
+    return ParserWorker(tokens, astArena, diagnostic_engine).parseStmt();
+}
+
+
 
 KahwaFile *Parser::ParserWorker::parseFile() {
     auto kahwaFileBuilder = KahwaFileBuilder();
@@ -444,20 +449,22 @@ Stmt *Parser::ParserWorker::parseStmt(const safePointFunc &isSafePoint) {
             expect(TokenType::RIGHT_PAREN, skipNothing);
             Block* ifBlock;
             if (ifBlock = parseBlock(isSafePoint); !ifBlock) return nullptr;
-            Block* elseBlock;
+            Block* elseBlock = nullptr;
             if (next_is(TokenType::ELSE)) {
                 idx++; // Skip past the 'else'
                 if (elseBlock = parseBlock(isSafePoint); elseBlock) return nullptr;
             }
             SourceRange bodyRange = SourceRange{0, 0}; // TODO
 
-            return astArena.make<IfStmt>(cond, ifBlock, elseBlock, bodyRange, ifRange);
+            return astArena.make<IfStmt>(cond, ifBlock, (elseBlock == nullptr || elseBlock->stmts.empty()) ? nullptr : elseBlock, bodyRange, ifRange);
         }
         case TokenType::RETURN: {
             SourceRange returnRange = tokens[idx++].source_range;
             Expr* expr;
             if (expr = parseExpr(isSafePoint); !expr) return nullptr;
             SourceRange bodyRange = SourceRange{0, 0}; // TODO
+
+            idx++; // Skip past ';'
 
             return astArena.make<ReturnStmt>(expr, bodyRange, returnRange);
         }
@@ -474,6 +481,8 @@ Stmt *Parser::ParserWorker::parseStmt(const safePointFunc &isSafePoint) {
         default: {
             Expr* expr = parseExpr(isSafePoint);
             if (!expr) return nullptr;
+
+            idx++; // Skip past ';'
 
             return astArena.make<ExprStmt>(expr, expr->bodyRange);
         }
