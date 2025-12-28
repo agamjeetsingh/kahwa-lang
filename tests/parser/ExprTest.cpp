@@ -149,7 +149,7 @@ TEST_F(ExprTestFixture, ParsesIndexingExpressionsCorrectly) {
         {"a[x] + b[y]", binaryExpr(
             indexExpr(identifierRef("a"), {identifierRef("x")}),
             indexExpr(identifierRef("b"), {identifierRef("y")}),
-            BinaryOp::PLUS)},
+            BinaryOp::PLUS)}
     };
 
     testExprs(strs);
@@ -175,7 +175,21 @@ TEST_F(ExprTestFixture, ParsesCallExpressionCorrectly) {
         {"a(x, y) + b(x--, z)++", binaryExpr(
             callExpr(identifierRef("a"), {identifierRef("x"), identifierRef("y")}),
             unaryExpr(callExpr(identifierRef("b"), {unaryExpr(identifierRef("x"), UnaryOp::POST_DECREMENT), identifierRef("z")}), UnaryOp::POST_INCREMENT),
-            BinaryOp::PLUS)}
+            BinaryOp::PLUS)},
+        {"a[x] + b(y)", binaryExpr(
+            indexExpr(identifierRef("a"), identifierRef("x")),
+            callExpr(identifierRef("b"), {identifierRef("y")}),
+            BinaryOp::PLUS)},
+        {"a[x + b(y) * 2] + 1", binaryExpr(
+            indexExpr(
+                identifierRef("a"),
+                binaryExpr(
+                    identifierRef("x"),
+                    binaryExpr(callExpr(identifierRef("b"), {identifierRef("y")}), integerLiteral(2), BinaryOp::STAR),
+                    BinaryOp::PLUS)),
+             integerLiteral(1),
+             BinaryOp::PLUS
+            )}
     };
 
     testExprs(strs);
