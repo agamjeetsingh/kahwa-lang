@@ -546,7 +546,37 @@ protected:
     }
 
     static std::string toString(const Stmt* stmt) {
-        return ""; // TODO
+        if (stmt == nullptr) return "";
+        switch (stmt->kind) {
+            case StmtKind::BREAK:
+                return "break;";
+            case StmtKind::CONTINUE:
+                return "continue;";
+            case StmtKind::EXPR:
+                return toString(dynamic_cast<const ExprStmt*>(stmt)->expr) + ";";
+            case StmtKind::FOR: {
+                auto fs = dynamic_cast<const ForLoop*>(stmt);
+                return "for (" + toString(fs->init) + toString(fs->cond) + ";" + toString(fs->step) + ") " + toString(fs->body);
+            }
+            case StmtKind::IF: {
+                auto is = dynamic_cast<const IfStmt*>(stmt);
+                return "if (" + toString(is->cond) + ") " + toString(is->ifBlock) + (is->elseBlock ? " else " + toString(is->elseBlock) : "");
+            }
+            case StmtKind::RETURN:
+                return "return " + toString(dynamic_cast<const ReturnStmt*>(stmt)->expr) + ";";
+            case StmtKind::WHILE: {
+                auto ws = dynamic_cast<const WhileLoop*>(stmt);
+                return "while (" + toString(ws->cond) + ") " + toString(ws->body);
+            }
+            case StmtKind::STMT:
+                return ";";
+            case StmtKind::BLOCK:
+                return toString(dynamic_cast<const Block*>(stmt));
+            case StmtKind::VARIABLE_DECL: {
+                auto vs = dynamic_cast<const FieldDecl*>(stmt);
+                return toString(vs->typeRef) + " " + vs->name + (vs->initExpr ? " = " + toString(vs->initExpr) : "") + ";";
+            }
+        }
     }
 
     static std::string toString(const Expr* expr) {
