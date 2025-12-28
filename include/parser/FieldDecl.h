@@ -24,7 +24,7 @@ struct FieldDecl : Decl, Stmt {
     const SourceRange &nameSourceRange,
     const SourceRange &bodyRange):
     Decl(std::move(name), modifiers, nameSourceRange, bodyRange),
-    Stmt(bodyRange),
+    Stmt(bodyRange, StmtKind::VARIABLE_DECL),
     typeRef(typeRef),
     typeSourceRange(typeSourceRange) {}
 

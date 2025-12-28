@@ -14,7 +14,7 @@ struct Block;
 
 struct IfStmt : Stmt {
     IfStmt(Expr* cond, Block* ifBlock, Block* elseBlock, const SourceRange& bodyRange, const SourceRange &ifRange, std::optional<SourceRange> elseRange = std::nullopt):
-    Stmt(bodyRange),
+    Stmt(bodyRange, StmtKind::IF),
     cond(cond),
     ifBlock(ifBlock),
     elseBlock(elseBlock),

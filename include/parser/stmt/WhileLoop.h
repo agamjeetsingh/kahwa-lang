@@ -12,7 +12,7 @@ struct Block;
 
 struct WhileLoop : Stmt {
     WhileLoop(Expr* cond, Block* body, const SourceRange& bodyRange, const SourceRange& whileRange):
-    Stmt(bodyRange), cond(cond), body(body), whileRange(whileRange) {}
+    Stmt(bodyRange, StmtKind::WHILE), cond(cond), body(body), whileRange(whileRange) {}
 
     Expr* cond;
     Block* body;

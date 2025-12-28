@@ -12,7 +12,7 @@ struct Block;
 
 struct ForLoop : Stmt {
     ForLoop(Stmt* init, Expr* cond, Stmt* step, Block* body, const SourceRange& bodyRange, const SourceRange &forRange):
-    Stmt(bodyRange),
+    Stmt(bodyRange, StmtKind::FOR),
     init(init),
     cond(cond),
     step(step),

@@ -9,8 +9,8 @@
 #include "expr/Stmt.h"
 
 
-struct Block {
-    explicit Block(const std::vector<Stmt*>& stmts): stmts(stmts) {}
+struct Block : Stmt {
+    explicit Block(const std::vector<Stmt*>& stmts, const SourceRange& bodyRange): Stmt(bodyRange, StmtKind::BLOCK), stmts(stmts) {}
     const std::vector<Stmt*> stmts;
 
     bool operator==(const Block &other) const {
@@ -32,7 +32,7 @@ public:
     BlockBuilder() = default;
 
     [[nodiscard]] Block* build() const {
-        return arena->make<Block>(stmts);
+        return arena->make<Block>(stmts, dummy_source);
     }
 
     BlockBuilder& with(Stmt* stmt) {

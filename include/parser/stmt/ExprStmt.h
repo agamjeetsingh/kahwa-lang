@@ -10,7 +10,7 @@
 struct Expr;
 
 struct ExprStmt : Stmt {
-    ExprStmt(Expr* expr, const SourceRange& bodyRange): Stmt(bodyRange), expr(expr) {}
+    ExprStmt(Expr* expr, const SourceRange& bodyRange): Stmt(bodyRange, StmtKind::EXPR), expr(expr) {}
     Expr* expr;
 };
 

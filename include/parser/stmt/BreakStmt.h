@@ -8,7 +8,7 @@
 
 
 struct BreakStmt : Stmt {
-    explicit BreakStmt(const SourceRange& bodyRange): Stmt(bodyRange) {}
+    explicit BreakStmt(const SourceRange& bodyRange): Stmt(bodyRange, StmtKind::BREAK) {}
 };
 
 

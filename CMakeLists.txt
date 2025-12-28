@@ -129,6 +129,8 @@ add_executable(kahwa_lang main.cpp
         include/parser/stmt/ExprStmt.h
         include/parser/expr/ExprKind.cpp
         include/parser/expr/ExprKind.h
+        include/parser/stmt/StmtKind.cpp
+        include/parser/stmt/StmtKind.h
 )
 
 target_link_libraries(kahwa_lang PRIVATE magic_enum::magic_enum)
