@@ -6,6 +6,7 @@
 #define EXPRTESTFIXTURE_H
 
 #include "ParserTestBase.cpp"
+#include "../../include/parser/expr/IndexExpr.h"
 
 class ExprTestFixture : public ParserTestBase, public testing::Test {
     protected:
@@ -59,6 +60,10 @@ class ExprTestFixture : public ParserTestBase, public testing::Test {
 
     static UnaryExpr* unaryExpr(Expr* expr, UnaryOp op) {
         return astArena.make<UnaryExpr>(expr, op, dummy_source);
+    }
+
+    static IndexExpr* indexExpr(Expr* callee, Expr* arg) {
+        return astArena.make<IndexExpr>(callee, arg, dummy_source);
     }
 
     inline static std::vector<Expr*> exampleExprs = {

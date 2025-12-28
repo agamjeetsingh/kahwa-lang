@@ -12,6 +12,7 @@
 #include "../../include/parser/expr/BinaryOp.h"
 #include "../../include/parser/expr/CallExpr.h"
 #include "../../include/parser/expr/IdentifierRef.h"
+#include "../../include/parser/expr/IndexExpr.h"
 #include "../../include/parser/expr/MemberAccessExpr.h"
 #include "../../include/parser/expr/TernaryExpr.h"
 #include "../../include/parser/expr/UnaryExpr.h"
@@ -246,6 +247,11 @@ protected:
             }
             case ExprKind::EXPR:
                 return true;
+            case ExprKind::INDEX_EXPR: {
+                auto ie1 = dynamic_cast<const IndexExpr*>(e1);
+                auto ie2 = dynamic_cast<const IndexExpr*>(e2);
+                return exprEqualIgnoreSourceRange(ie1->callee, ie2->callee) && exprEqualIgnoreSourceRange(ie1->arg, ie2->arg);
+            }
         }
     }
 
@@ -531,6 +537,10 @@ protected:
             }
             case ExprKind::EXPR:
                 return "dummy_expression";
+            case ExprKind::INDEX_EXPR: {
+                auto ie = dynamic_cast<const IndexExpr*>(expr);
+                return "(" + toString(ie->callee) + "[" + toString(ie->arg) + "])";
+            }
         }
         return "unknown_expression";
     }

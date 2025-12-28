@@ -140,7 +140,16 @@ TEST_F(ExprTestFixture, ParsesExpressionsWithUnaryOperatorsCorrectly) {
 
 TEST_F(ExprTestFixture, ParsesIndexingExpressionsCorrectly) {
     std::vector<std::pair<std::string, Expr*>> strs = {
-
+        {"a[]", indexExpr(identifierRef("a"), nullptr)},
+        {"!a[]", unaryExpr(indexExpr(identifierRef("a"), nullptr), UnaryOp::NOT)},
+        {"a[x]", indexExpr(identifierRef("a"), {identifierRef("x")})},
+        {"b[x++ + 2]", indexExpr(identifierRef("b"),
+            binaryExpr(unaryExpr(identifierRef("x"), UnaryOp::POST_INCREMENT), integerLiteral(2), BinaryOp::PLUS)
+        )},
+        {"a[x] + b[y]", binaryExpr(
+            indexExpr(identifierRef("a"), {identifierRef("x")}),
+            indexExpr(identifierRef("b"), {identifierRef("y")}),
+            BinaryOp::PLUS)},
     };
 
     testExprs(strs);

@@ -8,6 +8,7 @@
 #include "../../include/parser/expr/BinaryOp.h"
 #include "../../include/parser/expr/CallExpr.h"
 #include "../../include/parser/expr/IdentifierRef.h"
+#include "../../include/parser/expr/IndexExpr.h"
 #include "../../include/parser/expr/UnaryExpr.h"
 #include "../../include/parser/expr/literals/BoolLiteral.h"
 #include "../../include/parser/expr/literals/FloatLiteral.h"
@@ -546,9 +547,11 @@ Expr *Parser::ParserWorker::parseExpr(const safePointFunc &isSafePoint, int min_
                 return astArena.make<UnaryExpr>(rhs, tokenTypeToPrefixUnaryOp(tokType), bodyRange);
             }
 
-            default: ;
+            default: return nullptr;
         }
     }();
+
+    if (!lhs) return lhs;
 
     while (!next(1).empty()) {
         auto tok = tokens[idx];
@@ -565,8 +568,9 @@ Expr *Parser::ParserWorker::parseExpr(const safePointFunc &isSafePoint, int min_
                 // indexing with '['
 
                 auto rhs = parseExpr(isSafePoint, 0);
-                // TODO - Actually should be a call-expression like new struct
-                lhs = astArena.make<BinaryExpr>(lhs, rhs, tokenTypeToBinaryOp(tok.type).value(), bodyRange);
+
+                lhs = astArena.make<IndexExpr>(lhs, rhs, bodyRange);
+                if (expect(TokenType::RIGHT_BRACKET, skipNothing, false)) idx++;
             } else if (tok.type == TokenType::LEFT_PAREN) {
                 // call expressions with '('
 

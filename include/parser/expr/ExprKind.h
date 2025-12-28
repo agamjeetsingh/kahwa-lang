@@ -20,6 +20,7 @@ enum class ExprKind {
     TERNARY_EXPR,
     UNARY_EXPR,
     EXPR,
+    INDEX_EXPR,
 };
 
 
