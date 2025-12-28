@@ -23,6 +23,13 @@
 #include "../../include/parser/expr/literals/IntegerLiteral.h"
 #include "../../include/parser/expr/literals/NullLiteral.h"
 #include "../../include/parser/expr/literals/StringLiteral.h"
+#include "../../include/parser/stmt/BreakStmt.h"
+#include "../../include/parser/stmt/ContinueStmt.h"
+#include "../../include/parser/stmt/ExprStmt.h"
+#include "../../include/parser/stmt/IfStmt.h"
+#include "../../include/parser/stmt/ForLoop.h"
+#include "../../include/parser/stmt/ReturnStmt.h"
+#include "../../include/parser/stmt/WhileLoop.h"
 
 class ParserTest : public testing::Test, public DiagnosticTesting {
 protected:
@@ -45,6 +52,10 @@ protected:
         return parser.parseExpr(tokeniser.tokenise(0, str));
     }
 
+    [[nodiscard]] Stmt* parseStmt(const std::string &str) const {
+        return parser.parseStmt(tokeniser.tokenise(0, str));
+    }
+
     void testExprs(const std::vector<std::pair<std::string, Expr*>>& tests) const {
         for (auto& [str, expectedExpr]: tests) {
             auto parsedExpr = parseExpr(str);
@@ -53,22 +64,26 @@ protected:
         }
     }
 
+    void testStmts(const std::vector<std::pair<std::string, Stmt*>>& tests) const {
+        for (auto& [str, expectedStmt]: tests) {
+            auto parsedStmt = parseStmt(str);
+            EXPECT_PRED2(stmtEqualIgnoreSourceRange, parsedStmt, expectedStmt);
+            std::cout << "parsedExpr: " << toString(parsedStmt) << "\nexpectedExpr: " << toString(expectedStmt) << "\n--------" << std::endl;
+        }
+    }
+
+    void testStmts(const std::vector<Stmt*>& stmts) const {
+        for (auto* expectedStmt: stmts) {
+            auto parsedStmt = parseStmt(toString(expectedStmt));
+            EXPECT_PRED2(stmtEqualIgnoreSourceRange, parsedStmt, expectedStmt);
+            std::cout << "parsedExpr: " << toString(parsedStmt) << "\nexpectedExpr: " << toString(expectedStmt) << "\n--------" << std::endl;
+        }
+    }
+
     static bool declEqualIgnoreSourceRange(const Decl* d1, const Decl* d2) {
         if (d1 == nullptr && d2 == nullptr) return true;
         if (d1 == nullptr || d2 == nullptr) return false;
         return d1->name == d2->name && d1->modifiers == d2->modifiers;
-    }
-
-    static bool blockEqualIgnoreSourceRange(const Block* b1, const Block* b2) {
-        if (b1 == nullptr && b2 == nullptr) return true;
-        if (b1 == nullptr || b2 == nullptr) return false;
-        if (b1->stmts.size() != b2->stmts.size()) return false;
-        
-        for (size_t i = 0; i < b1->stmts.size(); ++i) {
-            if (b1->stmts[i] == nullptr && b2->stmts[i] == nullptr) continue;
-            if (b1->stmts[i] == nullptr || b2->stmts[i] == nullptr) return false;
-        }
-        return true;
     }
 
     static bool typedefDeclEqualIgnoreSourceRange(const TypedefDecl* td1, const TypedefDecl* td2) {
@@ -199,6 +214,8 @@ protected:
     }
 
     static bool exprEqualIgnoreSourceRange(const Expr* e1, const Expr* e2) {
+        if (e1 == nullptr && e2 == nullptr) return true;
+        if (e1 == nullptr || e2 == nullptr) return false;
         if (e1->kind != e2->kind) return false;
 
         switch (e1->kind) {
@@ -255,6 +272,80 @@ protected:
         }
     }
 
+    static bool stmtEqualIgnoreSourceRange(const Stmt* s1, const Stmt* s2) {
+        if (s1 == nullptr && s2 == nullptr) return true;
+        if (s1 == nullptr || s2 == nullptr) return false;
+        if (s1->kind != s2->kind) return false;
+
+        switch (s1->kind) {
+            case StmtKind::BREAK:
+            case StmtKind::CONTINUE:
+                return true;
+            case StmtKind::EXPR:
+                return exprEqualIgnoreSourceRange(dynamic_cast<const ExprStmt*>(s1)->expr, dynamic_cast<const ExprStmt*>(s2)->expr);
+            case StmtKind::FOR: {
+                auto fs1 = dynamic_cast<const ForLoop*>(s1);
+                auto fs2 = dynamic_cast<const ForLoop*>(s2);
+
+                return stmtEqualIgnoreSourceRange(fs1->init, fs2->init) &&
+                    exprEqualIgnoreSourceRange(fs1->cond, fs2->cond) &&
+                        stmtEqualIgnoreSourceRange(fs1->step, fs2->step) &&
+                            blockEqualIgnoreSourceRange(fs1->body, fs2->body);
+            }
+            case StmtKind::IF: {
+                auto is1 = dynamic_cast<const IfStmt*>(s1);
+                auto is2 = dynamic_cast<const IfStmt*>(s2);
+
+                return exprEqualIgnoreSourceRange(is1->cond, is2->cond) &&
+                    blockEqualIgnoreSourceRange(is1->ifBlock, is2->ifBlock) &&
+                        blockEqualIgnoreSourceRange(is1->elseBlock, is2->elseBlock);
+            }
+            case StmtKind::RETURN:
+                return exprEqualIgnoreSourceRange(dynamic_cast<const ReturnStmt*>(s1)->expr, dynamic_cast<const ReturnStmt*>(s2)->expr);
+            case StmtKind::WHILE: {
+                auto ws1 = dynamic_cast<const WhileLoop*>(s1);
+                auto ws2 = dynamic_cast<const WhileLoop*>(s2);
+
+                return exprEqualIgnoreSourceRange(ws1->cond, ws2->cond) && blockEqualIgnoreSourceRange(ws1->body, ws2->body);
+            }
+            case StmtKind::STMT:
+                return true;
+            case StmtKind::BLOCK:
+                return blockEqualIgnoreSourceRange(dynamic_cast<const Block*>(s1), dynamic_cast<const Block*>(s2));
+            case StmtKind::VARIABLE_DECL: {
+                auto vs1 = dynamic_cast<const FieldDecl*>(s1);
+                auto vs2 = dynamic_cast<const FieldDecl*>(s2);
+
+                return typeRefEqualIgnoreSourceRange(vs1->typeRef, vs2->typeRef) &&
+                    vs1->name == vs2->name &&
+                        exprEqualIgnoreSourceRange(vs1->initExpr, vs2->initExpr) &&
+                        modifiersEqualIgnoreSourceRange(vs1->modifiers, vs2->modifiers);
+            }
+        }
+    }
+
+    static bool modifiersEqualIgnoreSourceRange(const std::vector<ModifierNode>& nodes1, const std::vector<ModifierNode>& nodes2) {
+        if (nodes1.size() != nodes2.size()) return false;
+
+        for (int i = 0; i < nodes1.size(); i++) {
+            if (nodes1[i].modifier != nodes2[i].modifier) return false;
+        }
+
+        return true;
+    }
+
+    static bool blockEqualIgnoreSourceRange(const Block* b1, const Block* b2) {
+        if (b1 == nullptr && b2 == nullptr) return true;
+        if (b1 == nullptr || b2 == nullptr) return false;
+        if (b1->stmts.size() != b2->stmts.size()) return false;
+
+        for (int i = 0; i < b1->stmts.size(); i++) {
+            if (!stmtEqualIgnoreSourceRange(b1->stmts[i], b2->stmts[i])) return false;
+        }
+
+        return true;
+    }
+
     static BoolLiteral* boolLiteral(bool val) {
         return astArena.make<BoolLiteral>(val, dummy_source);
     }
@@ -297,6 +388,38 @@ protected:
 
     static UnaryExpr* unaryExpr(Expr* expr, UnaryOp op) {
         return astArena.make<UnaryExpr>(expr, op, dummy_source);
+    }
+
+    static BreakStmt* breakStmt() {
+        return astArena.make<BreakStmt>(dummy_source);
+    }
+
+    static ContinueStmt* continueStmt() {
+        return astArena.make<ContinueStmt>(dummy_source);
+    }
+
+    static ExprStmt* exprStmt(Expr* expr) {
+        return astArena.make<ExprStmt>(expr, dummy_source);
+    }
+
+    static ForLoop* forLoop(Stmt* init, Expr* cond, Stmt* step, Block* body) {
+        return astArena.make<ForLoop>(init, cond, step, body, dummy_source, dummy_source);
+    }
+
+    static IfStmt* ifStmt(Expr* cond, Block* ifBlock, Block* elseBlock = nullptr) {
+        return astArena.make<IfStmt>(cond, ifBlock, elseBlock, dummy_source, dummy_source);
+    }
+
+    static ReturnStmt* returnStmt(Expr* expr) {
+        return astArena.make<ReturnStmt>(expr, dummy_source, dummy_source);
+    }
+
+    static WhileLoop* whileLoop(Expr* cond, Block* block) {
+        return astArena.make<WhileLoop>(cond, block, dummy_source, dummy_source);
+    }
+
+    static Block* block(const std::vector<Stmt*>& stmts) {
+        return astArena.make<Block>(stmts, dummy_source);
     }
 
     static std::string toString(const std::vector<ModifierNode>& modifiers) {
@@ -418,7 +541,7 @@ protected:
             str += toString(stmt);
             str += "\n";
         }
-        str += "\n}";
+        str += "}";
         return str;
     }
 
@@ -427,6 +550,7 @@ protected:
     }
 
     static std::string toString(const Expr* expr) {
+        if (expr == nullptr) return "";
         switch (expr->kind) {
             case ExprKind::BOOL_LITERAL:
                 return dynamic_cast<const BoolLiteral*>(expr)->val ? "true" : "false";
