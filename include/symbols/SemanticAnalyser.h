@@ -103,9 +103,11 @@ private:
 
     void modifierNotAllowed(const std::vector<ModifierNode>& modifiers, std::function<bool(Modifier)> pred) const;
 
-    std::optional<MethodSymbol*> searchMethod(const ClassSymbol* classSymbol, const std::string& methodName, const std::vector<const Type*>& parameterTypes, const SourceRange& sourceRange);
+    std::optional<FunctionSymbol*> searchFunction(const std::vector<FunctionSymbol*>& functions, const std::string& methodName, const std::vector<const Type*>& parameterTypes, const SourceRange& sourceRange) const;
 
-    std::optional<MethodSymbol*> searchField(const ClassSymbol* classSymbol, const std::string& fieldName);
+    std::optional<MethodSymbol*> searchMethod(const ClassSymbol* classSymbol, const std::string& methodName, const std::vector<const Type*>& parameterTypes, const SourceRange& sourceRange) const;
+
+    std::optional<FieldSymbol*> searchField(const ClassSymbol* classSymbol, const std::string& fieldName);
 };
 
 

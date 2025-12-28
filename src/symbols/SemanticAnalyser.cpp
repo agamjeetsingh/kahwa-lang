@@ -305,6 +305,13 @@ BoundExpr *SemanticAnalyser::resolveTypes(Expr *expr, Scope *scope) {
                 boundArgs.push_back(resolveTypes(arg, scope));
             }
 
+            std::vector<const Type*> argTypes;
+            argTypes.reserve(boundArgs.size());
+
+            std::ranges::transform(boundArgs, std::back_inserter(argTypes), [](const BoundExpr* boundExpr) {
+                return boundExpr->type;
+            });
+
             if (callExpr->callee->kind == ExprKind::MEMBER_ACCESS_EXPR) {
                 // a.b
                 auto *memAccess = dynamic_cast<MemberAccessExpr*>(callExpr->callee);
@@ -317,12 +324,6 @@ BoundExpr *SemanticAnalyser::resolveTypes(Expr *expr, Scope *scope) {
                 auto typeSymbol = object->type->typeSymbol;
 
                 if (auto classSymbol = dynamic_cast<const ClassSymbol*>(typeSymbol)) {
-                    std::vector<const Type*> argTypes;
-                    argTypes.reserve(boundArgs.size());
-
-                    std::ranges::transform(boundArgs, std::back_inserter(argTypes), [](const BoundExpr* boundExpr) {
-                        return boundExpr->type;
-                    });
                     // should return method even if there is overload conflict, as no method -> emission of "cannot resolve symbol"
                     if (auto method = searchMethod(classSymbol, name, argTypes, memAccess->bodyRange)) {
                         return astArena.make<BoundMethodCallExpr>(object, method.value(), boundArgs);
@@ -345,6 +346,14 @@ BoundExpr *SemanticAnalyser::resolveTypes(Expr *expr, Scope *scope) {
                 std::string name = idRef->name;
 
                 auto symbols = scope->search(name);
+
+                std::vector<FunctionSymbol*> functionSymbols;
+                std::ranges::for_each(symbols, [&functionSymbols](Symbol* symbol) {
+                    if (const auto functionSymbol = dynamic_cast<FunctionSymbol*>(symbol)) {
+                        functionSymbols.push_back(functionSymbol);
+                    }
+                });
+                searchFunction(functionSymbols, name, argTypes, callExpr->bodyRange);
             }
         }
         case ExprKind::IDENTIFIER_REF:
@@ -578,29 +587,29 @@ void SemanticAnalyser::modifierNotAllowed(const std::vector<ModifierNode> &modif
         }
 }
 
-std::optional<MethodSymbol *> SemanticAnalyser::searchMethod(const ClassSymbol *classSymbol, const std::string &methodName, const std::vector<const Type *> &parameterTypes, const SourceRange& sourceRange) {
-    std::vector<MethodSymbol*> candidates;
-    for (auto methodSymbol : classSymbol->methods) {
-        if (methodSymbol->name != methodName || methodSymbol->parameters.size() != parameterTypes.size()) continue;
+std::optional<FunctionSymbol *> SemanticAnalyser::searchFunction(const std::vector<FunctionSymbol *> &functions, const std::string &methodName, const std::vector<const Type *> &parameterTypes, const SourceRange &sourceRange) const {
+    std::vector<FunctionSymbol*> candidates;
+    for (auto functionSymbol : functions) {
+        if (functionSymbol->name != methodName || functionSymbol->parameters.size() != parameterTypes.size()) continue;
 
         bool typeConflict = false;
 
-        for (int i = 0; i < methodSymbol->parameters.size(); i++) {
-            if (!parameterTypes[i]->isSubtypeOf(methodSymbol->parameters[i]->type)) {
+        for (int i = 0; i < functionSymbol->parameters.size(); i++) {
+            if (!parameterTypes[i]->isSubtypeOf(functionSymbol->parameters[i]->type)) {
                 typeConflict = true;
                 break;
             }
         }
 
-        if (!typeConflict) candidates.push_back(methodSymbol);
+        if (!typeConflict) candidates.push_back(functionSymbol);
     }
 
     if (candidates.empty()) return std::nullopt;
 
     // Do resolution
 
-    const auto clear_winner_it = std::ranges::find_if(candidates, [&candidates](const MethodSymbol* candidate) {
-       return std::ranges::all_of(candidates, [&candidate](const MethodSymbol* contestant) {
+    const auto clear_winner_it = std::ranges::find_if(candidates, [&candidates](const FunctionSymbol* candidate) {
+       return std::ranges::all_of(candidates, [&candidate](const FunctionSymbol* contestant) {
            if (contestant == candidate) return true;
 
            assert(contestant->parameters.size() == candidate->parameters.size());
@@ -643,5 +652,19 @@ std::optional<MethodSymbol *> SemanticAnalyser::searchMethod(const ClassSymbol *
 
         return candidates[0];
     }
+}
+
+
+std::optional<MethodSymbol *> SemanticAnalyser::searchMethod(const ClassSymbol *classSymbol, const std::string &methodName, const std::vector<const Type *> &parameterTypes, const SourceRange& sourceRange) const {
+    std::vector<MethodSymbol*> methods = classSymbol->methods;
+    std::vector<FunctionSymbol*> functions;
+    functions.reserve(methods.size());
+    std::ranges::transform(methods, std::back_inserter(functions), [](MethodSymbol* methodSymbol) {
+       return methodSymbol;
+    });
+
+    const auto res = searchFunction(functions, methodName, parameterTypes, sourceRange);
+
+    return res ? std::optional{dynamic_cast<MethodSymbol*>(res.value())} : std::nullopt;
 }
 
