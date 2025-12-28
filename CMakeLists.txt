@@ -107,8 +107,6 @@ add_executable(kahwa_lang main.cpp
         include/parser/expr/literals/NullLiteral.h
         include/parser/expr/IdentifierRef.cpp
         include/parser/expr/IdentifierRef.h
-        include/parser/expr/FunctionCall.cpp
-        include/parser/expr/FunctionCall.h
         include/parser/stmt/IfStmt.cpp
         include/parser/stmt/IfStmt.h
         include/parser/stmt/WhileLoop.cpp
@@ -133,6 +131,18 @@ add_executable(kahwa_lang main.cpp
         include/parser/stmt/StmtKind.h
         include/parser/expr/IndexExpr.cpp
         include/parser/expr/IndexExpr.h
+        include/symbols/boundexprs/BoundExpr.cpp
+        include/symbols/boundexprs/BoundExpr.h
+        include/symbols/boundexprs/BoundTernaryExpr.cpp
+        include/symbols/boundexprs/BoundTernaryExpr.h
+        include/symbols/boundexprs/BoundExprKind.cpp
+        include/symbols/boundexprs/BoundExprKind.h
+        include/symbols/boundexprs/BoundFieldAccessExpr.cpp
+        include/symbols/boundexprs/BoundFieldAccessExpr.h
+        include/symbols/boundexprs/BoundCallExpr.cpp
+        include/symbols/boundexprs/BoundCallExpr.h
+        include/symbols/boundexprs/BoundMethodCallExpr.cpp
+        include/symbols/boundexprs/BoundMethodCallExpr.h
 )
 
 target_link_libraries(kahwa_lang PRIVATE magic_enum::magic_enum)
@@ -235,8 +245,6 @@ add_executable(
         include/parser/expr/literals/NullLiteral.h
         include/parser/expr/IdentifierRef.cpp
         include/parser/expr/IdentifierRef.h
-        include/parser/expr/FunctionCall.cpp
-        include/parser/expr/FunctionCall.h
         include/parser/stmt/IfStmt.cpp
         include/parser/stmt/IfStmt.h
         include/parser/stmt/WhileLoop.cpp
