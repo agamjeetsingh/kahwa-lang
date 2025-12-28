@@ -631,6 +631,46 @@ protected:
         }
         return "unknown_expression";
     }
+
+    inline static std::vector<Stmt*> exampleStmts = {
+        exprStmt(integerLiteral(1)), // 1;
+        exprStmt(binaryExpr( // x++ + y;
+            unaryExpr(identifierRef("x"), UnaryOp::POST_INCREMENT),
+            identifierRef("y"),
+            BinaryOp::PLUS)),
+        exprStmt(binaryExpr(
+            callExpr(identifierRef("a"), {identifierRef("x")}),
+            callExpr(identifierRef("b"), {identifierRef("y")}),
+            BinaryOp::PLUS)), // a(x) + b(y);
+        returnStmt(stringLiteral("Hello, World!")),
+        continueStmt()
+    };
+
+    inline static std::vector<Expr*> exampleExprs = {
+        integerLiteral(2), // 2
+        binaryExpr( // x++ + y;
+            unaryExpr(identifierRef("x"), UnaryOp::POST_INCREMENT),
+            identifierRef("y"),
+            BinaryOp::PLUS),
+        binaryExpr(
+        callExpr(identifierRef("a"), {identifierRef("x")}),
+        callExpr(identifierRef("b"), {identifierRef("y")}),
+        BinaryOp::PLUS) // a(x) + b(y)
+    };
+
+    static std::vector<Block*> getExampleBlocks() {
+        std::vector<Block*> blocks;
+
+        for (int i = 0; i < exampleStmts.size(); i++) {
+            auto blockBuilder = BlockBuilder();
+            for (int j = 0; j <= i; j++) {
+                blockBuilder.with(exampleStmts[j]);
+            }
+            blocks.push_back(blockBuilder.build());
+        }
+
+        return blocks;
+    }
 };
 
 TEST_F(ParserTest, ParsesSingleTypedefCorrectly) {
@@ -1374,6 +1414,35 @@ TEST_F(ParserTest, ParsesIfStmtCorrectly) {
                 breakStmt(),
                 continueStmt()}))
     };
+
+    testStmts(stmts);
+
+    expectNoDiagnostics();
+}
+
+TEST_F(ParserTest, ParsesWhileLoopCorrectly) {
+    std::vector<Stmt*> stmts;
+    std::ranges::for_each(getExampleBlocks(), [&stmts](Block* block) {
+        stmts.push_back(whileLoop(boolLiteral(true), block));
+    });
+
+    testStmts(stmts);
+
+    expectNoDiagnostics();
+}
+
+TEST_F(ParserTest, ParsesForLoopCorrectly) {
+    // Fix: TODO - Extra colon after step statement
+    std::vector<Stmt*> stmts;
+    for (int i = 0; i < exampleStmts.size(); i++) {
+        for (int j = 0; j < exampleExprs.size(); j++) {
+            for (int k = 0; k < exampleStmts.size(); k++) {
+                std::ranges::for_each(getExampleBlocks(), [&stmts, i, j, k](Block* block) {
+                    stmts.push_back(forLoop(exampleStmts[i], exampleExprs[j], exampleStmts[k], block));
+                });
+            }
+        }
+    }
 
     testStmts(stmts);
 
