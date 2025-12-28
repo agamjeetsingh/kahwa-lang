@@ -142,7 +142,7 @@ add_executable(
         tests/tokeniser/TokenTest.cpp
         tests/tokeniser/TokeniserTest.cpp
         tests/diagnostics/DiagnosticEngineTest.cpp
-        tests/parser/ParserTest.cpp
+        tests/parser/FunctionTest.cpp
         src/tokeniser/Token.cpp
         include/tokeniser/Token.h
         include/tokeniser/TokenType.h
@@ -255,6 +255,13 @@ add_executable(
         include/parser/stmt/ExprStmt.h
         include/parser/expr/ExprKind.cpp
         include/parser/expr/ExprKind.h
+        tests/parser/ParserTestBase.cpp
+        tests/parser/ExprTest.cpp
+        tests/parser/StmtTest.cpp
+        tests/parser/TypedefTest.cpp
+        tests/parser/ClassTest.cpp
+        tests/parser/StmtTestFixture.h
+        tests/parser/ExprTestFixture.h
 )
 
 target_link_libraries(
