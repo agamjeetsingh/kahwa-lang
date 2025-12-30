@@ -28,6 +28,10 @@ public:
     }
 
     void addFile(const std::string& fileContents, const std::string& uri) {
+        if (uriToId.contains(uri)) {
+            sourceManager.removeFile(uriToId[uri]);
+        }
+
         auto id = sourceManager.addFile(fileContents);
         idToUri[id] = uri;
         uriToId[uri] = id;
@@ -49,6 +53,8 @@ public:
         std::string fileContent = sourceManager.getSource(uriToId[uri]);
 
         const auto& tokens = tokeniser.tokenise(uriToId[uri], fileContent);
+
+        parser.parseFile(tokens);
 
         std::vector<std::tuple<Token, std::optional<LSPTokenType>, std::vector<LSPTokenModifier>>> tokensWithData;
 

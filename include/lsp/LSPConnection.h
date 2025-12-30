@@ -15,7 +15,7 @@ using json = nlohmann::json;
 
 class LSPConnection {
 public:
-    LSPConnection(): log_file("/Users/agamjeetsingh/CLionProjects/kahwa-lang/kahwa_lsp_output.txt", std::ios::app) {
+    LSPConnection(): log_file("/Users/agamjeetsingh/CLionProjects/kahwa-lang/kahwa_lsp_output3.txt", std::ios::app) {
         assert(log_file.is_open());
     }
 
@@ -216,7 +216,17 @@ private:
         }}, {"textDocument/semanticTokens/full", [this](const json& request) {
             try {
                 json json_id = request["id"];
-                const std::vector<int>& tokenData = languageServer.syntaxHighlight(request["params"]["textDocument"]["uri"]);
+
+                auto start = std::chrono::steady_clock::now(); // Just time logging
+
+                const std::vector<int>& tokenData =
+                    languageServer.syntaxHighlight(request["params"]["textDocument"]["uri"]);
+
+                auto end = std::chrono::steady_clock::now(); // Just time logging
+                auto duration_ms = // Just time logging
+                    std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+
+                log_file << "syntaxHighlight() took " << duration_ms << " ms\n"; // Just time logging
 
                 sendResponse({
                     {"jsonrpc", "2.0"},
