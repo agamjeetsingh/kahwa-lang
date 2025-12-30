@@ -20,6 +20,13 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(googletest)
 
+FetchContent_Declare(
+        nlohmann_json
+        GIT_REPOSITORY https://github.com/nlohmann/json.git
+        GIT_TAG v3.12.0
+)
+FetchContent_MakeAvailable(nlohmann_json)
+
 add_executable(kahwa_lang main.cpp
         src/tokeniser/Token.cpp
         include/tokeniser/Token.h
@@ -143,9 +150,16 @@ add_executable(kahwa_lang main.cpp
         include/symbols/boundexprs/BoundCallExpr.h
         include/symbols/boundexprs/BoundMethodCallExpr.cpp
         include/symbols/boundexprs/BoundMethodCallExpr.h
+        include/lsp/LSPConnection.cpp
+        include/lsp/LSPConnection.h
+        include/lsp/LanguageServer.cpp
+        include/lsp/LanguageServer.h
+        include/lsp/LSPTokenType.h
+        include/lsp/LSPTokenModifier.cpp
+        include/lsp/LSPTokenModifier.h
 )
 
-target_link_libraries(kahwa_lang PRIVATE magic_enum::magic_enum)
+target_link_libraries(kahwa_lang PRIVATE magic_enum::magic_enum nlohmann_json::nlohmann_json)
 
 enable_testing()
 
@@ -278,6 +292,7 @@ target_link_libraries(
     tests
     gtest_main
     magic_enum::magic_enum
+    nlohmann_json::nlohmann_json
 )
 
 include(GoogleTest)
