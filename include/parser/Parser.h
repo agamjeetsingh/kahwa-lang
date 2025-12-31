@@ -81,7 +81,11 @@ public:
         [[nodiscard]] SourceRange getPrevTokSourceRange() const;
 
         static inline const safePointFunc isSafePointForFile = [](const Token& token) {
-            return token.type == TokenType::IDENTIFIER || token.type == TokenType::TYPEDEF || MODIFIER_TYPES.contains(token.type);
+            return token.type == TokenType::IDENTIFIER
+            || token.type == TokenType::TYPEDEF
+            || MODIFIER_TYPES.contains(token.type)
+            || token.type == TokenType::CLASS
+            || token.type == TokenType::INTERFACE;
         };
 
         static inline const safePointFunc isSafePointForClass = [](const Token& token) {
