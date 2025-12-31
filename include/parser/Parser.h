@@ -33,7 +33,7 @@ public:
     public:
         explicit ParserWorker(const std::vector<Token> &tokens, Arena& astArena, DiagnosticEngine& diagnostic_engine): tokens(tokens), astArena(astArena), diagnostic_engine(diagnostic_engine) {}
 
-        std::vector<Modifier> getModifierList();
+        std::vector<ModifierNode> getModifierList();
 
         KahwaFile* parseFile();
 
@@ -45,7 +45,7 @@ public:
 
         MethodDecl* parseMethod(const safePointFunc& isSafePoint = isSafePointForFile);
 
-        FieldDecl* parseField(const safePointFunc& isSafePoint = isSafePointForFile);
+        FieldDecl* parseField(const safePointFunc& isSafePoint = isSafePointForFile) {}
 
         Block* parseBlock(const safePointFunc &isSafePoint = isSafePointForStmt);
 

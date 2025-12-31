@@ -8,8 +8,8 @@
 
 
 struct ModifierNode {
-    const Modifier modifier;
-    const SourceRange sourceRange;
+    Modifier modifier;
+    SourceRange sourceRange;
 
     bool operator==(const ModifierNode &other) const {
         return modifier == other.modifier && sourceRange == other.sourceRange;

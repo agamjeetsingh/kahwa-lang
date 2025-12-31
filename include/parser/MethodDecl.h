@@ -95,6 +95,11 @@ public:
         return *this;
     }
 
+    MethodDeclBuilder& with(const std::vector<ModifierNode>& modifiers) {
+        this->modifiers.insert(this->modifiers.end(), modifiers.begin(), modifiers.end());
+        return *this;
+    }
+
     MethodDeclBuilder& with(const std::vector<Modifier>& modifiers) {
         return with(modifiers, std::vector(modifiers.size(), dummy_source));
     }

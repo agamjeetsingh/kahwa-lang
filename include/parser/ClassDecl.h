@@ -118,6 +118,11 @@ class ClassDeclBuilder : public ASTBuilder {
             return *this;
         }
 
+        ClassDeclBuilder& with(const std::vector<ModifierNode>& modifiers) {
+            this->modifiers.insert(this->modifiers.end(), modifiers.begin(), modifiers.end());
+            return *this;
+        }
+
         ClassDeclBuilder& withSuperClass(TypeRef* superClass) {
             superClasses.push_back(superClass);
             return *this;

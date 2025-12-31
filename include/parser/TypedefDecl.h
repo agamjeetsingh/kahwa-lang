@@ -62,11 +62,16 @@ public:
         return with(modifiers, std::vector(modifiers.size(), dummy_source));
     }
 
-    TypedefDeclBuilder& with(std::vector<Modifier> modifiers, const std::vector<SourceRange>& sourceRanges) {
+    TypedefDeclBuilder& with(const std::vector<Modifier>& modifiers, const std::vector<SourceRange>& sourceRanges) {
         assert(modifiers.size() == sourceRanges.size());
         for (int i = 0; i < modifiers.size(); i++) {
             this->modifiers.emplace_back(modifiers[i], sourceRanges[i]);
         }
+        return *this;
+    }
+
+    TypedefDeclBuilder& with(const std::vector<ModifierNode>& modifierNodes) {
+        this->modifiers.insert(this->modifiers.end(), modifierNodes.begin(), modifierNodes.end());
         return *this;
     }
 

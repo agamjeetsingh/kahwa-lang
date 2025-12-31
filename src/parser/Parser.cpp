@@ -104,15 +104,17 @@ TypedefDecl *Parser::ParserWorker::parseTypedef() {
 
     auto modifiers = getModifierList();
 
-    idx++;
+    assertTokenSequence({TokenType::TYPEDEF});
+
+    const auto& typeDefTok = tokens[idx++];
 
     if (auto typeRef = parseTypeRef(isSafePointForFile)) {
         if (auto nextTokens = expect({TokenType::IDENTIFIER, TokenType::SEMI_COLON}, {2, isSafePointForFile})) {
             return TypedefDeclBuilder(*nextTokens.value()[0].getIf<std::string>(), typeRef)
             .with(modifiers)
             .withBodyRange(SourceRange{firstToken, nextTokens->back()})
-            .withTypedefSourceRange(typeRef->bodyRange)
-            .withNameSourceRange(nextTokens.value()[1].source_range)
+            .withTypedefSourceRange(typeDefTok.source_range)
+            .withNameSourceRange(nextTokens.value()[0].source_range)
             .build();
         }
     }
@@ -207,7 +209,7 @@ TypeRef *Parser::ParserWorker::parseTypeRef(const safePointFunc &isSafePoint) {
 }
 
 ClassDecl *Parser::ParserWorker::parseClass(const safePointFunc& isSafePoint) {
-    std::vector<Modifier> modifiers = getModifierList();
+    std::vector<ModifierNode> modifiers = getModifierList();
 
     SourceRange classSourceRange = tokens[idx++].source_range;
 
@@ -330,7 +332,7 @@ ClassDecl *Parser::ParserWorker::parseClass(const safePointFunc& isSafePoint) {
 }
 
 MethodDecl *Parser::ParserWorker::parseMethod(const safePointFunc& isSafePoint) {
-    const std::vector<Modifier>& modifiers = getModifierList();
+    const std::vector<ModifierNode>& modifiers = getModifierList();
 
     auto returnType = parseTypeRef(isSafePoint);
 
@@ -712,12 +714,14 @@ SourceRange Parser::ParserWorker::getPrevTokSourceRange() const {
     return idx == 0 ? SourceRange{tokens.empty() ? -1 : tokens[0].source_range.file_id, 0} : tokens[idx - 1].source_range;
 }
 
-std::vector<Modifier> Parser::ParserWorker::getModifierList() {
+std::vector<ModifierNode> Parser::ParserWorker::getModifierList() {
     std::vector<Token> modifierTokens = next([](const Token& tok){ return !MODIFIER_TYPES.contains(tok.type); });
     idx += modifierTokens.size();
 
-    std::vector<Modifier> modifiers{modifierTokens.size()};
-    std::ranges::transform(modifierTokens, modifiers.begin(), [](const Token& token){ return tokenTypeToModifier(token.type); });
+    std::vector<ModifierNode> modifiers;
+    std::ranges::transform(modifierTokens, std::back_inserter(modifiers), [](const Token& token) {
+        return ModifierNode{tokenTypeToModifier(token.type), token.source_range};
+    });
 
     return modifiers;
 }
