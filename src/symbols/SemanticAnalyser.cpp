@@ -11,6 +11,20 @@
 #include "../../include/symbols/VisibleVariableSymbol.h"
 #include "../../include/symbols/VariableSymbol.h"
 #include "../../include/symbols/boundexprs/BoundMethodCallExpr.h"
+#include "../../include/symbols/boundexprs/BoundVariableExpr.h"
+
+TranslationUnit *SemanticAnalyser::processFile(const KahwaFile* kahwaFile) {
+    auto res = declareFile(kahwaFile); // Phase 1
+
+    resolveTypes(res); // Phase 2
+
+    resolveFunctionBodies(res); // Phase 3
+
+    // TODO - Phase 4
+
+    return res;
+}
+
 
 template<typename ChildSymbol, typename ParentSymbol, typename DeclLike, typename F1, typename F2> requires std::derived_from<ChildSymbol, Symbol> && requires(ParentSymbol t) { { t.scope } -> std::same_as<Scope &>; } && std::invocable<F1, const DeclLike &> && std::same_as<std::invoke_result_t<F1, const DeclLike &>, std::pair<ChildSymbol *, SourceRange> > && std::invocable<F2, ChildSymbol *> && std::same_as<std::invoke_result_t<F2, ChildSymbol *>, void>
 void SemanticAnalyser::registerIt(ParentSymbol *symbol, const std::vector<DeclLike> &decls, F1 &&declToSymbolAndSourceRange, F2 &&registerSymbol, bool duplicatesAllowed) {
@@ -271,6 +285,28 @@ Type *SemanticAnalyser::resolveType(const TypeRef *typeRef, Scope *scope) {
     return builder.build();
 }
 
+void SemanticAnalyser::resolveFunctionBodies(TranslationUnit *translationUnit) {
+    std::ranges::for_each(translationUnit->functions, [this](FunctionSymbol* functionSymbol) {
+        resolveTypes(functionSymbol->block, &functionSymbol->scope);
+    });
+
+    std::ranges::for_each(translationUnit->classes, [this](ClassSymbol* classSymbol) {
+        resolveMethodBodies(classSymbol, &classSymbol->scope);
+    });
+}
+
+void SemanticAnalyser::resolveMethodBodies(ClassSymbol *classSymbol, Scope *scope) {
+    std::ranges::for_each(classSymbol->nestedClasses, [this, classSymbol](ClassSymbol* nestedClass) {
+       resolveMethodBodies(nestedClass, &classSymbol->scope);
+    });
+
+    std::ranges::for_each(classSymbol->methods, [this](MethodSymbol* methodSymbol) {
+        resolveTypes(methodSymbol->block, &methodSymbol->scope);
+    });
+}
+
+
+
 void SemanticAnalyser::resolveTypes(Block *block, Scope *scope) {
     for (auto* stmt: block->stmts) {
         resolveTypes(stmt, scope);
@@ -356,8 +392,32 @@ BoundExpr *SemanticAnalyser::resolveTypes(Expr *expr, Scope *scope) {
                 searchFunction(functionSymbols, name, argTypes, callExpr->bodyRange);
             }
         }
-        case ExprKind::IDENTIFIER_REF:
-            break;
+        case ExprKind::IDENTIFIER_REF: {
+            auto idRef = dynamic_cast<IdentifierRef*>(expr);
+            std::vector<Symbol*> symbols = scope->search(idRef->name);
+            if (symbols.empty()) {
+                diagnosticEngine.reportProblem(
+                            DiagnosticSeverity::ERROR,
+                            DiagnosticKind::CANNOT_RESOLVE_SYMBOL,
+                            idRef->bodyRange,
+                            toMsg(DiagnosticKind::CANNOT_RESOLVE_SYMBOL, idRef->name));
+            } else if (symbols.size() > 1) {
+                // TODO - Diagnostic: Too many symbols or something
+            } else {
+                if (auto variableSymbol = dynamic_cast<VariableSymbol*>(symbols[0])) {
+                    return astArena.make<BoundVariableExpr>(variableSymbol);
+                } else {
+                    // Could be method if I have function pointers, but I don't have them right now
+                    diagnosticEngine.reportProblem(
+                            DiagnosticSeverity::ERROR,
+                            DiagnosticKind::CANNOT_RESOLVE_SYMBOL,
+                            idRef->bodyRange,
+                            toMsg(DiagnosticKind::CANNOT_RESOLVE_SYMBOL, idRef->name));
+                    return nullptr;
+                }
+
+            }
+        }
         case ExprKind::MEMBER_ACCESS_EXPR:
             break;
         case ExprKind::TERNARY_EXPR:

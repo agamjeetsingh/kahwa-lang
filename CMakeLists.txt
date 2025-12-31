@@ -150,6 +150,10 @@ add_executable(kahwa_lang main.cpp
         include/symbols/boundexprs/BoundCallExpr.h
         include/symbols/boundexprs/BoundMethodCallExpr.cpp
         include/symbols/boundexprs/BoundMethodCallExpr.h
+        include/symbols/boundexprs/BoundVariableExpr.cpp
+        include/symbols/boundexprs/BoundVariableExpr.h
+        include/symbols/PrimitiveTypes.cpp
+        include/symbols/PrimitiveTypes.h
         include/lsp/LSPConnection.cpp
         include/lsp/LSPConnection.h
         include/lsp/LanguageServer.cpp

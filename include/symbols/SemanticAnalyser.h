@@ -31,9 +31,9 @@ public:
         SymbolBuilder::setArena(&astArena);
     }
 
-    // ===== Phase 1 =====
-    // TODO - Method Bodies
+    TranslationUnit* processFile(const KahwaFile* kahwaFile);
 
+    // ===== Phase 1 =====
     ClassSymbol* declareClass(const ClassDecl* classDecl, Scope* scope, bool topLevel = false);
 
     template<typename FunctionLikeSymbol>
@@ -68,11 +68,17 @@ public:
 
     // Resolve method bodies
 
+    void resolveFunctionBodies(TranslationUnit* translationUnit);
+
+    void resolveMethodBodies(ClassSymbol* classSymbol, Scope* scope);
+
     void resolveTypes(Block* block, Scope* scope);
 
     void resolveTypes(Stmt* stmt, Scope* scope);
 
     BoundExpr* resolveTypes(Expr* expr, Scope* scope);
+
+    // ===== Phase 4 =====
 
     void analyseClass(ClassSymbol* classSymbol);
 
@@ -103,11 +109,11 @@ private:
 
     void modifierNotAllowed(const std::vector<ModifierNode>& modifiers, std::function<bool(Modifier)> pred) const;
 
-    std::optional<FunctionSymbol*> searchFunction(const std::vector<FunctionSymbol*>& functions, const std::string& methodName, const std::vector<const Type*>& parameterTypes, const SourceRange& sourceRange) const;
+    [[nodiscard]] std::optional<FunctionSymbol*> searchFunction(const std::vector<FunctionSymbol*>& functions, const std::string& methodName, const std::vector<const Type*>& parameterTypes, const SourceRange& sourceRange) const;
 
     std::optional<MethodSymbol*> searchMethod(const ClassSymbol* classSymbol, const std::string& methodName, const std::vector<const Type*>& parameterTypes, const SourceRange& sourceRange) const;
 
-    std::optional<FieldSymbol*> searchField(const ClassSymbol* classSymbol, const std::string& fieldName);
+    std::optional<FieldSymbol*> searchField(const ClassSymbol* classSymbol, const std::string& fieldName) {}
 };
 
 

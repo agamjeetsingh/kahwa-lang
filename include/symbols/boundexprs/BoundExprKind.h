@@ -13,6 +13,7 @@ enum class BoundExprKind {
     FIELD_ACCESS_EXPR,
     CALL_EXPR,
     METHOD_CALL_EXPR,
+    VARIABLE_REF,
 };
 
 
