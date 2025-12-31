@@ -23,7 +23,7 @@ struct ClassDecl : Decl {
         const SourceRange &classSourceRange,
         const SourceRange &nameSourceRange,
         const SourceRange &bodyRange,
-        const std::vector<ModifierNode> &modifiers = {},
+        const std::vector<ModifierNode*> &modifiers = {},
         const std::vector<TypeRef*>& superClasses = {},
         const std::vector<FieldDecl*> &fields = {},
         const std::vector<MethodDecl*> &methods = {},
@@ -106,19 +106,19 @@ class ClassDeclBuilder : public ASTBuilder {
         }
 
         ClassDeclBuilder& with(Modifier modifier, const SourceRange &sourceRange = dummy_source) {
-            modifiers.emplace_back(modifier, sourceRange);
+            modifiers.push_back(arena->make<ModifierNode>(modifier, sourceRange));
             return *this;
         }
 
         ClassDeclBuilder& with(const std::vector<Modifier> &modifiers, const std::vector<SourceRange>& sourceRanges) {
             assert(modifiers.size() == sourceRanges.size());
             for (int i = 0; i < modifiers.size(); i++) {
-                this->modifiers.emplace_back(modifiers[i], sourceRanges[i]);
+                this->modifiers.push_back(arena->make<ModifierNode>(modifiers[i], sourceRanges[i]));
             }
             return *this;
         }
 
-        ClassDeclBuilder& with(const std::vector<ModifierNode>& modifiers) {
+        ClassDeclBuilder& with(const std::vector<ModifierNode*>& modifiers) {
             this->modifiers.insert(this->modifiers.end(), modifiers.begin(), modifiers.end());
             return *this;
         }
@@ -214,7 +214,7 @@ class ClassDeclBuilder : public ASTBuilder {
 
     private:
         std::string name;
-        std::vector<ModifierNode> modifiers;
+        std::vector<ModifierNode*> modifiers;
         std::vector<TypeRef*> superClasses;
         std::vector<FieldDecl*> fields;
         std::vector<MethodDecl*> methods;

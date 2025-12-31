@@ -33,7 +33,7 @@ public:
     public:
         explicit ParserWorker(const std::vector<Token> &tokens, Arena& astArena, DiagnosticEngine& diagnostic_engine): tokens(tokens), astArena(astArena), diagnostic_engine(diagnostic_engine) {}
 
-        std::vector<ModifierNode> getModifierList();
+        std::vector<ModifierNode*> getModifierList();
 
         KahwaFile* parseFile();
 

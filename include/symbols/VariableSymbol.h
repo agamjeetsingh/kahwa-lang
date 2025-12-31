@@ -7,6 +7,7 @@
 #include "Scope.h"
 #include "Symbol.h"
 #include "../parser/Modifier.h"
+#include "boundexprs/BoundExpr.h"
 
 struct Type;
 
@@ -22,6 +23,8 @@ struct VariableSymbol : Symbol {
     }
 
     Type* type = nullptr;
+
+    BoundExpr* initExpr = nullptr;
 
     void setType(Type* type) {
         this->type = type;

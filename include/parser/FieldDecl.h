@@ -18,7 +18,7 @@
 struct FieldDecl : Decl, Stmt {
     FieldDecl(
     std::string name,
-    const std::vector<ModifierNode> &modifiers,
+    const std::vector<ModifierNode*> &modifiers,
     TypeRef* typeRef,
     const SourceRange &typeSourceRange,
     const SourceRange &nameSourceRange,

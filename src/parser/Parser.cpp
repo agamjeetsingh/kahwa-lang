@@ -209,7 +209,7 @@ TypeRef *Parser::ParserWorker::parseTypeRef(const safePointFunc &isSafePoint) {
 }
 
 ClassDecl *Parser::ParserWorker::parseClass(const safePointFunc& isSafePoint) {
-    std::vector<ModifierNode> modifiers = getModifierList();
+    std::vector<ModifierNode*> modifiers = getModifierList();
 
     SourceRange classSourceRange = tokens[idx++].source_range;
 
@@ -332,7 +332,7 @@ ClassDecl *Parser::ParserWorker::parseClass(const safePointFunc& isSafePoint) {
 }
 
 MethodDecl *Parser::ParserWorker::parseMethod(const safePointFunc& isSafePoint) {
-    const std::vector<ModifierNode>& modifiers = getModifierList();
+    const std::vector<ModifierNode*>& modifiers = getModifierList();
 
     auto returnType = parseTypeRef(isSafePoint);
 
@@ -714,13 +714,13 @@ SourceRange Parser::ParserWorker::getPrevTokSourceRange() const {
     return idx == 0 ? SourceRange{tokens.empty() ? -1 : tokens[0].source_range.file_id, 0} : tokens[idx - 1].source_range;
 }
 
-std::vector<ModifierNode> Parser::ParserWorker::getModifierList() {
+std::vector<ModifierNode*> Parser::ParserWorker::getModifierList() {
     std::vector<Token> modifierTokens = next([](const Token& tok){ return !MODIFIER_TYPES.contains(tok.type); });
     idx += modifierTokens.size();
 
-    std::vector<ModifierNode> modifiers;
-    std::ranges::transform(modifierTokens, std::back_inserter(modifiers), [](const Token& token) {
-        return ModifierNode{tokenTypeToModifier(token.type), token.source_range};
+    std::vector<ModifierNode*> modifiers;
+    std::ranges::transform(modifierTokens, std::back_inserter(modifiers), [this](const Token& token) {
+        return astArena.make<ModifierNode>(tokenTypeToModifier(token.type), token.source_range);
     });
 
     return modifiers;

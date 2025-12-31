@@ -13,7 +13,7 @@
 struct TypedefDecl : Decl {
     TypedefDecl(
         const std::string &name,
-        const std::vector<ModifierNode>& modifiers,
+        const std::vector<ModifierNode*>& modifiers,
         TypeRef* referredType,
         const SourceRange &typedefSourceRange,
         const SourceRange &nameSourceRange,
@@ -54,7 +54,7 @@ public:
     }
 
     TypedefDeclBuilder& with(Modifier modifier, const SourceRange &sourceRange = dummy_source) {
-        modifiers.emplace_back(modifier, sourceRange);
+        modifiers.push_back(arena->make<ModifierNode>(modifier, sourceRange));
         return *this;
     }
 
@@ -65,12 +65,12 @@ public:
     TypedefDeclBuilder& with(const std::vector<Modifier>& modifiers, const std::vector<SourceRange>& sourceRanges) {
         assert(modifiers.size() == sourceRanges.size());
         for (int i = 0; i < modifiers.size(); i++) {
-            this->modifiers.emplace_back(modifiers[i], sourceRanges[i]);
+            this->modifiers.push_back(arena->make<ModifierNode>(modifiers[i], sourceRanges[i]));
         }
         return *this;
     }
 
-    TypedefDeclBuilder& with(const std::vector<ModifierNode>& modifierNodes) {
+    TypedefDeclBuilder& with(const std::vector<ModifierNode*>& modifierNodes) {
         this->modifiers.insert(this->modifiers.end(), modifierNodes.begin(), modifierNodes.end());
         return *this;
     }
@@ -92,7 +92,7 @@ public:
 
 private:
     std::string name;
-    std::vector<ModifierNode> modifiers;
+    std::vector<ModifierNode*> modifiers;
     TypeRef* referredType;
     std::optional<SourceRange> typedefSourceRange;
     std::optional<SourceRange> nameSourceRange;

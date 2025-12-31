@@ -116,6 +116,7 @@ struct ClassSymbol final : TypeSymbol {
     std::vector<MethodSymbol*> methods;
     std::vector<FieldSymbol*> fields;
     std::vector<ClassSymbol*> nestedClasses;
+    bool isInterface = false;
 
     bool operator==(const ClassSymbol &other) const {
         return this == &other;

@@ -13,7 +13,7 @@
 
 struct Decl {
     Decl(std::string name,
-    const std::vector<ModifierNode> &modifiers,
+    const std::vector<ModifierNode*> &modifiers,
     const SourceRange &nameSourceRange,
     const SourceRange &bodyRange):
     name(std::move(name)),
@@ -24,7 +24,7 @@ struct Decl {
     virtual ~Decl() = default;
 
     const std::string name;
-    const std::vector<ModifierNode> modifiers;
+    const std::vector<ModifierNode*> modifiers;
 
     const SourceRange nameSourceRange;
     const SourceRange bodyRange;

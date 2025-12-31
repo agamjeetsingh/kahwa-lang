@@ -15,7 +15,7 @@
 // Functions and Methods are identical at the AST level (but not in symbols)
 struct MethodDecl : Decl {
     MethodDecl(std::string name,
-    const std::vector<ModifierNode> &modifiers,
+    const std::vector<ModifierNode*> &modifiers,
     TypeRef* returnType,
     const std::vector<std::pair<TypeRef*, std::string>>& parameters,
     Block* block,
@@ -91,11 +91,11 @@ public:
     }
 
     MethodDeclBuilder& with(Modifier modifier, const SourceRange &sourceRange = dummy_source) {
-        modifiers.emplace_back(modifier, sourceRange);
+        modifiers.push_back(arena->make<ModifierNode>(modifier, sourceRange));
         return *this;
     }
 
-    MethodDeclBuilder& with(const std::vector<ModifierNode>& modifiers) {
+    MethodDeclBuilder& with(const std::vector<ModifierNode*>& modifiers) {
         this->modifiers.insert(this->modifiers.end(), modifiers.begin(), modifiers.end());
         return *this;
     }
@@ -154,7 +154,7 @@ public:
 
 private:
     std::string name;
-    std::vector<ModifierNode> modifiers;;
+    std::vector<ModifierNode*> modifiers;;
     TypeRef* returnType;
     std::vector<std::pair<TypeRef*, std::string>> parameters;
     Block* block;
