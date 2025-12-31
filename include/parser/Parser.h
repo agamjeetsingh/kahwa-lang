@@ -45,6 +45,8 @@ public:
 
         MethodDecl* parseMethod(const safePointFunc& isSafePoint = isSafePointForFile);
 
+        FieldDecl* parseField(const safePointFunc& isSafePoint = isSafePointForFile);
+
         Block* parseBlock(const safePointFunc &isSafePoint = isSafePointForStmt);
 
         Stmt* parseStmt(const safePointFunc& isSafePoint = isSafePointForStmt);

@@ -60,8 +60,6 @@ KahwaFile *Parser::ParserWorker::parseFile() {
             idx = save_idx;
             if (auto typedefDecl = parseTypedef()) {
                 kahwaFileBuilder.with(typedefDecl);
-            } else {
-                continue;
             }
         } else {
             if (token.type == TokenType::CLASS) {
@@ -71,24 +69,28 @@ KahwaFile *Parser::ParserWorker::parseFile() {
                     kahwaFileBuilder.with(class_decl);
                 }
             } else {
-                diagnostic_engine.reportProblem(DiagnosticSeverity::ERROR, DiagnosticKind::EXPECTED_DECLARATION, token.source_range);
 
-                continue; // TODO
-                // variable-decl or function-decl
-
-                idx = save_idx;
-
-                // TODO - Distinguish between the two first
-
-                // TODO - But with recovery being file-level and not class-level
-                if (auto function = parseMethod()) {
-                    kahwaFileBuilder.with(function);
+                parseTypeRef(isSafePointForFile);
+                if (auto name = expect(TokenType::IDENTIFIER, isSafePointForFile); !name) {
+                    continue;
                 }
+                if (next_is(TokenType::LEFT_PAREN)) {
+                    // function
+                    idx = save_idx;
 
-                continue;
+                    if (auto functionDecl = parseMethod(isSafePointForFile)) {
+                        kahwaFileBuilder.with(functionDecl);
+                    }
+                } else {
+                    // variable
+
+                    idx = save_idx;
+
+                    if (auto variableDecl = parseField(isSafePointForFile)) {
+                        kahwaFileBuilder.with(variableDecl);
+                    }
+                }
             }
-
-            // TODO - Insert a bad node
         }
     }
 
@@ -399,8 +401,6 @@ Block *Parser::ParserWorker::parseBlock(const safePointFunc& isSafePoint) {
     while (!next_is(TokenType::RIGHT_CURLY_BRACE)) {
         if (auto* stmt = parseStmt(isSafePoint)) {
             blockBuilder.with(stmt);
-        } else {
-            return nullptr; // TODO, maybe don't discard the whole block
         }
     }
 
