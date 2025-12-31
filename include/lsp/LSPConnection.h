@@ -9,14 +9,27 @@
 #include <string>
 
 #include <nlohmann/json.hpp>
-
+#include "../diagnostics/DiagnosticSeverity.h"
+#include "../diagnostics/Diagnostic.h"
 #include "LanguageServer.h"
 using json = nlohmann::json;
+
+inline int diagnosticSeverityToInt(DiagnosticSeverity severity) {
+    switch (severity) {
+        case DiagnosticSeverity::ERROR:
+            return 1;
+        case DiagnosticSeverity::WARNING:
+        case DiagnosticSeverity::WEAK_WARNING:
+            return 2;
+    }
+}
 
 class LSPConnection {
 public:
     LSPConnection(): log_file("/Users/agamjeetsingh/CLionProjects/kahwa-lang/kahwa_lsp_output3.txt", std::ios::app) {
         assert(log_file.is_open());
+
+        languageServer.setConnection(this);
     }
 
     void run() {
@@ -129,6 +142,37 @@ public:
         } else {
             log_file << "INFO: Unhandled method: " << method << std::endl;
         }
+    }
+
+    void publishDiagnostics(SourceManager& sourceManager, std::vector<Diagnostic> diagnostics, std::unordered_map<std::size_t, std::string> idToUri) {
+        std::vector<json> diagnostics_json;
+
+        std::ranges::transform(diagnostics, std::back_inserter(diagnostics_json), [&sourceManager](Diagnostic& diagnostic) {
+            return json{
+          {
+              "range", {
+               {"start", {
+                   {"line", sourceManager.getSourceFile(diagnostic.source_range.file_id).getLinePos(diagnostic.source_range.pos).first},
+                   {"character", sourceManager.getSourceFile(diagnostic.source_range.file_id).getLinePos(diagnostic.source_range.pos).second}}},
+               {"end", {
+                   {"line", sourceManager.getSourceFile(diagnostic.source_range.file_id).getLinePos(diagnostic.source_range.pos + diagnostic.source_range.length).first},
+                   {"character", sourceManager.getSourceFile(diagnostic.source_range.file_id).getLinePos(diagnostic.source_range.pos + diagnostic.source_range.length).second}
+               }}
+             }
+          },
+                {"severity", diagnosticSeverityToInt(diagnostic.severity)}, // 1=Error, 2=Warning, 3=Information, 4=Hint
+              {"message", diagnostic.msg},
+              {"source", "Kahwa LSP"}
+            };
+            });
+
+        sendResponse({
+            {"jsonrpc", "2.0"},
+            {"method", "textDocument/publishDiagnostics"},
+            {"params", {
+                {"uri", idToUri[diagnostics[0].source_range.file_id]},
+                {"diagnostics", diagnostics_json}
+            }}});
     }
 
 private:

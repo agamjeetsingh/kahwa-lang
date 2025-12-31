@@ -12,8 +12,12 @@
 #include "LSPTokenType.h"
 #include "../arena/Arena.h"
 #include "../parser/Parser.h"
+#include "../symbols/SemanticAnalyser.h"
 #include "../tokeniser/Tokeniser.h"
+class LSPConnection;
 using json = nlohmann::json;
+
+typedef std::tuple<SourceRange, LSPTokenType, std::vector<LSPTokenModifier>> tokenData;
 
 class LanguageServer {
 public:
@@ -27,10 +31,14 @@ public:
         }
     }
 
+    void setConnection(LSPConnection* connection) {
+        lspConnection = connection;
+    }
+
     void addFile(const std::string& fileContents, const std::string& uri) {
-        if (uriToId.contains(uri)) {
-            sourceManager.removeFile(uriToId[uri]);
-        }
+        // if (uriToId.contains(uri)) {
+        //     sourceManager.removeFile(uriToId[uri]);
+        // }
 
         auto id = sourceManager.addFile(fileContents);
         idToUri[id] = uri;
@@ -45,65 +53,7 @@ public:
         uriToId.erase(uri);
     }
 
-    std::vector<int> syntaxHighlight(const std::string& uri) {
-        if (!uriToId.contains(uri)) {
-            return {};
-        }
-
-        std::string fileContent = sourceManager.getSource(uriToId[uri]);
-
-        const auto& tokens = tokeniser.tokenise(uriToId[uri], fileContent);
-
-        parser.parseFile(tokens);
-
-        std::vector<std::tuple<Token, std::optional<LSPTokenType>, std::vector<LSPTokenModifier>>> tokensWithData;
-
-        // Somehow get tokenWithData
-        std::ranges::for_each(tokens, [&tokensWithData](const Token& token) {
-            if (KEYWORD_TYPES.contains(token.type)) {
-                tokensWithData.push_back({token, LSPTokenType::KEYWORD, {}});
-            }
-        });
-
-        std::vector<int> res;
-
-        int prevLine = 0;
-        int prevPos = 0;
-
-        SourceFile& file = sourceManager.getSourceFile(uriToId[uri]);
-
-        std::ranges::for_each(tokensWithData, [&prevLine, &prevPos, &file, &res, this](const std::tuple<Token, std::optional<LSPTokenType>, std::vector<LSPTokenModifier>>& tuple) {
-            if (!std::get<1>(tuple)) return;
-
-            const Token& tok = std::get<0>(tuple);
-
-            const auto& linePos = file.getLinePos(tok.source_range.pos);
-
-            int currentLine = linePos.first;
-            int currentPos = linePos.second;
-
-            int deltaLine = currentLine - prevLine;
-            res.push_back(deltaLine);
-            int deltaStart = deltaLine == 0 ? currentPos - prevPos : currentPos;
-            res.push_back(deltaStart);
-
-            prevLine = currentLine;
-            prevPos = currentPos;
-
-            res.push_back(tok.source_range.length);
-
-            res.push_back(tokenTypeIdx[std::get<1>(tuple).value()]);
-
-            int tokenModifierInt = 0;
-            std::ranges::for_each(std::get<2>(tuple), [&tokenModifierInt, this](LSPTokenModifier modifier) {
-                tokenModifierInt |= 1 << tokenModifierIdx[modifier];
-            });
-
-            res.push_back(tokenModifierInt);
-        });
-
-        return res;
-    }
+    std::vector<int> syntaxHighlight(const std::string& uri);
 
 private:
     SourceManager sourceManager;
@@ -111,12 +61,53 @@ private:
     Arena arena;
     Tokeniser tokeniser{diagnosticEngine};
     Parser parser{arena, diagnosticEngine};
+    LSPConnection* lspConnection;
+    SemanticAnalyser semanticAnalyser{arena, diagnosticEngine};
 
     std::unordered_map<LSPTokenType, int> tokenTypeIdx;
     std::unordered_map<LSPTokenModifier, int> tokenModifierIdx;
 
     std::unordered_map<std::string, std::size_t> uriToId;
     std::unordered_map<std::size_t, std::string> idToUri;
+
+    void getSourceRanges(KahwaFile* kahwaFile, std::vector<tokenData>& data) {
+        auto res = semanticAnalyser.processFile(kahwaFile);
+
+        std::ranges::for_each(kahwaFile->classDecls, [&data](const auto* classDecl) {
+           getSourceRanges(classDecl, data);
+        });
+
+        std::ranges::for_each(kahwaFile->functionDecls, [&data](const auto& fieldDecl) {
+           getSourceRanges(fieldDecl, data);
+        });
+
+        std::ranges::for_each(kahwaFile->typedefDecls, [&data](const auto& typedefDecls) {
+           getSourceRanges(typedefDecls, data);
+        });
+
+        std::ranges::for_each(kahwaFile->variableDecls, [&data](const auto& variableDecls) {
+           getSourceRanges(variableDecls, data);
+        });
+    }
+
+    static void getSourceRanges(ClassDecl* classDecl, std::vector<tokenData> data) {
+        data.emplace_back(classDecl->classSourceRange, LSPTokenType::KEYWORD, std::vector<LSPTokenModifier>{});
+        data.emplace_back(classDecl->nameSourceRange, LSPTokenType::CLASS, std::vector<LSPTokenModifier>{});
+
+        // Need semantic analysis here...
+
+        std::ranges::for_each(classDecl->typeParameters, [](const auto& pair) {
+
+        });
+
+        std::ranges::for_each(classDecl->fields, [&data](const auto* fieldDecl) {
+           getSourceRanges(fieldDecl, data);
+        });
+    }
+
+    static void getSourceRanges(FieldDecl* fieldDecl, std::vector<tokenData> data) {
+
+    }
 };
 
 
