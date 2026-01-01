@@ -33,6 +33,16 @@ struct FieldDecl : Decl, Stmt {
 
     const SourceRange typeSourceRange;
 
+    void accept(ASTVisitor &v) override {
+        v.visit(this);
+    }
+
+    void visitChildren(ASTVisitor &v) override {
+        typeRef->accept(v);
+        if (initExpr) initExpr->accept(v);
+        std::ranges::for_each(modifiers, [&v](ModifierNode* modifierNode) { modifierNode->accept(v); });
+    }
+
     bool operator==(const FieldDecl &other) const {
         if (!Decl::operator==(other)) return false;
         

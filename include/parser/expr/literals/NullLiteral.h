@@ -8,7 +8,13 @@
 
 
 struct NullLiteral : Expr {
-    NullLiteral(const SourceRange& bodyRange): Expr(bodyRange, ExprKind::NULL_LITERAL) {}
+    explicit NullLiteral(const SourceRange& bodyRange): Expr(bodyRange, ExprKind::NULL_LITERAL) {}
+
+    void accept(ASTVisitor &v) override {
+        v.visit(this);
+    }
+
+    void visitChildren(ASTVisitor &v) override {}
 };
 
 

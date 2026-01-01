@@ -6,18 +6,14 @@
 #define STMT_H
 #include "../../source/SourceRange.h"
 #include "../stmt/StmtKind.h"
+#include "../ASTNode.h"
 
-
-struct Stmt {
-    explicit Stmt(const SourceRange& bodyRange, const StmtKind kind = StmtKind::STMT): bodyRange(bodyRange), kind(kind) {}
+struct Stmt : ASTNode {
+    explicit Stmt(const SourceRange& bodyRange, const StmtKind kind = StmtKind::STMT): ASTNode(bodyRange), kind(kind) {}
 
     bool operator==(const Stmt &other) const {
         return true; // Empty struct, all instances are equal
     }
-
-    virtual ~Stmt() noexcept = default;
-
-    const SourceRange bodyRange;
 
     const StmtKind kind;
 };

@@ -19,7 +19,7 @@ struct MethodDecl : Decl {
     TypeRef* returnType,
     const std::vector<std::pair<TypeRef*, std::string>>& parameters,
     Block* block,
-    const std::vector<TypeRef*> &typeParameters,
+    const std::vector<TypeParameterDecl*> &typeParameters,
     const SourceRange &returnTypeSourceRange,
     const SourceRange &nameSourceRange,
     const SourceRange &bodyRange):
@@ -30,13 +30,25 @@ struct MethodDecl : Decl {
     typeParameters(typeParameters),
     returnTypeSourceRange(returnTypeSourceRange) {}
 
-    TypeRef* const returnType;
+    TypeRef* returnType;
     const std::vector<std::pair<TypeRef*, std::string>> parameters;
-    Block* const block;
+    Block* block;
 
-    const std::vector<TypeRef*> typeParameters;
+    const std::vector<TypeParameterDecl*> typeParameters;
 
     const SourceRange returnTypeSourceRange;
+
+    void visitChildren(ASTVisitor &v) override {
+        std::ranges::for_each(modifiers, [&v](ModifierNode* node) { node->accept(v); });
+        returnType->accept(v);
+        // TODO - I think parameters should be stored as some kind of parameter decl
+        block->accept(v);
+        std::ranges::for_each(modifiers, [&v](ModifierNode* node) { node->accept(v); });
+    }
+
+    void accept(ASTVisitor &v) override {
+        v.visit(this);
+    }
 
     bool operator==(const MethodDecl &other) const {
         if (!Decl::operator==(other)) return false;
@@ -77,7 +89,7 @@ public:
     MethodDeclBuilder(std::string  name, TypeRef* returnType, Block* block)
         : name(std::move(name)), returnType(returnType), block(block) {}
 
-    [[nodiscard]] MethodDecl* build() const {
+    [[nodiscard]] MethodDecl* build() {
         return arena->make<MethodDecl>(
             name,
             modifiers,
@@ -127,12 +139,12 @@ public:
         return *this;
     }
 
-    MethodDeclBuilder& with(TypeRef* typeParameter) {
+    MethodDeclBuilder& with(TypeParameterDecl* typeParameter) {
         typeParameters.push_back(typeParameter);
         return *this;
     }
 
-    MethodDeclBuilder& with(const std::vector<TypeRef*>& typeParameters) {
+    MethodDeclBuilder& with(const std::vector<TypeParameterDecl*>& typeParameters) {
         this->typeParameters.insert(this->typeParameters.end(), typeParameters.begin(), typeParameters.end());
         return *this;
     }
@@ -158,7 +170,7 @@ private:
     TypeRef* returnType;
     std::vector<std::pair<TypeRef*, std::string>> parameters;
     Block* block;
-    std::vector<TypeRef*> typeParameters;
+    std::vector<TypeParameterDecl*> typeParameters;
 
     std::optional<SourceRange> returnTypeSourceRange;
     std::optional<SourceRange> nameSourceRange;

@@ -8,9 +8,8 @@
 
 #include "../expr/Expr.h"
 #include "../expr/Stmt.h"
+#include "../Block.h"
 
-
-struct Block;
 
 struct IfStmt : Stmt {
     IfStmt(Expr* cond, Block* ifBlock, Block* elseBlock, const SourceRange& bodyRange, const SourceRange &ifRange, std::optional<SourceRange> elseRange = std::nullopt):
@@ -26,6 +25,16 @@ struct IfStmt : Stmt {
     Block* elseBlock;
     SourceRange ifRange;
     std::optional<SourceRange> elseRange;
+
+    void accept(ASTVisitor &v) override {
+        v.visit(this);
+    }
+
+    void visitChildren(ASTVisitor &v) override {
+        cond->accept(v);
+        ifBlock->accept(v);
+        if (elseBlock) elseBlock->accept(v);
+    }
 };
 
 

@@ -25,6 +25,14 @@ struct TypedefDecl : Decl {
     const SourceRange typedefSourceRange;
     TypeRef* const referredType;
 
+    void accept(ASTVisitor &v) override {
+        v.visit(this);
+    }
+
+    void visitChildren(ASTVisitor &v) override {
+        referredType->accept(v);
+    }
+
     bool operator==(const TypedefDecl &other) const {
         if (!Decl::operator==(other)) return false;
         

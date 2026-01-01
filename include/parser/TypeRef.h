@@ -8,25 +8,35 @@
 #include <utility>
 #include <vector>
 #include "ASTBuilder.h"
+#include "ASTNode.h"
 #include "../types/Variance.h"
 
-struct TypeRef {
+struct ASTVisitor;
+
+struct TypeRef : ASTNode {
     explicit TypeRef(std::string identifier,
     const SourceRange &nameSourceRange,
     const SourceRange &bodyRange,
     const std::vector<TypeRef*> &args,
     const std::vector<Variance> &variances):
+    ASTNode(bodyRange),
     identifier(std::move(identifier)),
     args(args),
     variances(variances),
-    nameSourceRange(nameSourceRange),
-    bodyRange(bodyRange) {}
+    nameSourceRange(nameSourceRange) {}
 
     const std::string identifier;
     const std::vector<TypeRef*> args;
     const std::vector<Variance> variances;
     const SourceRange nameSourceRange;
-    const SourceRange bodyRange;
+
+    void accept(ASTVisitor &v) override {
+        v.visit(this);
+    }
+
+    void visitChildren(ASTVisitor& v) override {
+        std::ranges::for_each(args, [&v](TypeRef* arg) { arg->accept(v); });
+    }
 
     bool isVariantLess() const {
         return std::ranges::all_of(variances, [](const Variance variance) {

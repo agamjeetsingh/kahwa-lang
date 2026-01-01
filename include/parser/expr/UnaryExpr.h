@@ -14,6 +14,14 @@ struct UnaryExpr : Expr {
 
     Expr* expr;
     UnaryOp op;
+
+    void accept(ASTVisitor &v) override {
+        v.visit(this);
+    }
+
+    void visitChildren(ASTVisitor &v) override {
+        expr->accept(v);
+    }
 };
 
 

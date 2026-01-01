@@ -15,6 +15,15 @@ struct BinaryExpr : Expr {
     Expr* expr1;
     Expr* expr2;
     BinaryOp op;
+
+    void visitChildren(ASTVisitor &v) override {
+        expr1->accept(v);
+        expr2->accept(v);
+    }
+
+    void accept(ASTVisitor &v) override {
+        v.visit(this);
+    }
 };
 
 

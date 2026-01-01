@@ -9,6 +9,12 @@
 
 struct BreakStmt : Stmt {
     explicit BreakStmt(const SourceRange& bodyRange): Stmt(bodyRange, StmtKind::BREAK) {}
+
+    void accept(ASTVisitor &v) override {
+        v.visit(this);
+    }
+
+    void visitChildren(ASTVisitor &v) override {}
 };
 
 

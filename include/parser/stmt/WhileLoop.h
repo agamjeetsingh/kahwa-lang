@@ -17,6 +17,15 @@ struct WhileLoop : Stmt {
     Expr* cond;
     Block* body;
     SourceRange whileRange;
+
+    void accept(ASTVisitor &v) override {
+        v.visit(this);
+    }
+
+    void visitChildren(ASTVisitor &v) override {
+        cond->accept(v);
+        body->accept(v);
+    }
 };
 
 

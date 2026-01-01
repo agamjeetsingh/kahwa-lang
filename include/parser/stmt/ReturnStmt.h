@@ -14,6 +14,14 @@ struct ReturnStmt : Stmt {
 
     Expr* expr;
     SourceRange returnRange;
+
+    void accept(ASTVisitor &v) override {
+        v.visit(this);
+    }
+
+    void visitChildren(ASTVisitor &v) override {
+        expr->accept(v);
+    }
 };
 
 

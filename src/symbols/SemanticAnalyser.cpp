@@ -47,7 +47,7 @@ void SemanticAnalyser::registerIt(ParentSymbol *symbol, const std::vector<DeclLi
             symbol->scope.define(std::get<0>(triple));
             registerSymbol(std::get<0>(triple));
             if constexpr (std::derived_from<std::remove_pointer_t<DeclLike>, Decl>) {
-                symbolToDecl[std::get<0>(triple)] = std::get<2>(triple);
+                symbolToASTNode[std::get<0>(triple)] = std::get<2>(triple);
             }
         }
     });
@@ -206,7 +206,7 @@ void SemanticAnalyser::resolveTypes(TranslationUnit *translationUnit) {
 }
 
 void SemanticAnalyser::resolveTypes(ClassSymbol *classSymbol) {
-    std::ranges::for_each(dynamic_cast<ClassDecl*>(symbolToDecl[classSymbol])->superClasses, [this, classSymbol](TypeRef* superClass) {
+    std::ranges::for_each(dynamic_cast<ClassDecl*>(symbolToASTNode[classSymbol])->superClasses, [this, classSymbol](TypeRef* superClass) {
         classSymbol->addSuperClass(resolveType(superClass, &classSymbol->scope));
     });
 
@@ -225,7 +225,7 @@ void SemanticAnalyser::resolveTypes(ClassSymbol *classSymbol) {
 
 template<typename FunctionLikeSymbol> requires std::is_same_v<FunctionLikeSymbol, FunctionSymbol> || std::is_same_v<FunctionLikeSymbol, MethodSymbol>
 void SemanticAnalyser::resolveTypes(FunctionLikeSymbol *functionSymbol) {
-    functionSymbol->returnType = resolveType(dynamic_cast<MethodDecl*>(symbolToDecl[functionSymbol])->returnType, &functionSymbol->scope);
+    functionSymbol->returnType = resolveType(dynamic_cast<MethodDecl*>(symbolToASTNode[functionSymbol])->returnType, &functionSymbol->scope);
 
     std::ranges::for_each(functionSymbol->parameters, [this](VariableSymbol* variableSymbol) {
        resolveTypes(variableSymbol);
@@ -234,7 +234,7 @@ void SemanticAnalyser::resolveTypes(FunctionLikeSymbol *functionSymbol) {
 
 template<typename T> requires (std::is_same_v<T, VariableSymbol> || std::is_same_v<T, VisibleVariableSymbol> || std::is_same_v<T, FieldSymbol>)
 void SemanticAnalyser::resolveTypes(T *variableSymbol) {
-    variableSymbol->type = resolveType(dynamic_cast<FieldDecl*>(symbolToDecl[variableSymbol])->typeRef, &variableSymbol->scope);
+    variableSymbol->type = resolveType(dynamic_cast<FieldDecl*>(symbolToASTNode[variableSymbol])->typeRef, &variableSymbol->scope);
 }
 
 Type *SemanticAnalyser::resolveType(const TypeRef *typeRef, Scope *scope) {
@@ -440,21 +440,21 @@ void SemanticAnalyser::analyseClass(ClassSymbol *classSymbol) {
 
 
 
-Modifier SemanticAnalyser::resolveModality(const std::vector<ModifierNode>& modifiers) const {
-    auto modalityModifiersView = modifiers | std::ranges::views::filter([](const ModifierNode& modifier) {
-        return isModalityModifier(modifier.modifier);
+Modifier SemanticAnalyser::resolveModality(const std::vector<ModifierNode*>& modifiers) const {
+    auto modalityModifiersView = modifiers | std::ranges::views::filter([](const ModifierNode* modifier) {
+        return isModalityModifier(modifier->modifier);
     });
 
-    std::vector<ModifierNode> modalityModifiers = std::vector(modalityModifiersView.begin(), modalityModifiersView.end());
+    std::vector<ModifierNode*> modalityModifiers = std::vector(modalityModifiersView.begin(), modalityModifiersView.end());
 
     Modifier effectiveModality = Modifier::FINAL;
     if (!modalityModifiers.empty()) {
-        if (std::ranges::any_of(modalityModifiers, [](const ModifierNode& modifierNode) {
-           return modifierNode.modifier == Modifier::ABSTRACT;
+        if (std::ranges::any_of(modalityModifiers, [](const ModifierNode* modifierNode) {
+           return modifierNode->modifier == Modifier::ABSTRACT;
         })) {
             effectiveModality = Modifier::ABSTRACT;
-        } else if (std::ranges::any_of(modalityModifiers, [](const ModifierNode& modifierNode) {
-            return modifierNode.modifier == Modifier::OPEN;
+        } else if (std::ranges::any_of(modalityModifiers, [](const ModifierNode* modifierNode) {
+            return modifierNode->modifier == Modifier::OPEN;
          })) {
            effectiveModality = Modifier::OPEN;
        }
@@ -465,19 +465,19 @@ Modifier SemanticAnalyser::resolveModality(const std::vector<ModifierNode>& modi
     bool abstractFound = false;
 
     for (const auto modifierNode: modalityModifiers) {
-        switch (modifierNode.modifier) {
+        switch (modifierNode->modifier) {
             case Modifier::FINAL:
                 if (abstractFound || openFound) {
                     diagnosticEngine.reportProblem(
                         DiagnosticSeverity::ERROR,
                         DiagnosticKind::ILLEGAL_MODIFIER_COMBINATION,
-                        modifierNode.sourceRange,
+                        modifierNode->bodyRange,
                         toMsg(DiagnosticKind::ILLEGAL_MODIFIER_COMBINATION, abstractFound ? Modifier::ABSTRACT : Modifier::OPEN, Modifier::FINAL));
                 } else if (finalFound) {
                     diagnosticEngine.reportProblem(
                         DiagnosticSeverity::ERROR,
                         DiagnosticKind::REPEATED_MODIFIER,
-                        modifierNode.sourceRange,
+                        modifierNode->bodyRange,
                         toMsg(DiagnosticKind::REPEATED_MODIFIER, Modifier::FINAL));
                 }
                 finalFound = true;
@@ -488,13 +488,13 @@ Modifier SemanticAnalyser::resolveModality(const std::vector<ModifierNode>& modi
                     diagnosticEngine.reportProblem(
                         DiagnosticSeverity::ERROR,
                         DiagnosticKind::ILLEGAL_MODIFIER_COMBINATION,
-                        modifierNode.sourceRange,
+                        modifierNode->bodyRange,
                         toMsg(DiagnosticKind::ILLEGAL_MODIFIER_COMBINATION, Modifier::FINAL, Modifier::ABSTRACT));
                 } else if (abstractFound) {
                     diagnosticEngine.reportProblem(
                         DiagnosticSeverity::ERROR,
                         DiagnosticKind::REPEATED_MODIFIER,
-                        modifierNode.sourceRange,
+                        modifierNode->bodyRange,
                         toMsg(DiagnosticKind::REPEATED_MODIFIER, Modifier::ABSTRACT));
                 }
                 abstractFound = true;
@@ -505,27 +505,27 @@ Modifier SemanticAnalyser::resolveModality(const std::vector<ModifierNode>& modi
                     diagnosticEngine.reportProblem(
                         DiagnosticSeverity::ERROR,
                         DiagnosticKind::ILLEGAL_MODIFIER_COMBINATION,
-                        modifierNode.sourceRange,
+                        modifierNode->bodyRange,
                         toMsg(DiagnosticKind::ILLEGAL_MODIFIER_COMBINATION, Modifier::FINAL, Modifier::OPEN));
                 } else if (openFound) {
                     diagnosticEngine.reportProblem(
                         DiagnosticSeverity::ERROR,
                         DiagnosticKind::REPEATED_MODIFIER,
-                        modifierNode.sourceRange,
+                        modifierNode->bodyRange,
                         toMsg(DiagnosticKind::REPEATED_MODIFIER, Modifier::OPEN));
                 }
                 openFound = true;
                 break;
-            default: throw std::runtime_error("resolveModality() received a non-visibility modifier: " + toString(modifierNode.modifier));;
+            default: throw std::runtime_error("resolveModality() received a non-visibility modifier: " + toString(modifierNode->modifier));;
         }
     }
 
     return effectiveModality;
 }
 
-Modifier SemanticAnalyser::resolveVisibility(const std::vector<ModifierNode>& modifiers, bool topLevel) const {
-    auto visibilityModifiersView = modifiers | std::ranges::views::filter([](const ModifierNode& modifier) {
-        return isVisibilityModifier(modifier.modifier);
+Modifier SemanticAnalyser::resolveVisibility(const std::vector<ModifierNode*>& modifiers, bool topLevel) const {
+    auto visibilityModifiersView = modifiers | std::ranges::views::filter([](const ModifierNode* modifier) {
+        return isVisibilityModifier(modifier->modifier);
     });
 
     auto visibilityModifiers = std::vector(visibilityModifiersView.begin(), visibilityModifiersView.end());
@@ -535,9 +535,9 @@ Modifier SemanticAnalyser::resolveVisibility(const std::vector<ModifierNode>& mo
     if (visibilityModifiers.empty()) {
         res = topLevel ? Modifier::PUBLIC : Modifier::PRIVATE;
     } else if (visibilityModifiers.size() == 1) {
-        res = topLevel && visibilityModifiers[0].modifier == Modifier::PROTECTED ? Modifier::PUBLIC : visibilityModifiers[0].modifier;
+        res = topLevel && visibilityModifiers[0]->modifier == Modifier::PROTECTED ? Modifier::PUBLIC : visibilityModifiers[0]->modifier;
     } else {
-        res = visibilityModifiers[0].modifier;
+        res = visibilityModifiers[0]->modifier;
     }
 
     bool publicFound = false;
@@ -545,19 +545,19 @@ Modifier SemanticAnalyser::resolveVisibility(const std::vector<ModifierNode>& mo
     bool privateFound = false;
 
     for (const auto modifierNode: visibilityModifiers) {
-        switch (modifierNode.modifier) {
+        switch (modifierNode->modifier) {
             case Modifier::PUBLIC:
                 if ((!topLevel && protectedFound) || privateFound) {
                     diagnosticEngine.reportProblem(
                         DiagnosticSeverity::ERROR,
                         DiagnosticKind::ILLEGAL_MODIFIER_COMBINATION,
-                        modifierNode.sourceRange,
+                        modifierNode->bodyRange,
                         toMsg(DiagnosticKind::ILLEGAL_MODIFIER_COMBINATION, protectedFound ? Modifier::PROTECTED : Modifier::PRIVATE, Modifier::PUBLIC));
                 } else if (publicFound) {
                     diagnosticEngine.reportProblem(
                         DiagnosticSeverity::ERROR,
                         DiagnosticKind::REPEATED_MODIFIER,
-                        modifierNode.sourceRange,
+                        modifierNode->bodyRange,
                         toMsg(DiagnosticKind::REPEATED_MODIFIER, Modifier::PUBLIC));
                 }
                 publicFound = true;
@@ -568,13 +568,13 @@ Modifier SemanticAnalyser::resolveVisibility(const std::vector<ModifierNode>& mo
                     diagnosticEngine.reportProblem(
                         DiagnosticSeverity::ERROR,
                         DiagnosticKind::ILLEGAL_MODIFIER_COMBINATION,
-                        modifierNode.sourceRange,
+                        modifierNode->bodyRange,
                         toMsg(DiagnosticKind::ILLEGAL_MODIFIER_COMBINATION, protectedFound ? Modifier::PROTECTED : Modifier::PUBLIC, Modifier::PRIVATE));
                 } else if (privateFound) {
                     diagnosticEngine.reportProblem(
                         DiagnosticSeverity::ERROR,
                         DiagnosticKind::REPEATED_MODIFIER,
-                        modifierNode.sourceRange,
+                        modifierNode->bodyRange,
                         toMsg(DiagnosticKind::REPEATED_MODIFIER, Modifier::PRIVATE));
                 }
                 privateFound = true;
@@ -585,36 +585,36 @@ Modifier SemanticAnalyser::resolveVisibility(const std::vector<ModifierNode>& mo
                     diagnosticEngine.reportProblem(
                         DiagnosticSeverity::ERROR,
                         DiagnosticKind::MODIFIER_NOT_ALLOWED,
-                        modifierNode.sourceRange,
+                        modifierNode->bodyRange,
                         toMsg(DiagnosticKind::MODIFIER_NOT_ALLOWED, Modifier::PROTECTED));
                 } else if (publicFound || privateFound) {
                     diagnosticEngine.reportProblem(
                         DiagnosticSeverity::ERROR,
                         DiagnosticKind::ILLEGAL_MODIFIER_COMBINATION,
-                        modifierNode.sourceRange,
+                        modifierNode->bodyRange,
                         toMsg(DiagnosticKind::ILLEGAL_MODIFIER_COMBINATION, publicFound ? Modifier::PUBLIC : Modifier::PRIVATE, Modifier::PROTECTED));
                 } else if (protectedFound) {
                     diagnosticEngine.reportProblem(
                         DiagnosticSeverity::ERROR,
                         DiagnosticKind::REPEATED_MODIFIER,
-                        modifierNode.sourceRange,
+                        modifierNode->bodyRange,
                         toMsg(DiagnosticKind::REPEATED_MODIFIER, Modifier::PROTECTED));
                 }
                 protectedFound = true;
                 break;
 
-            default: throw std::runtime_error("resolveVisibility() received a non-visibility modifier: " + toString(modifierNode.modifier));
+            default: throw std::runtime_error("resolveVisibility() received a non-visibility modifier: " + toString(modifierNode->modifier));
         }
     }
 
     return res;
 }
 
-bool SemanticAnalyser::hasModifier(const std::vector<ModifierNode> &modifiers, Modifier modifier) const {
+bool SemanticAnalyser::hasModifier(const std::vector<ModifierNode*> &modifiers, Modifier modifier) const {
     bool found = false;
     for (auto desiredModifier : modifiers |
-        std::ranges::views::filter([modifier](const ModifierNode& modifierNode) {
-            return modifierNode.modifier == modifier;
+        std::ranges::views::filter([modifier](const ModifierNode* modifierNode) {
+            return modifierNode->modifier == modifier;
         })) {
         if (!found) {
             found = true;
@@ -622,28 +622,28 @@ bool SemanticAnalyser::hasModifier(const std::vector<ModifierNode> &modifiers, M
             diagnosticEngine.reportProblem(
             DiagnosticSeverity::ERROR,
             DiagnosticKind::REPEATED_MODIFIER,
-            desiredModifier.sourceRange,
-            toMsg(DiagnosticKind::MODIFIER_NOT_ALLOWED, desiredModifier.modifier));
+            desiredModifier->bodyRange,
+            toMsg(DiagnosticKind::MODIFIER_NOT_ALLOWED, desiredModifier->modifier));
         }
         }
     return found;
 }
 
 
-void SemanticAnalyser::modifierNotAllowed(const std::vector<ModifierNode> &modifiers, Modifier notAllowed) const {
+void SemanticAnalyser::modifierNotAllowed(const std::vector<ModifierNode*> &modifiers, Modifier notAllowed) const {
     modifierNotAllowed(modifiers, [notAllowed](Modifier modifier){ return modifier == notAllowed; });
 }
 
-void SemanticAnalyser::modifierNotAllowed(const std::vector<ModifierNode> &modifiers, std::function<bool(Modifier)> pred) const {
+void SemanticAnalyser::modifierNotAllowed(const std::vector<ModifierNode*> &modifiers, std::function<bool(Modifier)> pred) const {
     for (auto notAllowedModifier : modifiers |
-        std::ranges::views::filter([pred](const ModifierNode& modifier) {
-            return pred(modifier.modifier);
+        std::ranges::views::filter([pred](const ModifierNode* modifier) {
+            return pred(modifier->modifier);
         })) {
         diagnosticEngine.reportProblem(
             DiagnosticSeverity::ERROR,
             DiagnosticKind::MODIFIER_NOT_ALLOWED,
-            notAllowedModifier.sourceRange,
-            toMsg(DiagnosticKind::MODIFIER_NOT_ALLOWED, notAllowedModifier.modifier));
+            notAllowedModifier->bodyRange,
+            toMsg(DiagnosticKind::MODIFIER_NOT_ALLOWED, notAllowedModifier->modifier));
         }
 }
 

@@ -60,7 +60,7 @@ public:
     requires (std::is_same_v<T, VariableSymbol> || std::is_same_v<T, VisibleVariableSymbol> || std::is_same_v<T, FieldSymbol>)
     void resolveTypes(T* variableSymbol);
 
-    std::unordered_map<Symbol*, Decl*> symbolToDecl;
+    std::unordered_map<Symbol*, ASTNode*> symbolToASTNode;
 
     Type* resolveType(const TypeRef* typeRef, Scope* scope);
 
@@ -86,11 +86,11 @@ private:
     Arena& astArena;
     DiagnosticEngine& diagnosticEngine;
 
-    [[nodiscard]] Modifier resolveModality(const std::vector<ModifierNode>& modifiers) const;
+    [[nodiscard]] Modifier resolveModality(const std::vector<ModifierNode*>& modifiers) const;
 
-    [[nodiscard]] Modifier resolveVisibility(const std::vector<ModifierNode>& modifiers, bool topLevel) const;
+    [[nodiscard]] Modifier resolveVisibility(const std::vector<ModifierNode*>& modifiers, bool topLevel) const;
 
-    [[nodiscard]] bool hasModifier(const std::vector<ModifierNode>& modifiers, Modifier modifier) const;
+    [[nodiscard]] bool hasModifier(const std::vector<ModifierNode*>& modifiers, Modifier modifier) const;
 
     template<typename ChildSymbol, typename ParentSymbol, typename DeclLike, typename F1, typename F2>
     requires std::derived_from<ChildSymbol, Symbol> && requires(ParentSymbol t) {
@@ -105,9 +105,9 @@ private:
         F2&& registerSymbol,
         bool duplicatesAllowed = false);
 
-    void modifierNotAllowed(const std::vector<ModifierNode>& modifiers, Modifier notAllowed) const;
+    void modifierNotAllowed(const std::vector<ModifierNode*>& modifiers, Modifier notAllowed) const;
 
-    void modifierNotAllowed(const std::vector<ModifierNode>& modifiers, std::function<bool(Modifier)> pred) const;
+    void modifierNotAllowed(const std::vector<ModifierNode*>& modifiers, std::function<bool(Modifier)> pred) const;
 
     [[nodiscard]] std::optional<FunctionSymbol*> searchFunction(const std::vector<FunctionSymbol*>& functions, const std::string& methodName, const std::vector<const Type*>& parameterTypes, const SourceRange& sourceRange) const;
 

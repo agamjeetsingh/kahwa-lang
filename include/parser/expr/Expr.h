@@ -9,12 +9,9 @@
 #include "../../source/SourceRange.h"
 
 
-struct Expr {
-    Expr(const SourceRange& bodyRange, ExprKind kind = ExprKind::EXPR): bodyRange(bodyRange), kind(kind) {}
+struct Expr : ASTNode {
+    explicit Expr(const SourceRange& bodyRange, ExprKind kind = ExprKind::EXPR): ASTNode(bodyRange), kind(kind) {}
 
-    virtual ~Expr() = default;
-
-    const SourceRange bodyRange;
     const ExprKind kind;
 };
 

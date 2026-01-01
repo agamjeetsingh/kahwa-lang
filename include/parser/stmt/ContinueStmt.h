@@ -9,6 +9,12 @@
 
 struct ContinueStmt : Stmt {
     explicit ContinueStmt(const SourceRange& bodyRange): Stmt(bodyRange, StmtKind::CONTINUE) {}
+
+    void accept(ASTVisitor &v) override {
+        v.visit(this);
+    }
+
+    void visitChildren(ASTVisitor &v) override {}
 };
 
 

@@ -17,6 +17,15 @@ struct CallExpr : Expr {
 
     Expr* callee;
     std::vector<Expr*> args;
+
+    void visitChildren(ASTVisitor &v) override {
+        callee->accept(v);
+        std::ranges::for_each(args, [&v](Expr* arg) { arg->accept(v); });
+    }
+
+    void accept(ASTVisitor &v) override {
+        v.visit(this);
+    }
 };
 
 

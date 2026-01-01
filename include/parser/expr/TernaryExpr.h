@@ -14,6 +14,16 @@ struct TernaryExpr : Expr {
     Expr* cond;
     Expr* expr1;
     Expr* expr2;
+
+    void accept(ASTVisitor &v) override {
+       v.visit(this);
+    }
+
+    void visitChildren(ASTVisitor &v) override {
+        cond->accept(v);
+        expr1->accept(v);
+        expr2->accept(v);
+    }
 };
 
 

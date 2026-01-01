@@ -11,6 +11,12 @@ struct FloatLiteral : Expr {
     FloatLiteral(float val, const SourceRange& bodyRange): Expr(bodyRange, ExprKind::FLOAT_LITERAL), val(val) {}
 
     float val;
+
+    void accept(ASTVisitor &v) override {
+        v.visit(this);
+    }
+
+    void visitChildren(ASTVisitor &v) override {}
 };
 
 

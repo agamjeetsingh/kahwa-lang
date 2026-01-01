@@ -11,20 +11,32 @@
 #include "../arena/Arena.h"
 #include "ClassDecl.h"
 
-struct KahwaFile {
+struct KahwaFile : ASTNode {
     explicit KahwaFile(const std::vector<TypedefDecl*> &typedefDecls = {},
         const std::vector<ClassDecl*> &classDecls = {},
         const std::vector<MethodDecl*> &functionDecls = {},
         const std::vector<FieldDecl*> &variableDecls = {}):
+    ASTNode(SourceRange{0, 0}), // TODO
     typedefDecls(typedefDecls),
     classDecls(classDecls),
     functionDecls(functionDecls),
-    variableDecls(variableDecls) {}
+    variableDecls(variableDecls){}
 
     const std::vector<TypedefDecl*> typedefDecls;
     const std::vector<ClassDecl*> classDecls;
     const std::vector<MethodDecl*> functionDecls;
     const std::vector<FieldDecl*> variableDecls;
+
+    void accept(ASTVisitor &v) override {
+        v.visit(this);
+    }
+
+    void visitChildren(ASTVisitor &v) override {
+        std::ranges::for_each(typedefDecls, [&v](TypedefDecl* typedefDecl) { typedefDecl->accept(v); });
+        std::ranges::for_each(classDecls, [&v](ClassDecl* classDecl) { classDecl->accept(v); });
+        std::ranges::for_each(functionDecls, [&v](MethodDecl* methodDecl) { methodDecl->accept(v); });
+        std::ranges::for_each(variableDecls, [&v](FieldDecl* fieldDecl) { fieldDecl->accept(v); });
+    }
 
     bool operator==(const KahwaFile &other) const {
         if (typedefDecls.size() != other.typedefDecls.size() ||

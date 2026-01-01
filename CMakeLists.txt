@@ -161,6 +161,14 @@ add_executable(kahwa_lang main.cpp
         include/lsp/LSPTokenType.h
         include/lsp/LSPTokenModifier.cpp
         include/lsp/LSPTokenModifier.h
+        include/parser/ASTNode.cpp
+        include/parser/ASTNode.h
+        include/parser/ASTVisitor.cpp
+        include/parser/ASTVisitor.h
+        include/lsp/SyntaxHighlightingVisitor.cpp
+        include/lsp/SyntaxHighlightingVisitor.h
+        include/parser/TypeParameterDecl.cpp
+        include/parser/TypeParameterDecl.h
 )
 
 target_link_libraries(kahwa_lang PRIVATE magic_enum::magic_enum nlohmann_json::nlohmann_json)

@@ -12,6 +12,7 @@
 #include "FieldDecl.h"
 #include "MethodDecl.h"
 #include "Modifier.h"
+#include "TypeParameterDecl.h"
 #include "TypeRef.h"
 #include "../tokeniser/Token.h"
 #include "../types/Variance.h"
@@ -28,7 +29,7 @@ struct ClassDecl : Decl {
         const std::vector<FieldDecl*> &fields = {},
         const std::vector<MethodDecl*> &methods = {},
         const std::vector<ClassDecl*> &nestedClasses = {},
-        const std::vector<std::pair<TypeRef*, Variance>>& typeParameters = {}):
+        const std::vector<TypeParameterDecl*>& typeParameters = {}):
     Decl(std::move(name), modifiers, nameSourceRange, bodyRange),
     superClasses(superClasses),
     fields(fields),
@@ -41,9 +42,22 @@ struct ClassDecl : Decl {
     const std::vector<FieldDecl*> fields;
     const std::vector<MethodDecl*> methods;
     const std::vector<ClassDecl*> nestedClasses;
-    const std::vector<std::pair<TypeRef*, Variance>> typeParameters;
+    const std::vector<TypeParameterDecl*> typeParameters;
 
     const SourceRange classSourceRange;
+
+    void accept(ASTVisitor &v) override {
+        v.visit(this);
+    }
+
+    void visitChildren(ASTVisitor &v) override {
+        std::ranges::for_each(superClasses, [&v](TypeRef* superClass) { superClass->accept(v); });
+        std::ranges::for_each(fields, [&v](FieldDecl* fieldDecl) { fieldDecl->accept(v); });
+        std::ranges::for_each(methods, [&v](MethodDecl* methodDecl) { methodDecl->accept(v); });
+        std::ranges::for_each(nestedClasses, [&v](ClassDecl* nestedClass) { nestedClass->accept(v); });
+        std::ranges::for_each(typeParameters, [&v](TypeParameterDecl* typeParameterDecl) { typeParameterDecl->accept(v); });
+        std::ranges::for_each(modifiers, [&v](ModifierNode* modifierNode) { modifierNode->accept(v); });
+    }
 
     bool operator==(const ClassDecl &other) const {
         if (!Decl::operator==(other)) return false;
@@ -195,7 +209,7 @@ class ClassDeclBuilder : public ASTBuilder {
         ClassDeclBuilder& withTypeParameters(const std::vector<TypeRef*>& typeParameters, const std::vector<Variance>& variances) {
             assert(typeParameters.size() == variances.size());
             for (int i = 0; i < typeParameters.size(); i++) {
-                this->typeParameters.emplace_back(typeParameters[i], variances[i]);
+                this->typeParameters.push_back(arena->make<TypeParameterDecl>(typeParameters[i]->bodyRange, typeParameters[i]->identifier, variances[i]));
             }
             return *this;
         }
@@ -219,7 +233,7 @@ class ClassDeclBuilder : public ASTBuilder {
         std::vector<FieldDecl*> fields;
         std::vector<MethodDecl*> methods;
         std::vector<ClassDecl*> nestedClasses;
-        std::vector<std::pair<TypeRef*, Variance>> typeParameters;
+        std::vector<TypeParameterDecl*> typeParameters;
         std::optional<SourceRange> classSourceRange;
         std::optional<SourceRange> nameSourceRange;
         std::optional<SourceRange> bodyRange;

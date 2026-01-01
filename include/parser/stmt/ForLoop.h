@@ -24,6 +24,17 @@ struct ForLoop : Stmt {
     Stmt* step;
     Block* body;
     SourceRange forRange;
+
+    void accept(ASTVisitor &v) override {
+        v.visit(this);
+    }
+
+    void visitChildren(ASTVisitor &v) override {
+        init->accept(v);
+        cond->accept(v);
+        step->accept(v);
+        body->accept(v);
+    }
 };
 
 

@@ -13,6 +13,12 @@ struct StringLiteral : Expr {
     StringLiteral(std::string val, const SourceRange& bodyRange): Expr(bodyRange, ExprKind::STRING_LITERAL), val(val) {}
 
     std::string val;
+
+    void accept(ASTVisitor &v) override {
+        v.visit(this);
+    }
+
+    void visitChildren(ASTVisitor &v) override {}
 };
 
 

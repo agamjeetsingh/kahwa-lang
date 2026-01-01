@@ -24,6 +24,14 @@ struct Block : Stmt {
         
         return true;
     }
+
+    void accept(ASTVisitor &v) override {
+        v.visit(this);
+    }
+
+    void visitChildren(ASTVisitor &v) override {
+        std::ranges::for_each(stmts, [&v](Stmt* stmt) { stmt->accept(v); });
+    }
 };
 
 class BlockBuilder : public ASTBuilder {

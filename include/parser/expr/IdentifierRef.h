@@ -13,6 +13,12 @@ struct IdentifierRef : Expr {
     IdentifierRef(const std::string& name, const SourceRange& bodyRange): Expr(bodyRange, ExprKind::IDENTIFIER_REF), name(name) {}
 
     std::string name;
+
+    void visitChildren(ASTVisitor &v) override {}
+
+    void accept(ASTVisitor &v) override {
+        v.visit(this);
+    }
 };
 
 

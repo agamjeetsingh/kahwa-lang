@@ -17,6 +17,15 @@ struct IndexExpr : Expr {
 
     Expr* callee;
     Expr* arg;
+
+    void accept(ASTVisitor &v) override {
+        v.visit(this);
+    }
+
+    void visitChildren(ASTVisitor &v) override {
+        callee->accept(v);
+        arg->accept(v);
+    }
 };
 
 
