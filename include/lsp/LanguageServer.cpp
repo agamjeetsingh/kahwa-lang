@@ -18,14 +18,23 @@ std::vector<tokenData> LanguageServer::syntaxHighlight(const std::string &conten
 
     std::vector<tokenData> tokensWithData;
     semanticAnalyser.declareFile(kahwaFile);
-    SyntaxHighlightingVisitor(tokensWithData, semanticAnalyser).visit(kahwaFile);
 
-    // Somehow get tokenWithData
-    // std::ranges::for_each(tokens, [&tokensWithData](const Token& token) {
-    //     if (KEYWORD_TYPES.contains(token.type)) {
-    //         tokensWithData.push_back({token.source_range, LSPTokenType::KEYWORD, {}});
-    //     }
-    // });
+    auto commentTokens = tokeniser.getComments(file_id, content);
+    std::ranges::for_each(commentTokens, [&tokensWithData](const SourceRange& sourceRange) {
+       tokensWithData.emplace_back(sourceRange, LSPTokenType::COMMENT, std::vector<LSPTokenModifier>{});
+    });
+
+    std::ranges::for_each(tokens, [&tokensWithData](const Token& token) {
+        if (KEYWORD_TYPES.contains(token.type)) {
+            tokensWithData.emplace_back(token.source_range, LSPTokenType::KEYWORD, std::vector<LSPTokenModifier>{});
+        } else if (token.type == TokenType::INTEGER || token.type == TokenType::FLOAT) {
+            tokensWithData.emplace_back(token.source_range, LSPTokenType::NUMBER, std::vector<LSPTokenModifier>{});
+        } else if (token.type == TokenType::STRING_LITERAL) {
+            tokensWithData.emplace_back(token.source_range, LSPTokenType::STRING, std::vector<LSPTokenModifier>{});
+        }
+    });
+
+    SyntaxHighlightingVisitor(tokensWithData, semanticAnalyser).visit(kahwaFile);
 
     std::ranges::sort(tokensWithData, [](const auto& t1, const auto& t2) {
        return std::get<0>(t1).pos < std::get<0>(t2).pos;

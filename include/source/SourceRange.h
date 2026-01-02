@@ -24,8 +24,8 @@ struct SourceRange {
 
     bool operator==(const SourceRange &other) const;
 
-    SourceRange after() const {
-        return {file_id, pos + length};
+    [[nodiscard]] SourceRange after() const {
+        return {file_id, pos + length - 1};
     }
 };
 

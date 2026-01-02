@@ -5,6 +5,7 @@
 #ifndef SYNTAXHIGHLIGHTINGVISITOR_H
 #define SYNTAXHIGHLIGHTINGVISITOR_H
 #include "LanguageServer.h"
+#include "../parser/RecursiveASTVisitor.h"
 #include "../parser/expr/BinaryExpr.h"
 #include "../parser/expr/CallExpr.h"
 #include "../parser/expr/IdentifierRef.h"
@@ -27,7 +28,7 @@
 
 class SemanticAnalyser;
 
-class SyntaxHighlightingVisitor : ASTVisitor {
+class SyntaxHighlightingVisitor : RecursiveASTVisitor {
 public:
     SyntaxHighlightingVisitor(std::vector<tokenData>& data, SemanticAnalyser& semanticAnalyser):
     data(data), semanticAnalyser(semanticAnalyser) {}
@@ -38,9 +39,6 @@ public:
 
     void visit(ClassDecl *node) override {
         auto classSymbol = dynamic_cast<ClassSymbol*>(nodeToSymbol[node]);
-
-        // **class** MyClass { ... }
-        data.emplace_back(node->classSourceRange, LSPTokenType::KEYWORD, std::vector<LSPTokenModifier>{});
 
         std::vector nameLspTokenModifiers = {LSPTokenModifier::DECLARATION};
         if (classSymbol->isAbstract) nameLspTokenModifiers.push_back(LSPTokenModifier::ABSTRACT);
@@ -53,8 +51,6 @@ public:
 
     void visit(TypedefDecl *node) override {
 
-        // private **typedef** int myInt
-        data.emplace_back(node->typedefSourceRange, LSPTokenType::KEYWORD, std::vector<LSPTokenModifier>{});
         // private typedef int **myInt**
         data.emplace_back(node->nameSourceRange, LSPTokenType::TYPE, std::vector{LSPTokenModifier::DECLARATION});
         // **private** typedef **int** myInt
@@ -104,13 +100,9 @@ public:
         node->visitChildren(*this);
     }
 
-    void visit(BreakStmt *node) override {
-        data.emplace_back(node->bodyRange, LSPTokenType::KEYWORD, std::vector<LSPTokenModifier>{});
-    }
+    void visit(BreakStmt *node) override {}
 
-    void visit(ContinueStmt *node) override {
-        data.emplace_back(node->bodyRange, LSPTokenType::KEYWORD, std::vector<LSPTokenModifier>{});
-    }
+    void visit(ContinueStmt *node) override {}
 
     void visit(ExprStmt *node) override {
         // TODO - Not sure what to do (HARD)
@@ -118,26 +110,18 @@ public:
     }
 
     void visit(ForLoop *node) override {
-        data.emplace_back(node->forRange, LSPTokenType::KEYWORD, std::vector<LSPTokenModifier>{});
-
         node->visitChildren(*this);
     }
 
     void visit(IfStmt *node) override {
-        data.emplace_back(node->ifRange, LSPTokenType::KEYWORD, std::vector<LSPTokenModifier>{});
-
         node->visitChildren(*this);
     }
 
     void visit(ReturnStmt *node) override {
-        data.emplace_back(node->returnRange, LSPTokenType::KEYWORD, std::vector<LSPTokenModifier>{});
-
         node->visitChildren(*this);
     }
 
     void visit(WhileLoop *node) override {
-        data.emplace_back(node->whileRange, LSPTokenType::KEYWORD, std::vector<LSPTokenModifier>{});
-
         node->visitChildren(*this);
     }
 
@@ -177,9 +161,7 @@ public:
         node->visitChildren(*this);
     }
 
-    void visit(BoolLiteral *node) override {
-        data.emplace_back(node->bodyRange, LSPTokenType::KEYWORD, std::vector<LSPTokenModifier>{});
-    }
+    void visit(BoolLiteral *node) override {}
 
     void visit(FloatLiteral *node) override {
         data.emplace_back(node->bodyRange, LSPTokenType::NUMBER, std::vector<LSPTokenModifier>{});
@@ -189,16 +171,14 @@ public:
         data.emplace_back(node->bodyRange, LSPTokenType::NUMBER, std::vector<LSPTokenModifier>{});
     }
 
-    void visit(NullLiteral *node) override {
-        data.emplace_back(node->bodyRange, LSPTokenType::KEYWORD, std::vector<LSPTokenModifier>{});
-    }
+    void visit(NullLiteral *node) override {}
 
     void visit(StringLiteral *node) override {
         data.emplace_back(node->bodyRange, LSPTokenType::STRING, std::vector<LSPTokenModifier>{});
     }
 
     void visit(TypeParameterDecl *node) override {
-
+        data.emplace_back(node->bodyRange, LSPTokenType::TYPE_PARAMETER, std::vector<LSPTokenModifier>{});
     }
 
 private:
