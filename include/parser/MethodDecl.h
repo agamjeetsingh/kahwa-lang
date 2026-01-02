@@ -119,7 +119,7 @@ public:
     MethodDeclBuilder& with(const std::vector<Modifier>& modifiers, const std::vector<SourceRange>& sourceRanges) {
         assert(modifiers.size() == sourceRanges.size());
         for (int i = 0; i < modifiers.size(); i++) {
-            this->modifiers.emplace_back(modifiers[i], sourceRanges[i]);
+            this->modifiers.push_back(arena->make<ModifierNode>(modifiers[i], sourceRanges[i]));
         }
         return *this;
     }

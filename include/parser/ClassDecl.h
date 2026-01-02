@@ -192,25 +192,18 @@ class ClassDeclBuilder : public ASTBuilder {
             return *this;
         }
 
-        ClassDeclBuilder& withTypeParameter(TypeRef* typeParameter, Variance variance = Variance::INVARIANT) {
-            typeParameters.emplace_back(typeParameter, variance);
+        ClassDeclBuilder& withTypeParameter(TypeParameterDecl* typeParameter) {
+            typeParameters.push_back(typeParameter);
             return *this;
         }
 
         ClassDeclBuilder& withTypeParameter(const std::string &typeParameterName, Variance variance = Variance::INVARIANT) {
-            typeParameters.emplace_back(TypeRefBuilder(typeParameterName).build(), variance);
+            typeParameters.push_back(arena->make<TypeParameterDecl>(dummy_source, typeParameterName, variance));
             return *this;
         }
 
-        ClassDeclBuilder& withTypeParameters(const std::vector<TypeRef*>& typeParameters) {
-            return withTypeParameters(typeParameters, std::vector(typeParameters.size(), Variance::INVARIANT));
-        }
-
-        ClassDeclBuilder& withTypeParameters(const std::vector<TypeRef*>& typeParameters, const std::vector<Variance>& variances) {
-            assert(typeParameters.size() == variances.size());
-            for (int i = 0; i < typeParameters.size(); i++) {
-                this->typeParameters.push_back(arena->make<TypeParameterDecl>(typeParameters[i]->bodyRange, typeParameters[i]->identifier, variances[i]));
-            }
+        ClassDeclBuilder& withTypeParameters(const std::vector<TypeParameterDecl*>& typeParameters) {
+            this->typeParameters.insert(this->typeParameters.end(), typeParameters.begin(), typeParameters.end());
             return *this;
         }
 
@@ -219,11 +212,11 @@ class ClassDeclBuilder : public ASTBuilder {
         }
 
         ClassDeclBuilder& withTypeParameters(const std::vector<std::string>& typeParameterNames, const std::vector<Variance>& variances) {
-            std::vector<TypeRef*> typeParameters{typeParameterNames.size()};
-            std::ranges::transform(typeParameterNames, typeParameters.begin(), [](const std::string& name) {
-                return TypeRefBuilder(name).build();
-            });
-            return withTypeParameters(typeParameters, variances);
+            assert(typeParameterNames.size() == variances.size());
+            for (int i = 0; i < typeParameterNames.size(); i++) {
+                typeParameters.push_back(arena->make<TypeParameterDecl>(dummy_source, typeParameterNames[i], variances[i]));
+            }
+            return *this;
         }
 
     private:

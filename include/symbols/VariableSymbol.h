@@ -7,7 +7,8 @@
 #include "Scope.h"
 #include "Symbol.h"
 #include "../parser/Modifier.h"
-#include "boundexprs/BoundExpr.h"
+
+struct BoundExpr;
 
 struct Type;
 

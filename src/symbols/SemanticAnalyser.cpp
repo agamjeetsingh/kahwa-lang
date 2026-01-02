@@ -26,7 +26,13 @@ TranslationUnit *SemanticAnalyser::processFile(const KahwaFile* kahwaFile) {
 }
 
 
-template<typename ChildSymbol, typename ParentSymbol, typename DeclLike, typename F1, typename F2> requires std::derived_from<ChildSymbol, Symbol> && requires(ParentSymbol t) { { t.scope } -> std::same_as<Scope &>; } && std::invocable<F1, const DeclLike &> && std::same_as<std::invoke_result_t<F1, const DeclLike &>, std::pair<ChildSymbol *, SourceRange> > && std::invocable<F2, ChildSymbol *> && std::same_as<std::invoke_result_t<F2, ChildSymbol *>, void>
+template<typename ChildSymbol, typename ParentSymbol, typename DeclLike, typename F1, typename F2>
+requires std::derived_from<ChildSymbol, Symbol> &&
+    requires(ParentSymbol t) { { t.scope } -> std::same_as<Scope &>; } &&
+        std::invocable<F1, const DeclLike &> &&
+            std::same_as<std::invoke_result_t<F1, const DeclLike &>, std::pair<ChildSymbol *, SourceRange> > &&
+                std::invocable<F2, ChildSymbol *> &&
+                    std::same_as<std::invoke_result_t<F2, ChildSymbol *>, void>
 void SemanticAnalyser::registerIt(ParentSymbol *symbol, const std::vector<DeclLike> &decls, F1 &&declToSymbolAndSourceRange, F2 &&registerSymbol, bool duplicatesAllowed) {
     std::vector<std::tuple<ChildSymbol*, SourceRange, DeclLike>> ts;
     ts.reserve(decls.size());
@@ -58,9 +64,8 @@ ClassSymbol *SemanticAnalyser::declareClass(const ClassDecl *classDecl, Scope *s
 
     // ===== TypeParameterSymbols and Variances ======
 
-    registerIt<TypeParameterSymbol>(classSymbol, classDecl->typeParameters, [](const std::pair<TypeRef*, Variance>& pair) {
-            assert(pair.first->args.empty()); // Parser shouldn't allow any generic type parameters
-            return std::pair{TypeParameterSymbolBuilder(pair.first->identifier, pair.second).build(), pair.first->bodyRange};
+    registerIt<TypeParameterSymbol>(classSymbol, classDecl->typeParameters, [](const TypeParameterDecl* typeParameterDecl) {
+            return std::pair{TypeParameterSymbolBuilder(typeParameterDecl->name, typeParameterDecl->variance).build(), typeParameterDecl->bodyRange};
         }, [classSymbol](TypeParameterSymbol* typeParameter) { classSymbol->addGenericArgument(typeParameter); });
     // ===== Nested Classes =====
 
@@ -100,9 +105,8 @@ FunctionLikeSymbol *SemanticAnalyser::declareFunction(const MethodDecl *methodDe
 
     // ===== TypeParameterSymbols ======
 
-    registerIt<TypeParameterSymbol>(methodSymbol, methodDecl->typeParameters, [](const TypeRef* typeParameter) {
-           assert(typeParameter->args.empty()); // Parser shouldn't allow any generic type parameters
-           return std::pair{TypeParameterSymbolBuilder(typeParameter->identifier).build(), typeParameter->bodyRange};
+    registerIt<TypeParameterSymbol>(methodSymbol, methodDecl->typeParameters, [](const TypeParameterDecl* typeParameterDecl) {
+           return std::pair{TypeParameterSymbolBuilder(typeParameterDecl->name).build(), typeParameterDecl->bodyRange};
        }, [methodSymbol](TypeParameterSymbol* typeParameter) { methodSymbol->addGenericArgument(typeParameter); });
 
     // ===== Function Parameters =====

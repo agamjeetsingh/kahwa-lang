@@ -15,7 +15,7 @@
 #include "expr/Stmt.h"
 
 // Top-level variables, class fields and local variables are identical at the AST level (but not in symbols)
-struct FieldDecl : Decl, Stmt {
+struct FieldDecl : Decl {
     FieldDecl(
     std::string name,
     const std::vector<ModifierNode*> &modifiers,
@@ -24,7 +24,6 @@ struct FieldDecl : Decl, Stmt {
     const SourceRange &nameSourceRange,
     const SourceRange &bodyRange):
     Decl(std::move(name), modifiers, nameSourceRange, bodyRange),
-    Stmt(bodyRange, StmtKind::VARIABLE_DECL),
     typeRef(typeRef),
     typeSourceRange(typeSourceRange) {}
 

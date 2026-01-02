@@ -237,9 +237,9 @@ ClassDecl *Parser::ParserWorker::parseClass(const safePointFunc& isSafePoint) {
                     typeParameter->bodyRange,
                     toMsg(DiagnosticKind::TYPE_PARAMETERS_CANNOT_HAVE_GENERIC_ARGUMENTS, typeParameter->toString()));
                 // So something like myClass<A, B<T>> would get treated as myClass<A, B>
-                classDeclBuilder.withTypeParameter(TypeRefBuilder(typeParameter->identifier).build(), variance);
+                classDeclBuilder.withTypeParameter(astArena.make<TypeParameterDecl>(typeParameter->nameSourceRange, typeParameter->identifier, variance));
             } else {
-                classDeclBuilder.withTypeParameter(typeParameter, variance);
+                classDeclBuilder.withTypeParameter(astArena.make<TypeParameterDecl>(typeParameter->bodyRange, typeParameter->identifier, variance));
             }
         }
     } else {

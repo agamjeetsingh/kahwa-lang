@@ -51,7 +51,7 @@ class ExprTestFixture : public ParserTestBase, public testing::Test {
     }
 
     static MemberAccessExpr* memberAccessExpr(Expr* base, const std::string& member) {
-        return astArena.make<MemberAccessExpr>(base, member, dummy_source);
+        return astArena.make<MemberAccessExpr>(base, member, dummy_source, dummy_source);
     }
 
     static TernaryExpr* ternaryExpr(Expr* cond, Expr* expr1, Expr* expr2) {

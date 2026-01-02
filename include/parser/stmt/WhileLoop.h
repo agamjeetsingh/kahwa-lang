@@ -6,9 +6,8 @@
 #define WHILELOOP_H
 #include "../expr/Expr.h"
 #include "../expr/Stmt.h"
+#include "../Block.h"
 
-
-struct Block;
 
 struct WhileLoop : Stmt {
     WhileLoop(Expr* cond, Block* body, const SourceRange& bodyRange, const SourceRange& whileRange):

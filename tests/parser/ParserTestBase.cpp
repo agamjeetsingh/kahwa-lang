@@ -154,8 +154,8 @@ protected:
         }
 
         for (size_t i = 0; i < cd1->typeParameters.size(); ++i) {
-            if (*cd1->typeParameters[i].first != *cd2->typeParameters[i].first ||
-                cd1->typeParameters[i].second != cd2->typeParameters[i].second) return false;
+            if (cd1->typeParameters[i]->name != cd2->typeParameters[i]->name ||
+                cd1->typeParameters[i]->variance != cd2->typeParameters[i]->variance) return false;
         }
 
         return true;
@@ -307,11 +307,11 @@ protected:
         }
     }
 
-    static bool modifiersEqualIgnoreSourceRange(const std::vector<ModifierNode>& nodes1, const std::vector<ModifierNode>& nodes2) {
+    static bool modifiersEqualIgnoreSourceRange(const std::vector<ModifierNode*>& nodes1, const std::vector<ModifierNode*>& nodes2) {
         if (nodes1.size() != nodes2.size()) return false;
 
         for (int i = 0; i < nodes1.size(); i++) {
-            if (nodes1[i].modifier != nodes2[i].modifier) return false;
+            if (nodes1[i]->modifier != nodes2[i]->modifier) return false;
         }
 
         return true;
@@ -331,10 +331,10 @@ protected:
 
     // ==== toString functions =====
 
-    static std::string toString(const std::vector<ModifierNode>& modifiers) {
+    static std::string toString(const std::vector<ModifierNode*>& modifiers) {
         std::string str;
         for (int i = 0; i < modifiers.size(); i++) {
-            str += ::toString(modifiers[i].modifier);
+            str += ::toString(modifiers[i]->modifier);
             if (i != modifiers.size() - 1) str += " ";
         }
 
@@ -377,12 +377,12 @@ protected:
             str += "<";
 
             for (int i = 0; i < classDecl->typeParameters.size(); i++) {
-                if (classDecl->typeParameters[i].second == Variance::COVARIANT) {
+                if (classDecl->typeParameters[i]->variance == Variance::COVARIANT) {
                     str += "out ";
-                } else if (classDecl->typeParameters[i].second == Variance::CONTRAVARIANT) {
+                } else if (classDecl->typeParameters[i]->variance == Variance::CONTRAVARIANT) {
                     str += "in ";
                 }
-                str += classDecl->typeParameters[i].first->toString();
+                str += classDecl->typeParameters[i]->name;
                 if (i != classDecl->typeParameters.size() - 1) {
                     str += ", ";
                 }

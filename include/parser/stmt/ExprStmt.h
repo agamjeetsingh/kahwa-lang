@@ -5,9 +5,8 @@
 #ifndef EXPRSTMT_H
 #define EXPRSTMT_H
 #include "../expr/Stmt.h"
+#include "../expr/Expr.h"
 
-
-struct Expr;
 
 struct ExprStmt : Stmt {
     ExprStmt(Expr* expr, const SourceRange& bodyRange): Stmt(bodyRange, StmtKind::EXPR), expr(expr) {}

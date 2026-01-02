@@ -70,10 +70,9 @@ public:
     }
 
     void visit(FieldDecl *node) override {
-        // TODO - Fix diamond inheritance for VariableSymbol
         auto variableSymbol = dynamic_cast<VariableSymbol*>(nodeToSymbol[node]);
         std::vector nameModifiers = {LSPTokenModifier::DECLARATION};
-        if (node->isStatic) nameModifiers.push_back(LSPTokenModifier::STATIC);
+        if (variableSymbol->isStatic) nameModifiers.push_back(LSPTokenModifier::STATIC);
     }
 
     void visit(MethodDecl *node) override {

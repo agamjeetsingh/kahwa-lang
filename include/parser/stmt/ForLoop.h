@@ -6,9 +6,7 @@
 #define FORLOOP_H
 #include "../expr/Expr.h"
 #include "../expr/Stmt.h"
-
-
-struct Block;
+#include "../Block.h"
 
 struct ForLoop : Stmt {
     ForLoop(Stmt* init, Expr* cond, Stmt* step, Block* body, const SourceRange& bodyRange, const SourceRange &forRange):
