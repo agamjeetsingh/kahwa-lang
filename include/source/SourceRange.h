@@ -23,6 +23,10 @@ struct SourceRange {
     SourceRange(const Token& first, const Token& last);
 
     bool operator==(const SourceRange &other) const;
+
+    SourceRange after() const {
+        return {file_id, pos + length};
+    }
 };
 
 
