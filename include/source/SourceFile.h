@@ -23,7 +23,11 @@ struct SourceFile {
             newlineCacheBuilt = true;
         }
 
-        auto it = std::ranges::upper_bound(newlinePositions, offset);
+        if (offset >= contents.size()) {
+            offset = contents.size() == 0 ? 0 : contents.size() - 1;
+        }
+
+        auto it = std::ranges::lower_bound(newlinePositions, offset);
         std::size_t line = it - newlinePositions.begin();
         std::size_t lineStart = (line == 0) ? 0 : newlinePositions[line - 1] + 1;
         std::size_t column = offset - lineStart;
