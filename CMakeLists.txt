@@ -171,6 +171,8 @@ add_executable(kahwa_lang main.cpp
         include/parser/TypeParameterDecl.h
         include/parser/stmt/VariableDecl.cpp
         include/parser/stmt/VariableDecl.h
+        include/parser/RecursiveASTVisitor.cpp
+        include/parser/RecursiveASTVisitor.h
 )
 
 target_link_libraries(kahwa_lang PRIVATE magic_enum::magic_enum nlohmann_json::nlohmann_json)
