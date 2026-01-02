@@ -300,6 +300,7 @@ add_executable(
         tests/parser/ClassTest.cpp
         tests/parser/StmtTestFixture.h
         tests/parser/ExprTestFixture.h
+        tests/source/SourceFileTest.cpp
 )
 
 target_link_libraries(
