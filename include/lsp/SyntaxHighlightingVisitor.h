@@ -197,6 +197,10 @@ public:
         data.emplace_back(node->bodyRange, LSPTokenType::STRING, std::vector<LSPTokenModifier>{});
     }
 
+    void visit(TypeParameterDecl *node) override {
+
+    }
+
 private:
     std::vector<tokenData>& data;
     SemanticAnalyser& semanticAnalyser;
