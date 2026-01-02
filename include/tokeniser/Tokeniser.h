@@ -23,11 +23,17 @@ public:
         return TokeniserWorker(file_id, str, diagnostic_engine).tokenise();
     }
 
+    [[nodiscard]] std::vector<SourceRange> getComments(const std::size_t file_id, const std::string_view str) const {
+        return TokeniserWorker(file_id, str, diagnostic_engine).getComments();
+    }
+
     class TokeniserWorker {
     public:
         TokeniserWorker(const std::size_t file_id, const std::string_view str, DiagnosticEngine& diagnostic_engine): file_id(file_id), str(str), diagnostic_engine(diagnostic_engine) {}
 
         std::vector<Token> tokenise();
+
+        [[nodiscard]] std::vector<SourceRange> getComments();
     private:
         std::size_t idx = 0;
 

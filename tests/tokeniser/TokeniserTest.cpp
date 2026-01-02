@@ -472,3 +472,23 @@ TEST_F(TokeniserTest, TokeniserOutputsCorrectSourceRange) {
         EXPECT_EQ(str, (unTokenise(tokeniser.tokenise(0, str))));
     }
 }
+
+TEST_F(TokeniserTest, GetsCommentsCorrectly) {
+    std::vector<std::string> strs = {
+        "// This is a comment",
+        "/* This\n is a \n multi-line\n comment */",
+        "// Comment on this line \n But not on this one",
+        "// Comment on this line \n But not on this one \n Not here either // But it is here!"
+    };
+
+    std::vector<std::vector<SourceRange>> expectedSourceRanges = {
+        {SourceRange{0, 0, strs[0].length()}},
+        {SourceRange{0, 0, strs[1].length()}},
+        {SourceRange{0, 0, std::string("// Comment on this line ").length()}},
+        {SourceRange{0, 0, std::string("// Comment on this line ").length()}, SourceRange{0, std::string("// Comment on this line \n But not on this one \n Not here either ").size(), std::string("// But it is here!").length()}}
+    };
+
+    for (int i = 0; i < strs.size(); i++) {
+        EXPECT_EQ((tokeniser.getComments(0, strs[i])), expectedSourceRanges[i]);
+    }
+}

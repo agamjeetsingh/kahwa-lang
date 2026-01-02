@@ -230,6 +230,40 @@ std::vector<Token> Tokeniser::TokeniserWorker::tokenise() {
     return tokens;
 }
 
+std::vector<SourceRange> Tokeniser::TokeniserWorker::getComments() {
+    std::vector<SourceRange> res;
+
+    while (idx < str.length()) {
+        const std::size_t curr_idx = idx;
+        char c = str[idx++];
+        if (c != '/') continue;
+
+        std::size_t length = 2;
+        if (next_is("/")) {
+            idx++;
+            while (idx < str.length() && !next_is("\n")) { idx++; length++; }
+
+            res.emplace_back(file_id, curr_idx, length);
+        } else if (next_is("*")) {
+            idx++;
+            while (idx < str.length()) {
+                if (next_is("*/")) {
+                    idx += 2;
+                    length += 2;
+                    break;
+                }
+                idx++;
+                length++;
+            }
+
+            res.emplace_back(file_id, curr_idx, length);
+        }
+    }
+
+    return res;
+}
+
+
 
 std::optional<Token> Tokeniser::TokeniserWorker::tokeniseString(std::size_t curr_idx) {
     std::string s;
