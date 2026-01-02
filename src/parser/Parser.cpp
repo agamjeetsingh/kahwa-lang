@@ -70,10 +70,8 @@ KahwaFile *Parser::ParserWorker::parseFile() {
                 }
             } else {
 
-                parseTypeRef(isSafePointForFile);
-                if (auto name = expect(TokenType::IDENTIFIER, isSafePointForFile); !name) {
-                    continue;
-                }
+                if (!parseTypeRef(isSafePointForFile)) continue;
+                if (auto name = expect(TokenType::IDENTIFIER, isSafePointForFile); !name) continue;
                 if (next_is(TokenType::LEFT_PAREN)) {
                     // function
                     idx = save_idx;
@@ -83,7 +81,6 @@ KahwaFile *Parser::ParserWorker::parseFile() {
                     }
                 } else {
                     // variable
-
                     idx = save_idx;
 
                     if (auto variableDecl = parseField(isSafePointForFile)) {
@@ -711,7 +708,7 @@ std::optional<std::vector<Token>> Parser::ParserWorker::expect(const std::vector
 }
 
 SourceRange Parser::ParserWorker::getPrevTokSourceRange() const {
-    return idx == 0 ? SourceRange{tokens.empty() ? -1 : tokens[0].source_range.file_id, 0} : tokens[idx - 1].source_range;
+    return idx == 0 ? SourceRange{tokens.empty() ? -1 : tokens[0].source_range.file_id, 0} : tokens[idx - 1].source_range.after();
 }
 
 std::vector<ModifierNode*> Parser::ParserWorker::getModifierList() {
