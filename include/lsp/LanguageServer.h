@@ -54,6 +54,8 @@ public:
     }
 
     std::vector<int> syntaxHighlight(const std::string& uri);
+    std::vector<tokenData> syntaxHighlight(const std::string& content, std::size_t file_id);
+    std::vector<int> highlightingDataToLspFormat(const std::vector<tokenData>& data, std::size_t file_id);
 
 private:
     SourceManager sourceManager;

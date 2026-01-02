@@ -4,6 +4,35 @@
 
 #include "LanguageServer.h"
 #include "LSPConnection.h"
+#include "SyntaxHighlightingVisitor.h"
+
+std::vector<tokenData> LanguageServer::syntaxHighlight(const std::string &content, std::size_t file_id) {
+    const auto& tokens = tokeniser.tokenise(file_id, content);
+
+    auto kahwaFile = parser.parseFile(tokens);
+
+
+    if (!diagnosticEngine.getAll().empty()) {
+        lspConnection->publishDiagnostics(sourceManager, diagnosticEngine.getAll(file_id), idToUri);
+    }
+
+    std::vector<tokenData> tokensWithData;
+    semanticAnalyser.declareFile(kahwaFile);
+    SyntaxHighlightingVisitor(tokensWithData, semanticAnalyser).visit(kahwaFile);
+
+    // Somehow get tokenWithData
+    // std::ranges::for_each(tokens, [&tokensWithData](const Token& token) {
+    //     if (KEYWORD_TYPES.contains(token.type)) {
+    //         tokensWithData.push_back({token.source_range, LSPTokenType::KEYWORD, {}});
+    //     }
+    // });
+
+    std::ranges::sort(tokensWithData, [](const auto& t1, const auto& t2) {
+       return std::get<0>(t1).pos < std::get<0>(t2).pos;
+    });
+
+    return tokensWithData;
+}
 
 std::vector<int> LanguageServer::syntaxHighlight(const std::string &uri) {
     if (!uriToId.contains(uri)) {
@@ -12,37 +41,18 @@ std::vector<int> LanguageServer::syntaxHighlight(const std::string &uri) {
 
     std::string fileContent = sourceManager.getSource(uriToId[uri]);
 
-    const auto& tokens = tokeniser.tokenise(uriToId[uri], fileContent);
+    return highlightingDataToLspFormat(syntaxHighlight(fileContent, uriToId[uri]), uriToId[uri]);
+}
 
-    auto kahwaFile = parser.parseFile(tokens);
-
-    if (!diagnosticEngine.getAll().empty()) {
-        lspConnection->publishDiagnostics(sourceManager, diagnosticEngine.getAll(), idToUri);
-    }
-
-    std::vector<tokenData> tokensWithData;
-
-    // Somehow get tokenWithData
-    std::ranges::for_each(tokens, [&tokensWithData](const Token& token) {
-        if (KEYWORD_TYPES.contains(token.type)) {
-            tokensWithData.push_back({token.source_range, LSPTokenType::KEYWORD, {}});
-        }
-    });
-
-
-
-    std::ranges::sort(tokensWithData, [](const auto& t1, const auto& t2) {
-       return std::get<0>(t1).pos < std::get<0>(t2).pos;
-    });
-
+std::vector<int> LanguageServer::highlightingDataToLspFormat(const std::vector<tokenData>& data, std::size_t file_id) {
     std::vector<int> res;
 
     int prevLine = 0;
     int prevPos = 0;
 
-    SourceFile& file = sourceManager.getSourceFile(uriToId[uri]);
+    SourceFile& file = sourceManager.getSourceFile(file_id);
 
-    std::ranges::for_each(tokensWithData, [&prevLine, &prevPos, &file, &res, this](const auto& tuple) {
+    std::ranges::for_each(data, [&prevLine, &prevPos, &file, &res, this](const auto& tuple) {
         const SourceRange& sourceRange = std::get<0>(tuple);
 
         const auto& linePos = file.getLinePos(sourceRange.pos);
