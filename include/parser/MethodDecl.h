@@ -11,13 +11,14 @@
 #include "Modifier.h"
 #include "TypeRef.h"
 #include "../source/SourceRange.h"
+#include "FieldDecl.h"
 
 // Functions and Methods are identical at the AST level (but not in symbols)
 struct MethodDecl : Decl {
     MethodDecl(std::string name,
     const std::vector<ModifierNode*> &modifiers,
     TypeRef* returnType,
-    const std::vector<std::pair<TypeRef*, std::string>>& parameters,
+    const std::vector<FieldDecl*>& parameters,
     Block* block,
     const std::vector<TypeParameterDecl*> &typeParameters,
     const SourceRange &returnTypeSourceRange,
@@ -31,7 +32,7 @@ struct MethodDecl : Decl {
     returnTypeSourceRange(returnTypeSourceRange) {}
 
     TypeRef* returnType;
-    const std::vector<std::pair<TypeRef*, std::string>> parameters;
+    const std::vector<FieldDecl*> parameters;
     Block* block;
 
     const std::vector<TypeParameterDecl*> typeParameters;
@@ -60,16 +61,10 @@ struct MethodDecl : Decl {
         } else if (*returnType != *other.returnType) {
             return false;
         }
-        
+
         if (parameters.size() != other.parameters.size()) return false;
         for (size_t i = 0; i < parameters.size(); ++i) {
-            if (parameters[i].second != other.parameters[i].second) return false;
-            
-            auto &typeA = parameters[i].first;
-            auto &typeB = other.parameters[i].first;
-            if (typeA == nullptr && typeB == nullptr) continue;
-            if (typeA == nullptr || typeB == nullptr) return false;
-            if (*typeA != *typeB) return false;
+            if (*parameters[i] != *other.parameters[i]) return false;
         }
         
         if (block == nullptr && other.block == nullptr) {
@@ -125,11 +120,11 @@ public:
     }
 
     MethodDeclBuilder& with(const std::pair<TypeRef*, std::string> &parameter) {
-        parameters.push_back(parameter);
+        parameters.push_back(arena->make<FieldDecl>(parameter.second, std::vector<ModifierNode*>{}, parameter.first, dummy_source, dummy_source, dummy_source, nullptr));
         return *this;
     }
 
-    MethodDeclBuilder& with(const std::vector<std::pair<TypeRef*, std::string>>& parameters) {
+    MethodDeclBuilder& with(const std::vector<FieldDecl*>& parameters) {
         this->parameters.insert(this->parameters.begin(), parameters.begin(), parameters.end());
         return *this;
     }
@@ -168,7 +163,7 @@ private:
     std::string name;
     std::vector<ModifierNode*> modifiers;;
     TypeRef* returnType;
-    std::vector<std::pair<TypeRef*, std::string>> parameters;
+    std::vector<FieldDecl*> parameters;
     Block* block;
     std::vector<TypeParameterDecl*> typeParameters;
 

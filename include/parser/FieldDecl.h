@@ -22,9 +22,11 @@ struct FieldDecl : Decl {
     TypeRef* typeRef,
     const SourceRange &typeSourceRange,
     const SourceRange &nameSourceRange,
-    const SourceRange &bodyRange):
+    const SourceRange &bodyRange,
+    Expr* initExpr):
     Decl(std::move(name), modifiers, nameSourceRange, bodyRange),
     typeRef(typeRef),
+    initExpr(initExpr),
     typeSourceRange(typeSourceRange) {}
 
     TypeRef* const typeRef;
@@ -56,6 +58,54 @@ struct FieldDecl : Decl {
     }
 };
 
+class FieldDeclBuilder : public ASTBuilder {
+public:
+    FieldDeclBuilder(std::string name, TypeRef* typeRef): name(std::move(name)), typeRef(typeRef) {}
+
+    FieldDecl* build() {
+        return arena->make<FieldDecl>(
+            name,
+            modifiers,
+            typeRef,
+            dummy_source,
+            dummy_source,
+            dummy_source,
+            initExpr);
+    }
+
+    FieldDeclBuilder& with(Modifier modifier, const SourceRange &sourceRange = dummy_source) {
+        modifiers.push_back(arena->make<ModifierNode>(modifier, sourceRange));
+        return *this;
+    }
+
+    FieldDeclBuilder& with(const std::vector<Modifier>& modifiers) {
+        return with(modifiers, std::vector(modifiers.size(), dummy_source));
+    }
+
+    FieldDeclBuilder& with(const std::vector<Modifier>& modifiers, const std::vector<SourceRange>& sourceRanges) {
+        assert(modifiers.size() == sourceRanges.size());
+        for (int i = 0; i < modifiers.size(); i++) {
+            this->modifiers.push_back(arena->make<ModifierNode>(modifiers[i], sourceRanges[i]));
+        }
+        return *this;
+    }
+
+    FieldDeclBuilder& with(const std::vector<ModifierNode*>& modifierNodes) {
+        this->modifiers.insert(this->modifiers.end(), modifierNodes.begin(), modifierNodes.end());
+        return *this;
+    }
+
+    FieldDeclBuilder& with(Expr* initExpr) {
+        this->initExpr = initExpr;
+        return *this;
+    }
+
+private:
+    std::vector<ModifierNode*> modifiers;
+    std::string name;
+    TypeRef* typeRef;
+    Expr* initExpr = nullptr;
+};
 
 
 #endif //FIELDDECL_H

@@ -10,6 +10,7 @@
 #include "ASTBuilder.h"
 #include "ASTNode.h"
 #include "../types/Variance.h"
+#include <cassert>
 
 struct ASTVisitor;
 

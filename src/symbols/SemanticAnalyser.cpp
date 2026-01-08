@@ -111,8 +111,8 @@ FunctionLikeSymbol *SemanticAnalyser::declareFunction(const MethodDecl *methodDe
 
     // ===== Function Parameters =====
 
-    registerIt<VariableSymbol>(methodSymbol, methodDecl->parameters, [this, methodSymbol](const std::pair<TypeRef *, std::string>& pair) {
-       return std::pair{astArena.make<VariableSymbol>(pair.second, &methodSymbol->scope), pair.first->nameSourceRange}; // TODO - Need source range of parameter name too
+    registerIt<VariableSymbol>(methodSymbol, methodDecl->parameters, [this, methodSymbol](const FieldDecl* parameter) {
+       return std::pair{astArena.make<VariableSymbol>(parameter->name, &methodSymbol->scope), parameter->nameSourceRange}; // TODO - Need source range of parameter name too
     }, [methodSymbol](VariableSymbol* variableSymbol){ methodSymbol->addParameter(variableSymbol); });
 
     // ===== Modifiers =====
@@ -290,9 +290,11 @@ Type *SemanticAnalyser::resolveType(const TypeRef *typeRef, Scope *scope) {
 }
 
 void SemanticAnalyser::resolveFunctionBodies(TranslationUnit *translationUnit) {
-    std::ranges::for_each(translationUnit->functions, [this](FunctionSymbol* functionSymbol) {
-        resolveTypes(functionSymbol->block, &functionSymbol->scope);
-    });
+    // std::ranges::for_each(translationUnit->functions, [this](FunctionSymbol* functionSymbol) {
+    //     resolveTypes(functionSymbol->block, &functionSymbol->scope);
+    // });
+
+    // TODO - Should be function decl's block and also don't forget to wire back the block into functionSymbol->block
 
     std::ranges::for_each(translationUnit->classes, [this](ClassSymbol* classSymbol) {
         resolveMethodBodies(classSymbol, &classSymbol->scope);

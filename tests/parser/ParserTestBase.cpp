@@ -61,7 +61,7 @@ protected:
     static bool declEqualIgnoreSourceRange(const Decl* d1, const Decl* d2) {
         if (d1 == nullptr && d2 == nullptr) return true;
         if (d1 == nullptr || d2 == nullptr) return false;
-        return d1->name == d2->name && d1->modifiers == d2->modifiers;
+        return d1->name == d2->name && modifiersEqualIgnoreSourceRange(d1->modifiers, d2->modifiers);
     }
 
     static bool typedefDeclEqualIgnoreSourceRange(const TypedefDecl* td1, const TypedefDecl* td2) {
@@ -110,13 +110,7 @@ protected:
 
         if (md1->parameters.size() != md2->parameters.size()) return false;
         for (size_t i = 0; i < md1->parameters.size(); ++i) {
-            if (md1->parameters[i].second != md2->parameters[i].second) return false;
-
-            auto &typeA = md1->parameters[i].first;
-            auto &typeB = md2->parameters[i].first;
-            if (typeA == nullptr && typeB == nullptr) continue;
-            if (typeA == nullptr || typeB == nullptr) return false;
-            if (*typeA != *typeB) return false;
+            if (!fieldDeclEqualIgnoreSourceRange(md1->parameters[i], md2->parameters[i])) return false;
         }
 
         return blockEqualIgnoreSourceRange(md1->block, md2->block);
@@ -433,14 +427,28 @@ protected:
         str += methodDecl->name;
         str += "(";
         for (int i = 0; i < methodDecl->parameters.size(); i++) {
-            str += toString(methodDecl->parameters[i].first);
-            str += " ";
-            str += methodDecl->parameters[i].second;
+            str += toString(methodDecl->parameters[i]);
             if (i != methodDecl->parameters.size() - 1) str += ", ";
         }
 
         str += ") ";
         str += toString(methodDecl->block);
+        return str;
+    }
+
+    static std::string toString(const FieldDecl* fieldDecl) {
+        std::string str = toString(fieldDecl->modifiers);
+        if (!fieldDecl->modifiers.empty()) str += " ";
+
+        str += toString(fieldDecl->typeRef);
+        str += " ";
+        str += fieldDecl->name;
+
+        if (fieldDecl->initExpr) {
+            str += " = ";
+            str += toString(fieldDecl->initExpr);
+        }
+
         return str;
     }
 

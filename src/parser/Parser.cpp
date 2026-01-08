@@ -23,6 +23,7 @@
 #include "../../include/parser/stmt/ReturnStmt.h"
 #include "../../include/parser/stmt/WhileLoop.h"
 #include "../../include/symbols/TypeParameterSymbol.h"
+#include "../../include/parser/expr/MemberAccessExpr.h"
 
 KahwaFile *Parser::parseFile(const std::vector<Token> &tokens) const {
     return ParserWorker(tokens, astArena, diagnostic_engine).parseFile();
@@ -333,6 +334,8 @@ MethodDecl *Parser::ParserWorker::parseMethod(const safePointFunc& isSafePoint) 
 
     auto returnType = parseTypeRef(isSafePoint);
 
+    // TODO Parse generics
+
     assertTokenSequence({TokenType::IDENTIFIER, TokenType::LEFT_PAREN});
 
     auto nameToken = tokens[idx++];
@@ -604,7 +607,14 @@ Expr *Parser::ParserWorker::parseExpr(const safePointFunc &isSafePoint, int min_
 
             SourceRange bodyRange = SourceRange{0, 0}; // TODO
 
-            lhs = astArena.make<BinaryExpr>(lhs, rhs, tokenTypeToBinaryOp(tok.type).value(), bodyRange);
+            if (tok.type == TokenType::DOT) {
+                // TODO - Assuming rhs is identifier ref!
+                auto identifierRef = dynamic_cast<IdentifierRef*>(rhs);
+
+                lhs = astArena.make<MemberAccessExpr>(lhs, identifierRef->name, bodyRange, identifierRef->bodyRange);
+            } else {
+                lhs = astArena.make<BinaryExpr>(lhs, rhs, tokenTypeToBinaryOp(tok.type).value(), bodyRange);
+            }
             continue;
         }
 
@@ -730,7 +740,7 @@ std::optional<int> Parser::ParserWorker::prefixBindingPower(TokenType tokenType)
         case TokenType::NOT:
         case TokenType::INCREMENT:
         case TokenType::DECREMENT:
-            return 9;
+            return 28;
         default:
             return std::nullopt;
     }
@@ -742,7 +752,7 @@ std::optional<int> Parser::ParserWorker::postfixBindingPower(TokenType tokenType
         case TokenType::DECREMENT:
         case TokenType::LEFT_PAREN: // '(' for call expressions
         case TokenType::LEFT_BRACKET: // '[' for indexing
-            return 11;
+            return 30;
         default:
             return std::nullopt;
     }
@@ -751,16 +761,76 @@ std::optional<int> Parser::ParserWorker::postfixBindingPower(TokenType tokenType
 
 std::optional<std::pair<int, int>> Parser::ParserWorker::infixBindingPower(TokenType tokenType) {
     switch (tokenType) {
+        // Assignment operators (right-associative, lowest precedence)
         case TokenType::EQUALS:
+        case TokenType::PLUS_EQUALS:
+        case TokenType::MINUS_EQUALS:
+        case TokenType::STAR_EQUALS:
+        case TokenType::SLASH_EQUALS:
+        case TokenType::MODULO_EQUALS:
+        case TokenType::LEFT_SHIFT_EQUALS:
+        case TokenType::RIGHT_SHIFT_EQUALS:
+        case TokenType::BITWISE_AND_EQUALS:
+        case TokenType::BITWISE_OR_EQUALS:
+        case TokenType::BITWISE_XOR_EQUALS:
             return std::pair{2, 1};
+        
+        // Ternary operator (right-associative)
+        case TokenType::QUESTION:
+            return std::pair{4, 3};
+        
+        // Logical OR
+        case TokenType::LOGICAL_OR:
+            return std::pair{5, 6};
+        
+        // Logical AND
+        case TokenType::LOGICAL_AND:
+            return std::pair{7, 8};
+        
+        // Bitwise OR
+        case TokenType::BITWISE_OR:
+            return std::pair{9, 10};
+        
+        // Bitwise XOR
+        case TokenType::BITWISE_XOR:
+            return std::pair{11, 12};
+        
+        // Bitwise AND
+        case TokenType::BITWISE_AND:
+            return std::pair{13, 14};
+        
+        // Equality operators
+        case TokenType::DOUBLE_EQUALS:
+        case TokenType::NOT_EQUALS:
+            return std::pair{15, 16};
+        
+        // Relational operators
+        case TokenType::LESS:
+        case TokenType::GREATER:
+        case TokenType::LESS_EQUALS:
+        case TokenType::GREATER_EQUALS:
+            return std::pair{17, 18};
+        
+        // Shift operators
+        case TokenType::LEFT_SHIFT:
+        case TokenType::RIGHT_SHIFT:
+            return std::pair{19, 20};
+        
+        // Additive operators
         case TokenType::PLUS:
         case TokenType::MINUS:
-            return std::pair{5, 6};
+            return std::pair{21, 22};
+        
+        // Multiplicative operators
         case TokenType::STAR:
         case TokenType::SLASH:
-            return std::pair{7, 8};
+        case TokenType::MODULO:
+            return std::pair{23, 24};
+        
+        // Member access (left-associative, highest precedence)
         case TokenType::DOT:
-            return std::pair{14, 13};
+            return std::pair{31, 32};
+            
         default:
             return std::nullopt;
     }
