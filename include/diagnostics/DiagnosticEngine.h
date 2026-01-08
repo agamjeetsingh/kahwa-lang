@@ -14,6 +14,8 @@
 class DiagnosticEngine {
 public:
     void reportProblem(DiagnosticSeverity severity, DiagnosticKind kind, const SourceLocation location, const std::string& msg) {
+        if (frozen) return;
+
         diagnostics.emplace_back(severity, kind, SourceRange{location}, msg);
         diagnosticsMap[location.file_id].emplace_back(severity, kind, SourceRange{location}, msg);
 
@@ -27,6 +29,8 @@ public:
     }
 
     void reportProblem(DiagnosticSeverity severity, DiagnosticKind kind, const SourceLocation location) {
+        if (frozen) return;
+
         diagnostics.emplace_back(severity, kind, SourceRange{location});
         diagnosticsMap[location.file_id].emplace_back(severity, kind, SourceRange{location});
 
@@ -40,6 +44,8 @@ public:
     }
 
     void reportProblem(DiagnosticSeverity severity, DiagnosticKind kind, SourceRange range, const std::string& msg) {
+        if (frozen) return;
+
         diagnostics.emplace_back(severity, kind, range, msg);
         diagnosticsMap[range.file_id].emplace_back(severity, kind, range, msg);
 
@@ -53,6 +59,8 @@ public:
     }
 
     void reportProblem(DiagnosticSeverity severity, DiagnosticKind kind, SourceRange range) {
+        if (frozen) return;
+
         diagnostics.emplace_back(severity, kind, range);
         diagnosticsMap[range.file_id].emplace_back(severity, kind, range);
 
@@ -66,6 +74,8 @@ public:
     }
 
     void reportProblem(const Diagnostic& diagnostic) {
+        if (frozen) return;
+
         diagnostics.push_back(diagnostic);
         diagnosticsMap[diagnostic.source_range.file_id].emplace_back(diagnostic);
 
@@ -105,10 +115,19 @@ public:
         warningsMap[file_id].clear();
     }
 
+    void freeze() {
+        frozen = true;
+    }
+
+    void unfreeze() {
+        frozen = false;
+    }
+
 private:
     std::vector<Diagnostic> diagnostics;
     std::vector<Diagnostic> errors;
     std::vector<Diagnostic> warnings;
+    bool frozen = false;
 
     std::unordered_map<std::size_t, std::vector<Diagnostic>> diagnosticsMap;
     std::unordered_map<std::size_t, std::vector<Diagnostic>> errorsMap;
