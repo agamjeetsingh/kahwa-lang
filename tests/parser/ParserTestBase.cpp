@@ -29,6 +29,7 @@
 #include "../../include/parser/stmt/ForLoop.h"
 #include "../../include/parser/stmt/ReturnStmt.h"
 #include "../../include/parser/stmt/WhileLoop.h"
+#include "../../include/parser/stmt/VariableDecl.h"
 
 class ParserTestBase : public DiagnosticTesting {
 protected:
@@ -54,6 +55,14 @@ protected:
 
     [[nodiscard]] Stmt* parseStmt(const std::string &str) const {
         return parser.parseStmt(tokeniser.tokenise(0, str));
+    }
+
+    [[nodiscard]] MethodDecl* parseMethod(const std::string &str) const {
+        return parser.parseMethod(tokeniser.tokenise(0, str));
+    }
+
+    [[nodiscard]] ClassDecl* parseClass(const std::string &str) const {
+        return parser.parseClass(tokeniser.tokenise(0, str));
     }
 
     // ===== Equality functions =====
@@ -290,13 +299,10 @@ protected:
             case StmtKind::BLOCK:
                 return blockEqualIgnoreSourceRange(dynamic_cast<const Block*>(s1), dynamic_cast<const Block*>(s2));
             case StmtKind::VARIABLE_DECL: {
-                auto vs1 = dynamic_cast<const FieldDecl*>(s1);
-                auto vs2 = dynamic_cast<const FieldDecl*>(s2);
+                auto vs1 = dynamic_cast<const VariableDecl*>(s1);
+                auto vs2 = dynamic_cast<const VariableDecl*>(s2);
 
-                return typeRefEqualIgnoreSourceRange(vs1->typeRef, vs2->typeRef) &&
-                    vs1->name == vs2->name &&
-                        exprEqualIgnoreSourceRange(vs1->initExpr, vs2->initExpr) &&
-                        modifiersEqualIgnoreSourceRange(vs1->modifiers, vs2->modifiers);
+                return fieldDeclEqualIgnoreSourceRange(vs1->decl, vs2->decl);
             }
         }
     }
@@ -425,9 +431,18 @@ protected:
         str += toString(methodDecl->returnType);
         str += " ";
         str += methodDecl->name;
+        if (!methodDecl->typeParameters.empty()) {
+            str += "<";
+            for (int i = 0; i < methodDecl->typeParameters.size(); i++) {
+                str += methodDecl->typeParameters[i]->name;
+                if (i != methodDecl->typeParameters.size() - 1) str += ", ";
+            }
+            str += ">";
+        }
         str += "(";
         for (int i = 0; i < methodDecl->parameters.size(); i++) {
-            str += toString(methodDecl->parameters[i]);
+            std::string paramString = toString(methodDecl->parameters[i]);
+            str += paramString.substr(0, paramString.size() - 1);
             if (i != methodDecl->parameters.size() - 1) str += ", ";
         }
 
@@ -449,6 +464,7 @@ protected:
             str += toString(fieldDecl->initExpr);
         }
 
+        str += ";";
         return str;
     }
 
@@ -490,8 +506,8 @@ protected:
             case StmtKind::BLOCK:
                 return toString(dynamic_cast<const Block*>(stmt));
             case StmtKind::VARIABLE_DECL: {
-                auto vs = dynamic_cast<const FieldDecl*>(stmt);
-                return toString(vs->typeRef) + " " + vs->name + (vs->initExpr ? " = " + toString(vs->initExpr) : "") + ";";
+                auto vs = dynamic_cast<const VariableDecl*>(stmt);
+                return toString(vs->decl);
             }
         }
     }
@@ -508,7 +524,7 @@ protected:
             case ExprKind::NULL_LITERAL:
                 return "null";
             case ExprKind::STRING_LITERAL:
-                return dynamic_cast<const StringLiteral*>(expr)->val;
+                return  "\"" + dynamic_cast<const StringLiteral*>(expr)->val + "\"";
             case ExprKind::BINARY_EXPR: {
                 auto be = dynamic_cast<const BinaryExpr*>(expr);
                 return "(" + toString(be->expr1) + " " + ::toString(be->op) + " " + toString(be->expr2) + ")";

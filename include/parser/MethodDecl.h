@@ -129,6 +129,11 @@ public:
         return *this;
     }
 
+    MethodDeclBuilder& with(FieldDecl* parameter) {
+        parameters.push_back(parameter);
+        return *this;
+    }
+
     MethodDeclBuilder& with(Block* block) {
         this->block = block;
         return *this;
