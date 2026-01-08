@@ -41,7 +41,7 @@ public:
         auto classSymbol = dynamic_cast<ClassSymbol*>(nodeToSymbol[node]);
 
         std::vector nameLspTokenModifiers = {LSPTokenModifier::DECLARATION};
-        if (classSymbol->isAbstract) nameLspTokenModifiers.push_back(LSPTokenModifier::ABSTRACT);
+        // if (classSymbol->isAbstract) nameLspTokenModifiers.push_back(LSPTokenModifier::ABSTRACT);
 
         // class **myClass** { ... }
         data.emplace_back(node->nameSourceRange, LSPTokenType::CLASS, nameLspTokenModifiers);
@@ -179,6 +179,10 @@ public:
 
     void visit(TypeParameterDecl *node) override {
         data.emplace_back(node->bodyRange, LSPTokenType::TYPE_PARAMETER, std::vector<LSPTokenModifier>{});
+    }
+
+    void visit(VariableDecl *node) override {
+        // TODO
     }
 
 private:

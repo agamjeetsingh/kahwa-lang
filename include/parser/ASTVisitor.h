@@ -6,6 +6,7 @@
 #define ASTVISITOR_H
 
 
+struct VariableDecl;
 struct TypeParameterDecl;
 struct StringLiteral;
 struct NullLiteral;
@@ -49,6 +50,7 @@ struct ASTVisitor {
     virtual void visit(BreakStmt* node) = 0;
     virtual void visit(ContinueStmt* node) = 0;
     virtual void visit(ExprStmt* node) = 0;
+    virtual void visit(VariableDecl* node) = 0;
     virtual void visit(ForLoop* node) = 0;
     virtual void visit(IfStmt* node) = 0;
     virtual void visit(ReturnStmt* node) = 0;
