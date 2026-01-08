@@ -24,6 +24,7 @@
 #include "../../include/parser/stmt/WhileLoop.h"
 #include "../../include/symbols/TypeParameterSymbol.h"
 #include "../../include/parser/expr/MemberAccessExpr.h"
+#include "../../include/parser/stmt/VariableDecl.h"
 
 KahwaFile *Parser::parseFile(const std::vector<Token> &tokens) const {
     return ParserWorker(tokens, astArena, diagnostic_engine).parseFile();
@@ -43,6 +44,14 @@ Expr *Parser::parseExpr(const std::vector<Token> &tokens) const {
 
 Stmt *Parser::parseStmt(const std::vector<Token> &tokens) const {
     return ParserWorker(tokens, astArena, diagnostic_engine).parseStmt();
+}
+
+MethodDecl *Parser::parseMethod(const std::vector<Token> &tokens) const {
+    return ParserWorker(tokens, astArena, diagnostic_engine).parseMethod();
+}
+
+ClassDecl *Parser::parseClass(const std::vector<Token> &tokens) const {
+    return ParserWorker(tokens, astArena, diagnostic_engine).parseClass();
 }
 
 
@@ -347,12 +356,10 @@ MethodDecl *Parser::ParserWorker::parseMethod(const safePointFunc& isSafePoint) 
     idx++; // Skipping opening parenthesis '('
 
     if (!next_is(TokenType::RIGHT_PAREN)) {
-        if (auto paramTypeRef = parseTypeRef(isSafePoint)) {
-            if (auto paramNameToken = expect(TokenType::IDENTIFIER, isSafePoint)) {
-                methodDeclBuilder.with({paramTypeRef, *paramNameToken.value().getIf<std::string>()});
-            } else {
-                return nullptr;
-            }
+        auto param = parseField(isSafePoint, false);
+
+        if (param) {
+            methodDeclBuilder.with(param);
         } else {
             return nullptr;
         }
@@ -361,12 +368,10 @@ MethodDecl *Parser::ParserWorker::parseMethod(const safePointFunc& isSafePoint) 
     while (next_is(TokenType::COMMA)) {
         idx++; // Skip comma
 
-        if (auto paramTypeRef = parseTypeRef(isSafePoint)) {
-            if (auto paramNameToken = expect(TokenType::IDENTIFIER, isSafePoint)) {
-                methodDeclBuilder.with({paramTypeRef, *paramNameToken.value().getIf<std::string>()});
-            } else {
-                return nullptr;
-            }
+        auto param = parseField(isSafePoint, false);
+
+        if (param) {
+            methodDeclBuilder.with(param);
         } else {
             return nullptr;
         }
@@ -394,6 +399,34 @@ MethodDecl *Parser::ParserWorker::parseMethod(const safePointFunc& isSafePoint) 
 
     return methodDeclBuilder.build();
 }
+
+FieldDecl *Parser::ParserWorker::parseField(const safePointFunc &isSafePoint, bool expectSemiColon) {
+    auto modifiers = getModifierList();
+    auto typeRef = parseTypeRef(isSafePoint);
+    if (!typeRef) return nullptr;
+    if (auto nameTok = expect(TokenType::IDENTIFIER, DiagnosticKind::EXPECTED_IDENTIFIER, isSafePoint)) {
+        std::string name = *nameTok->getIf<std::string>();
+
+        FieldDeclBuilder fieldDeclBuilder{name, typeRef};
+        fieldDeclBuilder.with(modifiers);
+
+        if (next_is(TokenType::EQUALS)) {
+            idx++; // Skip past '='
+            auto initExpr = parseExpr(isSafePoint);
+
+            return fieldDeclBuilder.with(initExpr).build();
+        } else {
+            if (!expectSemiColon || expect(TokenType::SEMI_COLON, DiagnosticKind::EXPECTED_SEMI_COLON, skipNothing)) {
+                return fieldDeclBuilder.build();
+            } else {
+                return nullptr;
+            }
+        }
+    } else {
+        return nullptr;
+    }
+}
+
 
 Block *Parser::ParserWorker::parseBlock(const safePointFunc& isSafePoint) {
     idx++; // Move past '{'
@@ -455,16 +488,18 @@ Stmt *Parser::ParserWorker::parseStmt(const safePointFunc &isSafePoint) {
             Block* elseBlock = nullptr;
             if (next_is(TokenType::ELSE)) {
                 idx++; // Skip past the 'else'
-                if (elseBlock = parseBlock(isSafePoint); elseBlock) return nullptr;
+                if (elseBlock = parseBlock(isSafePoint); !elseBlock) return nullptr;
             }
             SourceRange bodyRange = SourceRange{0, 0}; // TODO
 
-            return astArena.make<IfStmt>(cond, ifBlock, (elseBlock == nullptr || elseBlock->stmts.empty()) ? nullptr : elseBlock, bodyRange, ifRange);
+            return astArena.make<IfStmt>(cond, ifBlock, elseBlock, bodyRange, ifRange);
         }
         case TokenType::RETURN: {
             SourceRange returnRange = tokens[idx++].source_range;
             Expr* expr;
-            if (expr = parseExpr(isSafePoint); !expr) return nullptr;
+            if (next_is(TokenType::SEMI_COLON)) {
+                expr = nullptr;
+            } else if (expr = parseExpr(isSafePoint); !expr) return nullptr;
             SourceRange bodyRange = SourceRange{0, 0}; // TODO
 
             idx++; // Skip past ';'
@@ -481,7 +516,45 @@ Stmt *Parser::ParserWorker::parseStmt(const safePointFunc &isSafePoint) {
 
             return astArena.make<WhileLoop>(cond, body, bodyRange, whileRange);
         }
+        case TokenType::LEFT_CURLY_BRACE: {
+            return parseBlock(isSafePoint);
+        }
         default: {
+            std::size_t save_idx = idx;
+
+            auto modifiers = getModifierList();
+
+            if (modifiers.empty()) diagnostic_engine.freeze();
+
+            auto typeRef = parseTypeRef(isSafePoint);
+            if (typeRef) {
+                if (next_is(TokenType::IDENTIFIER)) {
+                    std::string name = *tokens[idx++].getIf<std::string>();
+                    if (next_is(TokenType::SEMI_COLON)) {
+                        idx++; // Skip past ';'
+                        SourceRange dummy_source{0, 0}; // TODO
+                        diagnostic_engine.unfreeze();
+                        return astArena.make<VariableDecl>(astArena.make<FieldDecl>(name, modifiers, typeRef, dummy_source, dummy_source, dummy_source, nullptr));
+                    } else if (next_is(TokenType::EQUALS)) {
+                        idx++; // Skip past '='
+
+                        diagnostic_engine.unfreeze();
+
+                        auto expr = parseExpr(isSafePoint);
+
+                        if (expr) {
+                            SourceRange dummy_source{0, 0}; // TODO
+                            idx++; // Skip past ';'
+                            return astArena.make<VariableDecl>(astArena.make<FieldDecl>(name, modifiers, typeRef, dummy_source, dummy_source, dummy_source, expr));
+                        }
+                    }
+                }
+            }
+
+            diagnostic_engine.unfreeze();
+
+            idx = save_idx;
+
             Expr* expr = parseExpr(isSafePoint);
             if (!expr) return nullptr;
 
@@ -610,6 +683,10 @@ Expr *Parser::ParserWorker::parseExpr(const safePointFunc &isSafePoint, int min_
             if (tok.type == TokenType::DOT) {
                 // TODO - Assuming rhs is identifier ref!
                 auto identifierRef = dynamic_cast<IdentifierRef*>(rhs);
+                if (!identifierRef) {
+                    // Handle error: rhs is not an identifier
+                    return nullptr;
+                }
 
                 lhs = astArena.make<MemberAccessExpr>(lhs, identifierRef->name, bodyRange, identifierRef->bodyRange);
             } else {

@@ -29,6 +29,10 @@ public:
 
     [[nodiscard]] Stmt* parseStmt(const std::vector<Token> &tokens) const;
 
+    [[nodiscard]] MethodDecl* parseMethod(const std::vector<Token> &tokens) const;
+
+    [[nodiscard]] ClassDecl* parseClass(const std::vector<Token> &tokens) const;
+
     class ParserWorker {
     public:
         explicit ParserWorker(const std::vector<Token> &tokens, Arena& astArena, DiagnosticEngine& diagnostic_engine): tokens(tokens), astArena(astArena), diagnostic_engine(diagnostic_engine) {}
@@ -45,7 +49,7 @@ public:
 
         MethodDecl* parseMethod(const safePointFunc& isSafePoint = isSafePointForFile);
 
-        FieldDecl* parseField(const safePointFunc& isSafePoint = isSafePointForFile) {}
+        FieldDecl* parseField(const safePointFunc& isSafePoint = isSafePointForFile, bool expectSemiColon = true);
 
         Block* parseBlock(const safePointFunc &isSafePoint = isSafePointForStmt);
 
