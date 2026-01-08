@@ -13,6 +13,14 @@ struct VariableDecl : Stmt {
     Stmt(decl->bodyRange, StmtKind::VARIABLE_DECL),
     decl(decl) {}
     FieldDecl* decl;
+
+    void visitChildren(ASTVisitor &v) override {
+        decl->accept(v);
+    }
+
+    void accept(ASTVisitor &v) override {
+        v.visit(this);
+    }
 };
 
 
