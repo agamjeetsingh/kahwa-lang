@@ -17,18 +17,23 @@ TEST_F(StmtTestFixture, ParsesOneWordStatementsCorrectly) {
 }
 
 TEST_F(StmtTestFixture, ParsesReturnStatementCorrectly) {
-    std::vector<Stmt*> stmts = {
-        returnStmt(integerLiteral(1)), // return 1;
-        returnStmt(binaryExpr( // return x++ + y;
-            unaryExpr(identifierRef("x"), UnaryOp::POST_INCREMENT),
-            identifierRef("y"),
-            BinaryOp::PLUS)),
-        returnStmt(binaryExpr(
-            callExpr(identifierRef("a"), {identifierRef("x")}),
-            callExpr(identifierRef("b"), {identifierRef("y")}),
-            BinaryOp::PLUS)), // return a(x) + b(y);
-        returnStmt(nullptr) // return;
-    };
+    std::vector<Stmt*> stmts;
+    stmts.reserve(exampleExprs.size());
+
+    for (auto expr: exampleExprs) stmts.push_back(returnStmt(expr));
+
+    stmts.push_back(returnStmt(nullptr)); // TODO - Not sure how to model empty expression for "return;"
+
+    testStmts(stmts);
+
+    expectNoDiagnostics();
+}
+
+TEST_F(StmtTestFixture, ParsesBlocksCorrectly) {
+    std::vector<Stmt*> stmts;
+    stmts.reserve(exampleBlocks.size());
+
+    for (auto block: exampleBlocks) stmts.push_back(block);
 
     testStmts(stmts);
 
@@ -36,18 +41,10 @@ TEST_F(StmtTestFixture, ParsesReturnStatementCorrectly) {
 }
 
 TEST_F(StmtTestFixture, ParsesExpressionStatementsCorrectly) {
-    std::vector<Stmt*> stmts = {
-        exprStmt(integerLiteral(1)), // 1;
-        exprStmt(binaryExpr( // x++ + y;
-            unaryExpr(identifierRef("x"), UnaryOp::POST_INCREMENT),
-            identifierRef("y"),
-            BinaryOp::PLUS)),
-        exprStmt(binaryExpr(
-            callExpr(identifierRef("a"), {identifierRef("x")}),
-            callExpr(identifierRef("b"), {identifierRef("y")}),
-            BinaryOp::PLUS)), // a(x) + b(y);
-        exprStmt(nullptr) // ;
-    };
+    std::vector<Stmt*> stmts;
+    stmts.reserve(exampleExprs.size());
+
+    for (auto expr: exampleExprs) stmts.push_back(exprStmt(expr));
 
     testStmts(stmts);
 
@@ -55,14 +52,19 @@ TEST_F(StmtTestFixture, ParsesExpressionStatementsCorrectly) {
 }
 
 TEST_F(StmtTestFixture, ParsesIfStmtCorrectly) {
-    std::vector<Stmt*> stmts = {
-        ifStmt(boolLiteral(true), block({continueStmt()})), // if (true) { continue; }
-        ifStmt(unaryExpr(identifierRef("x"), UnaryOp::POST_INCREMENT), // if (x++) { ++x; break; continue; }
-            block({
-                exprStmt(unaryExpr(identifierRef("x"), UnaryOp::PRE_INCREMENT)),
-                breakStmt(),
-                continueStmt()}))
-    };
+    std::vector<Stmt*> stmts;
+
+    for (auto cond: exampleExprs) {
+        for (auto ifBlock: exampleBlocks) {
+            stmts.push_back(ifStmt(cond, ifBlock));
+        }
+
+        for (auto ifBlock: exampleBlocks) {
+            for (auto elseBlock: exampleBlocks) {
+                stmts.push_back(ifStmt(cond, ifBlock, elseBlock));
+            }
+        }
+    }
 
     testStmts(stmts);
 
@@ -71,9 +73,34 @@ TEST_F(StmtTestFixture, ParsesIfStmtCorrectly) {
 
 TEST_F(StmtTestFixture, ParsesWhileLoopCorrectly) {
     std::vector<Stmt*> stmts;
-    std::ranges::for_each(getExampleBlocks(), [&stmts](Block* block) {
-        stmts.push_back(whileLoop(boolLiteral(true), block));
-    });
+
+    for (auto cond: exampleExprs) {
+        for (auto body: exampleBlocks) {
+            stmts.push_back(whileLoop(cond, body));
+        }
+    }
+
+    testStmts(stmts);
+
+    expectNoDiagnostics();
+}
+
+TEST_F(StmtTestFixture, ParsesVariableDeclCorrectly) {
+    std::vector<Stmt*> stmts;
+
+    std::vector types = {
+        TypeRefBuilder("int").build(),
+        TypeRefBuilder("vector").with(TypeRefBuilder("int").build()).build()
+    };
+
+    for (auto type: types) {
+        stmts.push_back(variableDecl("foo", type));
+        stmts.push_back(variableDecl("foo", type, nullptr, {Modifier::STATIC, Modifier::STATIC}));
+        for (auto expr: exampleExprs) {
+            stmts.push_back(variableDecl("foo", type, expr));
+            stmts.push_back(variableDecl("foo", type, expr, {Modifier::STATIC, Modifier::STATIC}));
+        }
+    }
 
     testStmts(stmts);
 
@@ -86,7 +113,7 @@ TEST_F(StmtTestFixture, ParsesForLoopCorrectly) {
     for (int i = 0; i < exampleStmts.size(); i++) {
         for (int j = 0; j < exampleExprs.size(); j++) {
             for (int k = 0; k < exampleStmts.size(); k++) {
-                std::ranges::for_each(getExampleBlocks(), [&stmts, i, j, k](Block* block) {
+                std::ranges::for_each(exampleBlocks, [&stmts, i, j, k, this](Block* block) {
                     stmts.push_back(forLoop(exampleStmts[i], exampleExprs[j], exampleStmts[k], block));
                 });
             }
