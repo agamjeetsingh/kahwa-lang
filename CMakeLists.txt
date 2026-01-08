@@ -303,6 +303,46 @@ add_executable(
         tests/parser/StmtTestFixture.h
         tests/parser/ExprTestFixture.h
         tests/source/SourceFileTest.cpp
+        tests/lsp/semanticTokens/SyntaxHighlightingTest.cpp
+        include/parser/stmt/StmtKind.cpp
+        include/parser/stmt/StmtKind.h
+        include/parser/expr/IndexExpr.cpp
+        include/parser/expr/IndexExpr.h
+        include/symbols/boundexprs/BoundExpr.cpp
+        include/symbols/boundexprs/BoundExpr.h
+        include/symbols/boundexprs/BoundTernaryExpr.cpp
+        include/symbols/boundexprs/BoundTernaryExpr.h
+        include/symbols/boundexprs/BoundExprKind.cpp
+        include/symbols/boundexprs/BoundExprKind.h
+        include/symbols/boundexprs/BoundFieldAccessExpr.cpp
+        include/symbols/boundexprs/BoundFieldAccessExpr.h
+        include/symbols/boundexprs/BoundCallExpr.cpp
+        include/symbols/boundexprs/BoundCallExpr.h
+        include/symbols/boundexprs/BoundMethodCallExpr.cpp
+        include/symbols/boundexprs/BoundMethodCallExpr.h
+        include/symbols/boundexprs/BoundVariableExpr.cpp
+        include/symbols/boundexprs/BoundVariableExpr.h
+        include/symbols/PrimitiveTypes.cpp
+        include/symbols/PrimitiveTypes.h
+        include/lsp/LSPConnection.cpp
+        include/lsp/LSPConnection.h
+        include/lsp/LanguageServer.cpp
+        include/lsp/LanguageServer.h
+        include/lsp/LSPTokenType.h
+        include/lsp/LSPTokenModifier.cpp
+        include/lsp/LSPTokenModifier.h
+        include/parser/ASTNode.cpp
+        include/parser/ASTNode.h
+        include/parser/ASTVisitor.cpp
+        include/parser/ASTVisitor.h
+        include/lsp/SyntaxHighlightingVisitor.cpp
+        include/lsp/SyntaxHighlightingVisitor.h
+        include/parser/TypeParameterDecl.cpp
+        include/parser/TypeParameterDecl.h
+        include/parser/stmt/VariableDecl.cpp
+        include/parser/stmt/VariableDecl.h
+        include/parser/RecursiveASTVisitor.cpp
+        include/parser/RecursiveASTVisitor.h
 )
 
 target_link_libraries(
