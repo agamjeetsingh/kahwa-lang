@@ -12,6 +12,7 @@
 #include "TypeRef.h"
 #include "../source/SourceRange.h"
 #include "FieldDecl.h"
+#include "TypeParameterDecl.h"
 
 // Functions and Methods are identical at the AST level (but not in symbols)
 struct MethodDecl : Decl {
@@ -44,7 +45,8 @@ struct MethodDecl : Decl {
         returnType->accept(v);
         // TODO - I think parameters should be stored as some kind of parameter decl
         block->accept(v);
-        std::ranges::for_each(modifiers, [&v](ModifierNode* node) { node->accept(v); });
+        std::ranges::for_each(typeParameters, [&v](TypeParameterDecl* node) { node->accept(v); });
+        std::ranges::for_each(parameters, [&v](FieldDecl* node) { node->accept(v); });
     }
 
     void accept(ASTVisitor &v) override {
