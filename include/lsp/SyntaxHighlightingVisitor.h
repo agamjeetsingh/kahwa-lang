@@ -24,6 +24,7 @@
 #include "../parser/stmt/WhileLoop.h"
 #include "../parser/expr/literals/NullLiteral.h"
 #include "../parser/expr/literals/StringLiteral.h"
+#include "../parser/stmt/VariableDecl.h"
 
 
 class SemanticAnalyser;
@@ -62,6 +63,7 @@ public:
     }
 
     void visit(Block *node) override {
+        if (!node) return;
         node->visitChildren(*this);
     }
 
@@ -69,6 +71,7 @@ public:
         auto variableSymbol = dynamic_cast<VariableSymbol*>(nodeToSymbol[node]);
         std::vector nameModifiers = {LSPTokenModifier::DECLARATION};
         if (variableSymbol->isStatic) nameModifiers.push_back(LSPTokenModifier::STATIC);
+        node->visitChildren(*this);
     }
 
     void visit(MethodDecl *node) override {
@@ -182,13 +185,13 @@ public:
     }
 
     void visit(VariableDecl *node) override {
-        // TODO
+        node->visitChildren(*this);
     }
 
 private:
     std::vector<tokenData>& data;
     SemanticAnalyser& semanticAnalyser;
-    std::unordered_map<ASTNode*, Symbol*> nodeToSymbol;
+    std::unordered_map<ASTNode*, Symbol*> nodeToSymbol = semanticAnalyser.nodeToSymbol;
 
     static LSPTokenType getClassTokenType(ClassSymbol* classSymbol) {
         return classSymbol->isInterface ? LSPTokenType::CLASS : LSPTokenType::INTERFACE;
