@@ -24,9 +24,6 @@ protected:
 
     void testFunctions(const std::vector<MethodDecl*>& methods) const {
         for (auto* expectedMethod: methods) {
-            if (expectedMethod->typeParameters.size() > 0) {
-
-            }
             auto parsedMethod = parseMethod(toString(expectedMethod));
             EXPECT_PRED2(methodDeclEqualIgnoreSourceRange, parsedMethod, expectedMethod);
             std::cout << "parsedMethod: " << toString(parsedMethod) << "\nexpectedMethod: " << toString(expectedMethod) << "\n--------" << std::endl;
