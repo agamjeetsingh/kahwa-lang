@@ -324,6 +324,11 @@ ClassDecl *Parser::ParserWorker::parseClass(const safePointFunc& isSafePoint) {
                 // field OR error TODO
 
                 idx = save_idx;
+                if (auto fieldDecl = parseField(isSafePoint)) {
+                    classDeclBuilder.with(fieldDecl);
+                } else {
+                    continue;
+                }
 
                 // TODO
             }
