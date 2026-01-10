@@ -31,6 +31,7 @@
 #include "expr/literals/IntegerLiteral.h"
 #include "expr/literals/NullLiteral.h"
 #include "expr/literals/StringLiteral.h"
+#include "stmt/VariableDecl.h"
 
 void RecursiveASTVisitor::visit(KahwaFile* node) {
     node->visitChildren(*this);
@@ -67,6 +68,11 @@ void RecursiveASTVisitor::visit(TypeParameterDecl* node) {
 void RecursiveASTVisitor::visit(TypeRef* node) {
     node->visitChildren(*this);
 }
+
+void RecursiveASTVisitor::visit(VariableDecl *node) {
+    node->visitChildren(*this);
+}
+
 
 void RecursiveASTVisitor::visit(BreakStmt* node) {
     node->visitChildren(*this);

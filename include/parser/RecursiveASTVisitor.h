@@ -18,6 +18,7 @@ public:
     void visit(MethodDecl* node) override;
     void visit(TypeParameterDecl* node) override;
     void visit(TypeRef* node) override;
+    void visit(VariableDecl *node) override;
     void visit(BreakStmt* node) override;
     void visit(ContinueStmt* node) override;
     void visit(ExprStmt* node) override;
