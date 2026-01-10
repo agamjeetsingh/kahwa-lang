@@ -29,7 +29,7 @@ struct FieldDecl : Decl {
     initExpr(initExpr),
     typeSourceRange(typeSourceRange) {}
 
-    TypeRef* const typeRef;
+    TypeRef* typeRef;
     Expr* initExpr = nullptr;
 
     const SourceRange typeSourceRange;

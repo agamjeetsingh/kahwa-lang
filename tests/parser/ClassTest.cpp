@@ -6,7 +6,14 @@
 #include "ParserTestBase.cpp"
 
 class ClassTest : public testing::Test, public ParserTestBase {
-
+protected:
+    void testClasses(const std::vector<ClassDecl*>& classes) const {
+        for (auto* expectedClass: classes) {
+            auto parsedClass = parseClass(toString(expectedClass));
+            EXPECT_PRED2(classDeclEqualIgnoreSourceRange, parsedClass, expectedClass);
+            std::cout << "parsedClass: " << toString(parsedClass) << "\nexpectedClass: " << toString(expectedClass) << "\n--------" << std::endl;
+        }
+    }
 };
 
 TEST_F(ClassTest, ParsesEmptyClassCorrectly) {
@@ -283,5 +290,20 @@ TEST_F(ClassTest, ParsesClassWithTypeParametersAndVarianceCorrectly) {
 }
 
 TEST_F(ClassTest, ParsesClassesWithFieldsCorrectly) {
+    std::vector<ClassDecl*> classes;
 
+    std::vector fields = {
+        FieldDeclBuilder("bar1", TypeRefBuilder("bool").build()).build(),
+        FieldDeclBuilder("bar2", TypeRefBuilder("int").build()).with(Modifier::PRIVATE).build(),
+        FieldDeclBuilder("bar3", TypeRefBuilder("int").build()).with(Modifier::ABSTRACT).build()
+    };
+
+    for (int i = 0; i < fields.size(); i++) {
+        std::vector<FieldDecl*> fieldSubset{fields.begin(), fields.begin() + i + 1};
+
+        classes.push_back(ClassDeclBuilder("foo").with(fieldSubset).build());
+    }
+
+    testClasses(classes);
+    expectNoDiagnostics();
 }

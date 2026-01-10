@@ -38,7 +38,7 @@ struct ClassDecl : Decl {
     typeParameters(typeParameters),
     classSourceRange(classSourceRange) {}
 
-    const std::vector<TypeRef*> superClasses;
+    std::vector<TypeRef*> superClasses;
     const std::vector<FieldDecl*> fields;
     const std::vector<MethodDecl*> methods;
     const std::vector<ClassDecl*> nestedClasses;
