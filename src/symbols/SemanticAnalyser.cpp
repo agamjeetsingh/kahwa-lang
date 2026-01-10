@@ -3,7 +3,8 @@
 //
 
 #include "../../include/symbols/SemanticAnalyser.h"
-
+#include "../../include/parser/ASTVisitor.h"
+#include "../../include/parser/RecursiveASTVisitor.h"
 #include "../../include/parser/expr/CallExpr.h"
 #include "../../include/parser/expr/IdentifierRef.h"
 #include "../../include/parser/expr/MemberAccessExpr.h"
@@ -13,8 +14,10 @@
 #include "../../include/symbols/boundexprs/BoundMethodCallExpr.h"
 #include "../../include/symbols/boundexprs/BoundVariableExpr.h"
 
-TranslationUnit *SemanticAnalyser::processFile(const KahwaFile* kahwaFile) {
+TranslationUnit *SemanticAnalyser::processFile(KahwaFile* kahwaFile) {
     auto res = declareFile(kahwaFile); // Phase 1
+
+    replaceTypedefs(kahwaFile);
 
     resolveTypes(res); // Phase 2
 
@@ -54,6 +57,7 @@ void SemanticAnalyser::registerIt(ParentSymbol *symbol, const std::vector<DeclLi
             registerSymbol(std::get<0>(triple));
             if constexpr (std::derived_from<std::remove_pointer_t<DeclLike>, Decl>) {
                 symbolToASTNode[std::get<0>(triple)] = std::get<2>(triple);
+                nodeToSymbol[std::get<2>(triple)] = std::get<0>(triple);
             }
         }
     });
@@ -155,9 +159,63 @@ TranslationUnit *SemanticAnalyser::declareFile(const KahwaFile *kahwaFile) {
         return std::pair{declareVariable<VisibleVariableSymbol>(variableDecl, &translationUnit->scope, true), variableDecl->nameSourceRange};
     }, [translationUnit](VisibleVariableSymbol* variableSymbol){ translationUnit->addVariable(variableSymbol); });
 
-    // Typedefs in Phase 2
-
     return translationUnit;
+}
+
+
+class TypedefReplacer: public RecursiveASTVisitor {
+public:
+    TypedefReplacer(const std::vector<TypedefDecl*>& typedefs): typedefs(typedefs) {}
+
+    void visit(KahwaFile *node) override {
+        node->visitChildren(*this);
+    }
+
+    void visit(ClassDecl *node) override {
+        replaceIfMatch(node->superClasses);
+        node->visitChildren(*this);
+    }
+
+    void visit(FieldDecl *node) override {
+        replaceIfMatch(node->typeRef);
+        node->visitChildren(*this);
+    }
+
+    void visit(MethodDecl *node) override {
+        replaceIfMatch(node->returnType);
+        node->visitChildren(*this);
+    }
+
+private:
+    std::vector<TypedefDecl*> typedefs;
+
+    const TypedefDecl* match(const TypeRef* typeRef) const {
+        // TODO - Might not be enough because of scopes, == is probably bad
+        for (auto typedefDecl : typedefs) {
+            if (typedefDecl->name == typeRef->identifier && typeRef->args.empty()) return typedefDecl;
+        }
+        return nullptr;
+    }
+
+    void replaceIfMatch(TypeRef*& typeRef) const {
+        for (auto typedefDecl : typedefs) {
+            if (typedefDecl->name == typeRef->identifier && typeRef->args.empty()) {
+                typeRef = typedefDecl->referredType;
+            }
+        }
+    }
+
+    void replaceIfMatch(std::vector<TypeRef*>& typeRefs) const {
+        for (auto & typeRef : typeRefs) {
+            if (auto typedefDecl = match(typeRef)) {
+                typeRef = typedefDecl->referredType;
+            }
+        }
+    }
+};
+
+void SemanticAnalyser::replaceTypedefs(KahwaFile* kahwaFile) {
+    TypedefReplacer(kahwaFile->typedefDecls).visit(kahwaFile);
 }
 
 template<typename T> requires (std::is_same_v<T, VariableSymbol> || std::is_same_v<T, VisibleVariableSymbol> || std::is_same_v<T, FieldSymbol>)
@@ -194,8 +252,6 @@ T *SemanticAnalyser::declareVariable(const FieldDecl *variableDecl, Scope *scope
 }
 
 void SemanticAnalyser::resolveTypes(TranslationUnit *translationUnit) {
-    // TODO - typedefs
-
     std::ranges::for_each(translationUnit->classes, [this](ClassSymbol* classSymbol) {
        resolveTypes(classSymbol);
     });
@@ -314,6 +370,7 @@ void SemanticAnalyser::resolveMethodBodies(ClassSymbol *classSymbol, Scope *scop
 
 
 void SemanticAnalyser::resolveTypes(Block *block, Scope *scope) {
+    if (!block) return;
     for (auto* stmt: block->stmts) {
         resolveTypes(stmt, scope);
     }

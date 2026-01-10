@@ -7,6 +7,7 @@
 #include <ranges>
 
 #include "../parser/ClassDecl.h"
+#include "../parser/RecursiveASTVisitor.h"
 #include "../diagnostics/DiagnosticEngine.h"
 #include "ClassSymbol.h"
 #include "TranslationUnit.h"
@@ -31,7 +32,7 @@ public:
         SymbolBuilder::setArena(&astArena);
     }
 
-    TranslationUnit* processFile(const KahwaFile* kahwaFile);
+    TranslationUnit* processFile(KahwaFile* kahwaFile);
 
     // ===== Phase 1 =====
     ClassSymbol* declareClass(const ClassDecl* classDecl, Scope* scope, bool topLevel = false);
@@ -45,6 +46,9 @@ public:
     T* declareVariable(const FieldDecl* variableDecl, Scope* scope, bool topLevel = false);
 
     TranslationUnit* declareFile(const KahwaFile* kahwaFile);
+
+    // ===== Phase 1.5 =====
+    void replaceTypedefs(KahwaFile* kahwaFile);
 
     // ===== Phase 2 =====
 
@@ -61,6 +65,7 @@ public:
     void resolveTypes(T* variableSymbol);
 
     std::unordered_map<Symbol*, ASTNode*> symbolToASTNode;
+    std::unordered_map<ASTNode*, Symbol*> nodeToSymbol;
 
     Type* resolveType(const TypeRef* typeRef, Scope* scope);
 
