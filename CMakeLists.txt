@@ -154,18 +154,18 @@ add_executable(kahwa_lang main.cpp
         include/symbols/boundexprs/BoundVariableExpr.h
         include/symbols/PrimitiveTypes.cpp
         include/symbols/PrimitiveTypes.h
-        include/lsp/LSPConnection.cpp
+        src/lsp/LSPConnection.cpp
         include/lsp/LSPConnection.h
-        include/lsp/LanguageServer.cpp
+        src/lsp/LanguageServer.cpp
         include/lsp/LanguageServer.h
         include/lsp/LSPTokenType.h
-        include/lsp/LSPTokenModifier.cpp
+        src/lsp/LSPTokenModifier.cpp
         include/lsp/LSPTokenModifier.h
         include/parser/ASTNode.cpp
         include/parser/ASTNode.h
         include/parser/ASTVisitor.cpp
         include/parser/ASTVisitor.h
-        include/lsp/SyntaxHighlightingVisitor.cpp
+        src/lsp/SyntaxHighlightingVisitor.cpp
         include/lsp/SyntaxHighlightingVisitor.h
         include/parser/TypeParameterDecl.cpp
         include/parser/TypeParameterDecl.h

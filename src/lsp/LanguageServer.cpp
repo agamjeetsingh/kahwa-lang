@@ -2,9 +2,9 @@
 // Created by Agamjeet Singh on 30/12/25.
 //
 
-#include "LanguageServer.h"
-#include "LSPConnection.h"
-#include "SyntaxHighlightingVisitor.h"
+#include "../../include/lsp/LanguageServer.h"
+#include "../../include/lsp/LSPConnection.h"
+#include "../../include/lsp/SyntaxHighlightingVisitor.h"
 
 std::vector<tokenData> LanguageServer::syntaxHighlight(const std::string &content, std::size_t file_id) {
     const auto& tokens = tokeniser.tokenise(file_id, content);
