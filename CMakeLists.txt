@@ -78,7 +78,7 @@ add_executable(kahwa_lang main.cpp
         include/symbols/SemanticAnalyser.h
         src/symbols/SymbolBuilder.cpp
         include/symbols/SymbolBuilder.h
-        include/parser/ModifierNode.cpp
+        src/parser/ModifierNode.cpp
         include/parser/ModifierNode.h
         src/types/Type.cpp
         include/types/Type.h
@@ -97,46 +97,46 @@ add_executable(kahwa_lang main.cpp
         include/symbols/VisibleVariableSymbol.h
         include/symbols/FieldSymbol.cpp
         include/symbols/FieldSymbol.h
-        include/parser/expr/Expr.cpp
+        src/parser/expr/Expr.cpp
         include/parser/expr/Expr.h
-        include/parser/expr/BinaryExpr.cpp
+        src/parser/expr/BinaryExpr.cpp
         include/parser/expr/BinaryExpr.h
         include/parser/expr/BinaryOp.h
         include/parser/expr/UnaryOp.h
-        include/parser/expr/UnaryExpr.cpp
+        src/parser/expr/UnaryExpr.cpp
         include/parser/expr/UnaryExpr.h
-        include/parser/expr/TernaryExpr.cpp
+        src/parser/expr/TernaryExpr.cpp
         include/parser/expr/TernaryExpr.h
         include/parser/expr/literals/IntegerLiteral.h
         include/parser/expr/literals/FloatLiteral.h
         include/parser/expr/literals/BoolLiteral.h
         include/parser/expr/literals/StringLiteral.h
         include/parser/expr/literals/NullLiteral.h
-        include/parser/expr/IdentifierRef.cpp
+        src/parser/expr/IdentifierRef.cpp
         include/parser/expr/IdentifierRef.h
-        include/parser/stmt/IfStmt.cpp
+        src/parser/stmt/IfStmt.cpp
         include/parser/stmt/IfStmt.h
-        include/parser/stmt/WhileLoop.cpp
+        src/parser/stmt/WhileLoop.cpp
         include/parser/stmt/WhileLoop.h
-        include/parser/stmt/ForLoop.cpp
+        src/parser/stmt/ForLoop.cpp
         include/parser/stmt/ForLoop.h
-        include/parser/stmt/ReturnStmt.cpp
+        src/parser/stmt/ReturnStmt.cpp
         include/parser/stmt/ReturnStmt.h
-        include/parser/stmt/BreakStmt.cpp
+        src/parser/stmt/BreakStmt.cpp
         include/parser/stmt/BreakStmt.h
-        include/parser/stmt/ContinueStmt.cpp
+        src/parser/stmt/ContinueStmt.cpp
         include/parser/stmt/ContinueStmt.h
-        include/parser/expr/MemberAccessExpr.cpp
+        src/parser/expr/MemberAccessExpr.cpp
         include/parser/expr/MemberAccessExpr.h
-        include/parser/expr/CallExpr.cpp
+        src/parser/expr/CallExpr.cpp
         include/parser/expr/CallExpr.h
-        include/parser/stmt/ExprStmt.cpp
+        src/parser/stmt/ExprStmt.cpp
         include/parser/stmt/ExprStmt.h
-        include/parser/expr/ExprKind.cpp
+        src/parser/expr/ExprKind.cpp
         include/parser/expr/ExprKind.h
-        include/parser/stmt/StmtKind.cpp
+        src/parser/stmt/StmtKind.cpp
         include/parser/stmt/StmtKind.h
-        include/parser/expr/IndexExpr.cpp
+        src/parser/expr/IndexExpr.cpp
         include/parser/expr/IndexExpr.h
         include/symbols/boundexprs/BoundExpr.cpp
         include/symbols/boundexprs/BoundExpr.h
@@ -161,17 +161,17 @@ add_executable(kahwa_lang main.cpp
         include/lsp/LSPTokenType.h
         src/lsp/LSPTokenModifier.cpp
         include/lsp/LSPTokenModifier.h
-        include/parser/ASTNode.cpp
+        src/parser/ASTNode.cpp
         include/parser/ASTNode.h
-        include/parser/ASTVisitor.cpp
+        src/parser/ASTVisitor.cpp
         include/parser/ASTVisitor.h
         src/lsp/SyntaxHighlightingVisitor.cpp
         include/lsp/SyntaxHighlightingVisitor.h
-        include/parser/TypeParameterDecl.cpp
+        src/parser/TypeParameterDecl.cpp
         include/parser/TypeParameterDecl.h
-        include/parser/stmt/VariableDecl.cpp
+        src/parser/stmt/VariableDecl.cpp
         include/parser/stmt/VariableDecl.h
-        include/parser/RecursiveASTVisitor.cpp
+        src/parser/RecursiveASTVisitor.cpp
         include/parser/RecursiveASTVisitor.h
 )
 
@@ -229,7 +229,7 @@ add_executable(
         include/symbols/SemanticAnalyser.h
         src/symbols/SymbolBuilder.cpp
         include/symbols/SymbolBuilder.h
-        include/parser/ModifierNode.cpp
+        src/parser/ModifierNode.cpp
         include/parser/ModifierNode.h
         src/types/Type.cpp
         include/types/Type.h
@@ -258,42 +258,42 @@ add_executable(
         include/parser/expr/Stmt.h
         src/parser/Decl.cpp
         include/parser/Decl.h
-        include/parser/expr/Expr.cpp
+        src/parser/expr/Expr.cpp
         include/parser/expr/Expr.h
-        include/parser/expr/BinaryExpr.cpp
+        src/parser/expr/BinaryExpr.cpp
         include/parser/expr/BinaryExpr.h
         include/parser/expr/BinaryOp.h
         include/parser/expr/UnaryOp.h
-        include/parser/expr/UnaryExpr.cpp
+        src/parser/expr/UnaryExpr.cpp
         include/parser/expr/UnaryExpr.h
-        include/parser/expr/TernaryExpr.cpp
+        src/parser/expr/TernaryExpr.cpp
         include/parser/expr/TernaryExpr.h
         include/parser/expr/literals/IntegerLiteral.h
         include/parser/expr/literals/FloatLiteral.h
         include/parser/expr/literals/BoolLiteral.h
         include/parser/expr/literals/StringLiteral.h
         include/parser/expr/literals/NullLiteral.h
-        include/parser/expr/IdentifierRef.cpp
+        src/parser/expr/IdentifierRef.cpp
         include/parser/expr/IdentifierRef.h
-        include/parser/stmt/IfStmt.cpp
+        src/parser/stmt/IfStmt.cpp
         include/parser/stmt/IfStmt.h
-        include/parser/stmt/WhileLoop.cpp
+        src/parser/stmt/WhileLoop.cpp
         include/parser/stmt/WhileLoop.h
-        include/parser/stmt/ForLoop.cpp
+        src/parser/stmt/ForLoop.cpp
         include/parser/stmt/ForLoop.h
-        include/parser/stmt/ReturnStmt.cpp
+        src/parser/stmt/ReturnStmt.cpp
         include/parser/stmt/ReturnStmt.h
-        include/parser/stmt/BreakStmt.cpp
+        src/parser/stmt/BreakStmt.cpp
         include/parser/stmt/BreakStmt.h
-        include/parser/stmt/ContinueStmt.cpp
+        src/parser/stmt/ContinueStmt.cpp
         include/parser/stmt/ContinueStmt.h
-        include/parser/expr/MemberAccessExpr.cpp
+        src/parser/expr/MemberAccessExpr.cpp
         include/parser/expr/MemberAccessExpr.h
-        include/parser/expr/CallExpr.cpp
+        src/parser/expr/CallExpr.cpp
         include/parser/expr/CallExpr.h
-        include/parser/stmt/ExprStmt.cpp
+        src/parser/stmt/ExprStmt.cpp
         include/parser/stmt/ExprStmt.h
-        include/parser/expr/ExprKind.cpp
+        src/parser/expr/ExprKind.cpp
         include/parser/expr/ExprKind.h
         tests/parser/ParserTestBase.cpp
         tests/parser/ExprTest.cpp
@@ -304,9 +304,9 @@ add_executable(
         tests/parser/ExprTestFixture.h
         tests/source/SourceFileTest.cpp
         tests/lsp/semanticTokens/SyntaxHighlightingTest.cpp
-        include/parser/stmt/StmtKind.cpp
+        src/parser/stmt/StmtKind.cpp
         include/parser/stmt/StmtKind.h
-        include/parser/expr/IndexExpr.cpp
+        src/parser/expr/IndexExpr.cpp
         include/parser/expr/IndexExpr.h
         include/symbols/boundexprs/BoundExpr.cpp
         include/symbols/boundexprs/BoundExpr.h
@@ -324,24 +324,24 @@ add_executable(
         include/symbols/boundexprs/BoundVariableExpr.h
         include/symbols/PrimitiveTypes.cpp
         include/symbols/PrimitiveTypes.h
-        include/lsp/LSPConnection.cpp
+        src/lsp/LSPConnection.cpp
         include/lsp/LSPConnection.h
-        include/lsp/LanguageServer.cpp
+        src/lsp/LanguageServer.cpp
         include/lsp/LanguageServer.h
         include/lsp/LSPTokenType.h
-        include/lsp/LSPTokenModifier.cpp
+        src/lsp/LSPTokenModifier.cpp
         include/lsp/LSPTokenModifier.h
-        include/parser/ASTNode.cpp
+        src/parser/ASTNode.cpp
         include/parser/ASTNode.h
-        include/parser/ASTVisitor.cpp
+        src/parser/ASTVisitor.cpp
         include/parser/ASTVisitor.h
-        include/lsp/SyntaxHighlightingVisitor.cpp
+        src/lsp/SyntaxHighlightingVisitor.cpp
         include/lsp/SyntaxHighlightingVisitor.h
-        include/parser/TypeParameterDecl.cpp
+        src/parser/TypeParameterDecl.cpp
         include/parser/TypeParameterDecl.h
-        include/parser/stmt/VariableDecl.cpp
+        src/parser/stmt/VariableDecl.cpp
         include/parser/stmt/VariableDecl.h
-        include/parser/RecursiveASTVisitor.cpp
+        src/parser/RecursiveASTVisitor.cpp
         include/parser/RecursiveASTVisitor.h
 )
 
