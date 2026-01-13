@@ -7,7 +7,9 @@
 
 #include <magic_enum.hpp>
 #include <optional>
+#include <algorithm>
 #include "../tokeniser/Token.h"
+#include "../parser/Modifier.h"
 
 
 
@@ -22,16 +24,23 @@ enum class DiagnosticKind {
     EXPECTED_LEFT_CURLY_BRACE,
     EXPECTED_RIGHT_CURLY_BRACE,
     EXPECTED_TYPEDEF,
-};
+    EXPECTED_GREATER,
+    EXPECTED_LEFT_PAREN,
+    EXPECTED_RIGHT_PAREN,
+    EXPECTED_RIGHT_BRACKET,
 
-inline std::string toMsg(const DiagnosticKind kind, const std::string& aux) {
-    switch (kind) {
-        case DiagnosticKind::EXPECTED_SOMETHING:
-            return "Expected '" + aux + "'";
-        default:
-            throw std::runtime_error("Kind cannot be converted to msg with aux.");
-    }
-}
+    STATIC_NOT_VALID_MODIFIER_FOR_CLASSES,
+    REPEATED_MODIFIER,
+    ILLEGAL_MODIFIER_COMBINATION,
+    MODIFIER_NOT_ALLOWED,
+    TYPE_PARAMETERS_CANNOT_HAVE_GENERIC_ARGUMENTS,
+    SYMBOL_ALREADY_DECLARED,
+    CANNOT_RESOLVE_SYMBOL,
+    SYMBOL_MISMATCH,
+    INCORRECT_NUMBER_OF_TYPE_PARAMETERS,
+    EXPRESSION_NOT_CALLABLE,
+    AMBIGUOUS_FUNCTION_CALL
+};
 
 inline DiagnosticKind expectedTokenTypeToDiagnosticKind(const TokenType tokenType) {
     const auto typeName = std::string{magic_enum::enum_name(tokenType)};
@@ -79,24 +88,112 @@ inline std::optional<std::string> expectedDiagnostictoMsg(const DiagnosticKind k
     return "Expected " + tokenStr;
 }
 
+inline std::optional<std::string> notValidModifierDiagnosticToMsg(const DiagnosticKind kind) {
+    std::string kindName = std::string{magic_enum::enum_name(kind)};
+    
+    // Look for pattern: <MODIFIER>_NOT_VALID_MODIFIER_FOR_<TARGET>
+    const std::string pattern = "_NOT_VALID_MODIFIER_FOR_";
+    auto patternPos = kindName.find(pattern);
+    if (patternPos == std::string::npos) {
+        return std::nullopt;
+    }
+    
+    std::string modifierPart = kindName.substr(0, patternPos);
+    std::string targetPart = kindName.substr(patternPos + pattern.length());
+    
+    auto modifier = magic_enum::enum_cast<Modifier>(modifierPart);
+    if (!modifier.has_value()) {
+        return std::nullopt;
+    }
+    
+    // Convert target to lowercase
+    std::string target = targetPart;
+    std::ranges::transform(target, target.begin(), tolower);
+    
+    return "'" + toString(modifier.value()) + "' is not a valid modifier for " + target;
+}
+
+inline std::string toMsg(const DiagnosticKind kind, const std::string &str1, const std::string &str2) {
+    assert(kind == DiagnosticKind::SYMBOL_MISMATCH);
+
+    return "Cannot use " + str1 + " as a " + str2;
+}
+
+inline std::string toMsg(const DiagnosticKind kind, int expected, const std::string &str, int actual) {
+    assert(kind == DiagnosticKind::INCORRECT_NUMBER_OF_TYPE_PARAMETERS);
+
+    return std::to_string(expected) + "type parameters expected for " + str + " but found " + std::to_string(actual);
+}
+
+inline std::string toMsg(const DiagnosticKind kind, const std::string &str) {
+    assert(kind == DiagnosticKind::TYPE_PARAMETERS_CANNOT_HAVE_GENERIC_ARGUMENTS ||
+        kind == DiagnosticKind::SYMBOL_ALREADY_DECLARED ||
+        kind == DiagnosticKind::CANNOT_RESOLVE_SYMBOL ||
+        kind == DiagnosticKind::EXPRESSION_NOT_CALLABLE);
+
+    if (kind == DiagnosticKind::TYPE_PARAMETERS_CANNOT_HAVE_GENERIC_ARGUMENTS)
+        return "Type parameter " + str + " has generic arguments, which are not allowed";
+
+    if (kind == DiagnosticKind::SYMBOL_ALREADY_DECLARED)
+        return "Symbol '" + str + "' has already been declared";
+
+    if (kind == DiagnosticKind::CANNOT_RESOLVE_SYMBOL)
+        return "Cannot resolve symbol '" + str + "'";
+
+    return "Expression of type " + str + "is not callable";
+}
+
+inline std::string toMsg(const DiagnosticKind kind, Modifier modifier) {
+    assert(kind == DiagnosticKind::REPEATED_MODIFIER || kind == DiagnosticKind::MODIFIER_NOT_ALLOWED);
+    if (kind == DiagnosticKind::REPEATED_MODIFIER) return "Repeated modifier '" + toString(modifier) + "'";
+    return "Modifier '" + toString(modifier) + "' not allowed here";
+}
+
+inline std::string toMsg(const DiagnosticKind kind, Modifier modifier1, Modifier modifier2) {
+    assert(kind == DiagnosticKind::ILLEGAL_MODIFIER_COMBINATION);
+    return "Illegal combination of modifiers '" + toString(modifier1) + "' and '" + toString(modifier2) + "'";
+}
+
+inline std::string toMsg(const DiagnosticKind kind, const std::vector<std::string>& typeNames, const std::vector<std::string>& viableFunctions) {
+    assert(kind == DiagnosticKind::AMBIGUOUS_FUNCTION_CALL);
+
+    std::string str = "Ambiguous function call.\nArgument types: ";
+    for (int i = 0; i < typeNames.size(); i++) {
+        str += typeNames[i];
+        if (i != typeNames.size() - 1) str += ", ";
+    }
+    str += "\nViable candidates:";
+
+    for (int i = 0; i < viableFunctions.size(); i++) {
+        str += viableFunctions[i];
+        if (i != typeNames.size() - 1) str += "\n";
+    }
+
+    return str;
+}
+
 inline std::string toMsg(const DiagnosticKind kind) {
     switch (kind) {
         case DiagnosticKind::UNTERMINATED_STRING_LITERAL:
-            return "Unterminated string literal.";
+            return "Unterminated string literal";
         case DiagnosticKind::UNRECOGNISED_TOKEN:
-            return "Unrecognised token.";
+            return "Unrecognised token";
         case DiagnosticKind::EXPECTED_DECLARATION:
-            return "Expected a declaration.";
+            return "Expected declaration";
         case DiagnosticKind::EXPECTED_CLASS_NAME:
-            return "Expected a class name.";
+            return "Expected class name";
         case DiagnosticKind::EXPECTED_IDENTIFIER:
-            return "Expected an identifier.";
+            return "Expected identifier";
         default:
             if (auto msg = expectedDiagnostictoMsg(kind)) {
                 return msg.value();
             }
+            
+            if (auto msg = notValidModifierDiagnosticToMsg(kind)) {
+                return msg.value();
+            }
 
-            throw std::runtime_error("Kind cannot be converted to msg.");
+            throw std::runtime_error("Kind cannot be converted to msg");
     }
 }
 

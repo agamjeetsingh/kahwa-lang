@@ -7,24 +7,25 @@
 #include <utility>
 
 #include "Modifier.h"
+#include "ModifierNode.h"
 #include "../source/SourceRange.h"
+#include "ASTNode.h"
 
 
-struct Decl {
+struct Decl : ASTNode {
     Decl(std::string name,
-    const std::vector<Modifier> &modifiers,
+    const std::vector<ModifierNode*> &modifiers,
     const SourceRange &nameSourceRange,
     const SourceRange &bodyRange):
+    ASTNode(bodyRange),
     name(std::move(name)),
     modifiers(modifiers),
-    nameSourceRange(nameSourceRange),
-    bodyRange(bodyRange) {}
+    nameSourceRange(nameSourceRange) {}
 
     const std::string name;
-    const std::vector<Modifier> modifiers;
+    const std::vector<ModifierNode*> modifiers;
 
     const SourceRange nameSourceRange;
-    const SourceRange bodyRange;
 
     bool operator==(const Decl &other) const {
         return name == other.name &&

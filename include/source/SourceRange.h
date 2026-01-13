@@ -10,9 +10,9 @@ class Token;
 struct SourceLocation;
 
 struct SourceRange {
-    const std::size_t file_id;
-    const std::size_t pos;
-    const std::size_t length;
+    std::size_t file_id;
+    std::size_t pos;
+    std::size_t length;
 
     SourceRange(std::size_t file_id, std::size_t pos, std::size_t length = 1);
 
@@ -23,6 +23,10 @@ struct SourceRange {
     SourceRange(const Token& first, const Token& last);
 
     bool operator==(const SourceRange &other) const;
+
+    [[nodiscard]] SourceRange after() const {
+        return {file_id, pos + length - 1};
+    }
 };
 
 

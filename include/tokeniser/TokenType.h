@@ -64,6 +64,9 @@ enum class TokenType {
     ABSTRACT, // "abstract"
     INTERFACE, // "interface"
     TYPEDEF, // "typedef"
+    IN, // "in"
+    OUT, // "out"
+    OVERRIDE, // "override"
 
     RETURN, // "return"
     IF, // "if"
@@ -97,6 +100,9 @@ inline const auto KEYWORD_TYPES = std::unordered_set{
     TokenType::ABSTRACT, // "abstract"
     TokenType::INTERFACE, // "interface"
     TokenType::TYPEDEF, // "typedef"
+    TokenType::IN, // "in"
+    TokenType::OUT, // "out"
+    TokenType::OVERRIDE, // "override"
 
     TokenType::RETURN, // "return"
     TokenType::IF, // "if"

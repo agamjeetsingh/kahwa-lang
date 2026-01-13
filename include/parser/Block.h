@@ -5,12 +5,12 @@
 #ifndef BLOCK_H
 #define BLOCK_H
 #include <vector>
+#include "ASTBuilder.h"
+#include "expr/Stmt.h"
 
-#include "Stmt.h"
 
-
-struct Block {
-    explicit Block(const std::vector<Stmt*>& stmts): stmts(stmts) {}
+struct Block : Stmt {
+    explicit Block(const std::vector<Stmt*>& stmts, const SourceRange& bodyRange): Stmt(bodyRange, StmtKind::BLOCK), stmts(stmts) {}
     const std::vector<Stmt*> stmts;
 
     bool operator==(const Block &other) const {
@@ -24,8 +24,38 @@ struct Block {
         
         return true;
     }
+
+    void accept(ASTVisitor &v) override {
+        v.visit(this);
+    }
+
+    void visitChildren(ASTVisitor &v) override {
+        std::ranges::for_each(stmts, [&v](Stmt* stmt) { stmt->accept(v); });
+    }
 };
 
+class BlockBuilder : public ASTBuilder {
+public:
+
+    BlockBuilder() = default;
+
+    [[nodiscard]] Block* build() const {
+        return arena->make<Block>(stmts, dummy_source);
+    }
+
+    BlockBuilder& with(Stmt* stmt) {
+        stmts.push_back(stmt);
+        return *this;
+    }
+
+    BlockBuilder& with(const std::vector<Stmt*> &stmts) {
+        this->stmts.insert(this->stmts.begin(), stmts.begin(), stmts.end());
+        return *this;
+    }
+
+private:
+    std::vector<Stmt*> stmts;
+};
 
 
 #endif //BLOCK_H

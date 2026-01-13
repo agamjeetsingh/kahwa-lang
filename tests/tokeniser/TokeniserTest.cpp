@@ -254,7 +254,7 @@ TEST_F(TokeniserTest, ReportsDiagnosticForUnterminatedString) {
     const auto tokens = tokeniser.tokenise(0, "\" Unterminated string! Oh no! \n \t \r");
     EXPECT_TRUE (tokens.empty());
 
-    expectDiagnostics({Diagnostic{DiagnosticSeverity::ERROR, DiagnosticKind::UNTERMINATED_STRING_LITERAL, SourceRange{0, 0}, toMsg(DiagnosticKind::UNTERMINATED_STRING_LITERAL)}});
+    expectDiagnostics({Diagnostic{DiagnosticSeverity::ERROR, DiagnosticKind::UNTERMINATED_STRING_LITERAL, SourceRange{0, 0}}});
 }
 
 TEST_F(TokeniserTest, ReportsDiagnosticForUnrecognisedToken) {
@@ -265,7 +265,7 @@ TEST_F(TokeniserTest, ReportsDiagnosticForUnrecognisedToken) {
     EXPECT_EQ (*tokens[1].getIf<std::string>(), "Weird");
     EXPECT_EQ (*tokens[2].getIf<std::string>(), "char");
 
-    expectDiagnostics({Diagnostic{DiagnosticSeverity::ERROR, DiagnosticKind::UNRECOGNISED_TOKEN, SourceRange{0, 0}, toMsg(DiagnosticKind::UNRECOGNISED_TOKEN)}});
+    expectDiagnostics({Diagnostic{DiagnosticSeverity::ERROR, DiagnosticKind::UNRECOGNISED_TOKEN, SourceRange{0, 0}}});
 }
 
 TEST_F(TokeniserTest, TokeniserIdentifiesIdentifierCorrectly) {
@@ -470,5 +470,25 @@ TEST_F(TokeniserTest, TokeniserOutputsCorrectSourceRange) {
     };
     for (const auto& str: strs) {
         EXPECT_EQ(str, (unTokenise(tokeniser.tokenise(0, str))));
+    }
+}
+
+TEST_F(TokeniserTest, GetsCommentsCorrectly) {
+    std::vector<std::string> strs = {
+        "// This is a comment",
+        "/* This\n is a \n multi-line\n comment */",
+        "// Comment on this line \n But not on this one",
+        "// Comment on this line \n But not on this one \n Not here either // But it is here!"
+    };
+
+    std::vector<std::vector<SourceRange>> expectedSourceRanges = {
+        {SourceRange{0, 0, strs[0].length()}},
+        {SourceRange{0, 0, strs[1].length()}},
+        {SourceRange{0, 0, std::string("// Comment on this line ").length()}},
+        {SourceRange{0, 0, std::string("// Comment on this line ").length()}, SourceRange{0, std::string("// Comment on this line \n But not on this one \n Not here either ").size(), std::string("// But it is here!").length()}}
+    };
+
+    for (int i = 0; i < strs.size(); i++) {
+        EXPECT_EQ((tokeniser.getComments(0, strs[i])), expectedSourceRanges[i]);
     }
 }

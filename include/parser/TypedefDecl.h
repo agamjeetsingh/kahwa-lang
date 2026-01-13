@@ -5,14 +5,15 @@
 #ifndef TYPEDEFDECL_H
 #define TYPEDEFDECL_H
 #include <string>
+#include <utility>
 
 #include "TypeRef.h"
-
+#include "Decl.h"
 
 struct TypedefDecl : Decl {
     TypedefDecl(
         const std::string &name,
-        const std::vector<Modifier>& modifiers,
+        const std::vector<ModifierNode*>& modifiers,
         TypeRef* referredType,
         const SourceRange &typedefSourceRange,
         const SourceRange &nameSourceRange,
@@ -23,6 +24,14 @@ struct TypedefDecl : Decl {
 
     const SourceRange typedefSourceRange;
     TypeRef* const referredType;
+
+    void accept(ASTVisitor &v) override {
+        v.visit(this);
+    }
+
+    void visitChildren(ASTVisitor &v) override {
+        referredType->accept(v);
+    }
 
     bool operator==(const TypedefDecl &other) const {
         if (!Decl::operator==(other)) return false;
@@ -37,6 +46,66 @@ struct TypedefDecl : Decl {
     }
 };
 
+class TypedefDeclBuilder : public ASTBuilder{
+public:
+    explicit TypedefDeclBuilder(std::string name, TypeRef* referredType):
+    name(std::move(name)), referredType(referredType) {}
+
+    [[nodiscard]] TypedefDecl* build() const {
+        return arena->make<TypedefDecl>(
+            name,
+            modifiers,
+            referredType,
+            typedefSourceRange.has_value() ? typedefSourceRange.value() : dummy_source,
+            nameSourceRange.has_value() ? nameSourceRange.value() : dummy_source,
+            bodyRange.has_value() ? bodyRange.value() : dummy_source);
+    }
+
+    TypedefDeclBuilder& with(Modifier modifier, const SourceRange &sourceRange = dummy_source) {
+        modifiers.push_back(arena->make<ModifierNode>(modifier, sourceRange));
+        return *this;
+    }
+
+    TypedefDeclBuilder& with(const std::vector<Modifier>& modifiers) {
+        return with(modifiers, std::vector(modifiers.size(), dummy_source));
+    }
+
+    TypedefDeclBuilder& with(const std::vector<Modifier>& modifiers, const std::vector<SourceRange>& sourceRanges) {
+        assert(modifiers.size() == sourceRanges.size());
+        for (int i = 0; i < modifiers.size(); i++) {
+            this->modifiers.push_back(arena->make<ModifierNode>(modifiers[i], sourceRanges[i]));
+        }
+        return *this;
+    }
+
+    TypedefDeclBuilder& with(const std::vector<ModifierNode*>& modifierNodes) {
+        this->modifiers.insert(this->modifiers.end(), modifierNodes.begin(), modifierNodes.end());
+        return *this;
+    }
+
+    TypedefDeclBuilder& withTypedefSourceRange(const SourceRange& typedefSourceRange) {
+        this->typedefSourceRange.emplace(typedefSourceRange);
+        return *this;
+    }
+
+    TypedefDeclBuilder& withNameSourceRange(const SourceRange& nameSourceRange) {
+        this->nameSourceRange.emplace(nameSourceRange);
+        return *this;
+    }
+
+    TypedefDeclBuilder& withBodyRange(const SourceRange& bodyRange) {
+        this->bodyRange.emplace(bodyRange);
+        return *this;
+    }
+
+private:
+    std::string name;
+    std::vector<ModifierNode*> modifiers;
+    TypeRef* referredType;
+    std::optional<SourceRange> typedefSourceRange;
+    std::optional<SourceRange> nameSourceRange;
+    std::optional<SourceRange> bodyRange;
+};
 
 
 #endif //TYPEDEFDECL_H

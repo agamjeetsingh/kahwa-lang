@@ -15,8 +15,17 @@ enum class Modifier {
     PUBLIC,
     PRIVATE,
     PROTECTED,
-    STATIC
+    STATIC,
+    OVERRIDE,
 };
+
+inline bool isModalityModifier(Modifier modifier) {
+    return modifier == Modifier::OPEN || modifier == Modifier::FINAL || modifier == Modifier::ABSTRACT;
+}
+
+inline bool isVisibilityModifier(Modifier modifier) {
+    return modifier == Modifier::PUBLIC || modifier == Modifier::PROTECTED || modifier == Modifier::PRIVATE;
+}
 
 inline Modifier tokenTypeToModifier(TokenType tokenType) {
     switch (tokenType) {
@@ -27,12 +36,13 @@ inline Modifier tokenTypeToModifier(TokenType tokenType) {
         case TokenType::PRIVATE: return Modifier::PRIVATE;
         case TokenType::PROTECTED: return Modifier::PROTECTED;
         case TokenType::STATIC: return Modifier::STATIC;
+        case TokenType::OVERRIDE: return Modifier::OVERRIDE;
         default:
             throw std::invalid_argument("TokenType is not a modifier");
     }
 }
 
-inline std::string toString(Modifier modifier) {
+inline std::string toString(const Modifier modifier) {
     switch (modifier) {
         case Modifier::OPEN: return tokenTypeToString(TokenType::OPEN);
         case Modifier::FINAL: return tokenTypeToString(TokenType::FINAL);
@@ -41,6 +51,7 @@ inline std::string toString(Modifier modifier) {
         case Modifier::PRIVATE: return tokenTypeToString(TokenType::PRIVATE);
         case Modifier::PROTECTED: return tokenTypeToString(TokenType::PROTECTED);
         case Modifier::STATIC: return tokenTypeToString(TokenType::STATIC);
+        default: throw std::invalid_argument("Modifier not recognised.");
     }
 }
 

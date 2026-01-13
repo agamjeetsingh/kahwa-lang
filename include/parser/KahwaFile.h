@@ -6,23 +6,37 @@
 #define KAHWAFILE_H
 #include <vector>
 
+#include "ASTBuilder.h"
 #include "TypedefDecl.h"
+#include "../arena/Arena.h"
+#include "ClassDecl.h"
 
-
-struct KahwaFile {
+struct KahwaFile : ASTNode {
     explicit KahwaFile(const std::vector<TypedefDecl*> &typedefDecls = {},
         const std::vector<ClassDecl*> &classDecls = {},
         const std::vector<MethodDecl*> &functionDecls = {},
         const std::vector<FieldDecl*> &variableDecls = {}):
+    ASTNode(SourceRange{0, 0}), // TODO
     typedefDecls(typedefDecls),
     classDecls(classDecls),
     functionDecls(functionDecls),
-    variableDecls(variableDecls) {}
+    variableDecls(variableDecls){}
 
     const std::vector<TypedefDecl*> typedefDecls;
     const std::vector<ClassDecl*> classDecls;
     const std::vector<MethodDecl*> functionDecls;
     const std::vector<FieldDecl*> variableDecls;
+
+    void accept(ASTVisitor &v) override {
+        v.visit(this);
+    }
+
+    void visitChildren(ASTVisitor &v) override {
+        std::ranges::for_each(typedefDecls, [&v](TypedefDecl* typedefDecl) { typedefDecl->accept(v); });
+        std::ranges::for_each(classDecls, [&v](ClassDecl* classDecl) { classDecl->accept(v); });
+        std::ranges::for_each(functionDecls, [&v](MethodDecl* methodDecl) { methodDecl->accept(v); });
+        std::ranges::for_each(variableDecls, [&v](FieldDecl* fieldDecl) { fieldDecl->accept(v); });
+    }
 
     bool operator==(const KahwaFile &other) const {
         if (typedefDecls.size() != other.typedefDecls.size() ||
@@ -55,6 +69,61 @@ struct KahwaFile {
         
         return true;
     }
+};
+
+class KahwaFileBuilder : public ASTBuilder {
+public:
+    KahwaFileBuilder() = default;
+
+    [[nodiscard]] KahwaFile* build() const {
+        return arena->make<KahwaFile>(typedefDecls, classDecls, functionDecls, variableDecls);
+    }
+
+    KahwaFileBuilder& with(TypedefDecl* typedefDecl) {
+        typedefDecls.push_back(typedefDecl);
+        return *this;
+    }
+
+    KahwaFileBuilder& with(std::vector<TypedefDecl*> typedefDecls) {
+        this->typedefDecls.insert(this->typedefDecls.end(), typedefDecls.begin(), typedefDecls.end());
+        return *this;
+    }
+
+    KahwaFileBuilder& with(ClassDecl* classDecl) {
+        classDecls.push_back(classDecl);
+        return *this;
+    }
+
+    KahwaFileBuilder& with(std::vector<ClassDecl*> classDecls) {
+        this->classDecls.insert(this->classDecls.end(), classDecls.begin(), classDecls.end());
+        return *this;
+    }
+
+    KahwaFileBuilder& with(MethodDecl* functionDecl) {
+        functionDecls.push_back(functionDecl);
+        return *this;
+    }
+
+    KahwaFileBuilder& with(std::vector<MethodDecl*> functionDecls) {
+        this->functionDecls.insert(this->functionDecls.end(), functionDecls.begin(), functionDecls.end());
+        return *this;
+    }
+
+    KahwaFileBuilder& with(FieldDecl* variableDecl) {
+        variableDecls.push_back(variableDecl);
+        return *this;
+    }
+
+    KahwaFileBuilder& with(std::vector<FieldDecl*> variableDecls) {
+        this->variableDecls.insert(this->variableDecls.end(), variableDecls.begin(), variableDecls.end());
+        return *this;
+    }
+
+private:
+    std::vector<TypedefDecl*> typedefDecls;
+    std::vector<ClassDecl*> classDecls;
+    std::vector<MethodDecl*> functionDecls;
+    std::vector<FieldDecl*> variableDecls;
 };
 
 

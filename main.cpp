@@ -1,6 +1,6 @@
-#include <iostream>
+#include "include/lsp/LSPConnection.h"
 
 int main() {
-    std::cout << "Hello, World!" << std::endl;
+    LSPConnection().run();
     return 0;
 }

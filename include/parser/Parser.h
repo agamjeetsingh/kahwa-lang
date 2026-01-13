@@ -11,32 +11,54 @@
 #include "../arena/Arena.h"
 #include "../diagnostics/DiagnosticEngine.h"
 
+typedef std::function<bool(const Token&)> safePointFunc;
+
 class Parser {
 public:
-    explicit Parser(Arena& astArena, DiagnosticEngine& diagnostic_engine): astArena(astArena), diagnostic_engine(diagnostic_engine) {}
+    explicit Parser(Arena& astArena, DiagnosticEngine& diagnostic_engine): astArena(astArena), diagnostic_engine(diagnostic_engine) {
+        ASTBuilder::setArena(&astArena);
+    }
 
     [[nodiscard]] KahwaFile* parseFile(const std::vector<Token> &tokens) const;
 
     [[nodiscard]] TypedefDecl* parseTypedef(const std::vector<Token> &tokens) const;
 
+    [[nodiscard]] TypeRef* parseTypeRef(const std::vector<Token> &tokens) const;
+
+    [[nodiscard]] Expr* parseExpr(const std::vector<Token> &tokens) const;
+
+    [[nodiscard]] Stmt* parseStmt(const std::vector<Token> &tokens) const;
+
+    [[nodiscard]] MethodDecl* parseMethod(const std::vector<Token> &tokens) const;
+
+    [[nodiscard]] ClassDecl* parseClass(const std::vector<Token> &tokens) const;
+
     class ParserWorker {
     public:
         explicit ParserWorker(const std::vector<Token> &tokens, Arena& astArena, DiagnosticEngine& diagnostic_engine): tokens(tokens), astArena(astArena), diagnostic_engine(diagnostic_engine) {}
 
-        std::vector<Modifier> getModifierList();
+        std::vector<ModifierNode*> getModifierList();
 
         KahwaFile* parseFile();
 
         TypedefDecl* parseTypedef();
 
-        ClassDecl* parseClass();
+        ClassDecl* parseClass(const safePointFunc& isSafePoint = isSafePointForFile);
 
-        MethodDecl* parseMethod();
+        TypeRef* parseTypeRef(const safePointFunc& isSafePoint = isSafePointForFile);
 
-        Block* parseBlock();
+        MethodDecl* parseMethod(const safePointFunc& isSafePoint = isSafePointForFile);
+
+        FieldDecl* parseField(const safePointFunc& isSafePoint = isSafePointForFile, bool expectSemiColon = true);
+
+        Block* parseBlock(const safePointFunc &isSafePoint = isSafePointForStmt);
+
+        Stmt* parseStmt(const safePointFunc& isSafePoint = isSafePointForStmt);
+
+        Expr* parseExpr(const safePointFunc& isSafePoint = isSafePointForStmt, int min_bp = 0);
 
     private:
-        const std::vector<Token> tokens;
+        std::vector<Token> tokens;
         std::size_t idx = 0;
 
         Arena& astArena;
@@ -46,33 +68,49 @@ public:
 
         [[nodiscard]] bool next_is(const std::vector<TokenType>& expected) const;
 
-        std::vector<Token> next(const std::function<bool(const Token&)> &until) const;
+        [[nodiscard]] std::vector<Token> next(const safePointFunc &until) const;
 
-        std::vector<Token> next(std::size_t count, const std::function<bool(const Token&)> &until = [](const Token& token){ return false; }) const;
+        [[nodiscard]] std::vector<Token> next(std::size_t count, const safePointFunc &until = [](const Token& token){ return false; }) const;
 
         [[nodiscard]] Token next() const;
 
-        void syncTo(const std::function<bool(const Token&)> &isSafePoint);
+        void syncTo(const safePointFunc &isSafePoint);
 
-        std::optional<Token> expect(TokenType tokenType, DiagnosticKind kind, const std::function<bool(const Token&)> &isSafePoint);
+        std::optional<Token> expect(TokenType tokenType, DiagnosticKind kind, const safePointFunc &isSafePoint, bool advance = true);
 
-        std::optional<Token> expect(TokenType tokenType, const std::function<bool(const Token&)> &isSafePoint);
+        std::optional<Token> expect(TokenType tokenType, const safePointFunc &isSafePoint, bool advance = true);
 
-        std::optional<std::vector<Token>> expect(const std::vector<TokenType>& tokenTypes, const std::vector<DiagnosticKind>& kinds, const std::vector<std::function<bool(const Token&)>>& isSafePoints);
+        std::optional<std::vector<Token>> expect(const std::vector<TokenType>& tokenTypes, const std::vector<DiagnosticKind>& kinds, const std::vector<safePointFunc>& isSafePoints, bool advance = true);
 
-        std::optional<std::vector<Token>> expect(const std::vector<TokenType>& tokenTypes, const std::vector<std::function<bool(const Token&)>>& isSafePoints);
+        std::optional<std::vector<Token>> expect(const std::vector<TokenType>& tokenTypes, const std::vector<safePointFunc>& isSafePoints, bool advance = true);
 
         [[nodiscard]] SourceRange getPrevTokSourceRange() const;
 
-        const std::function<bool(const Token&)> isSafePointForFile = [](const Token& token) {
-            return token.type == TokenType::IDENTIFIER || token.type == TokenType::TYPEDEF || MODIFIER_TYPES.contains(token.type);
+        static inline const safePointFunc isSafePointForFile = [](const Token& token) {
+            return token.type == TokenType::IDENTIFIER
+            || token.type == TokenType::TYPEDEF
+            || MODIFIER_TYPES.contains(token.type)
+            || token.type == TokenType::CLASS
+            || token.type == TokenType::INTERFACE;
         };
 
-        const std::function<bool(const Token&)> isSafePointForClass = [](const Token& token) {
+        static inline const safePointFunc isSafePointForClass = [](const Token& token) {
             return token.type == TokenType::IDENTIFIER || MODIFIER_TYPES.contains(token.type);
         };
 
-        void assertTokenSequence(std::size_t count, const std::vector<TokenType> &expectedTypes) const;
+        static inline const safePointFunc skipNothing = [](const Token& token) { return true; };
+
+        static inline const safePointFunc isSafePointForStmt = [](const Token& token) {
+            return token.type == TokenType::STATIC || token.type == TokenType::RIGHT_CURLY_BRACE || token.type == TokenType::SEMI_COLON;
+        };
+
+        void assertTokenSequence(const std::vector<TokenType> &expectedTypes) const;
+
+        static std::optional<int> prefixBindingPower(TokenType tokenType);
+
+        static std::optional<int> postfixBindingPower(TokenType tokenType);
+
+        static std::optional<std::pair<int, int>> infixBindingPower(TokenType tokenType);
     };
 
 private:

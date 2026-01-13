@@ -1,0 +1,126 @@
+//
+// Created by Agamjeet Singh on 19/12/25.
+//
+
+#ifndef SEMANTICANALYSER_H
+#define SEMANTICANALYSER_H
+#include <ranges>
+
+#include "../parser/ClassDecl.h"
+#include "../parser/RecursiveASTVisitor.h"
+#include "../diagnostics/DiagnosticEngine.h"
+#include "ClassSymbol.h"
+#include "TranslationUnit.h"
+#include "../parser/KahwaFile.h"
+#include "../types/Type.h"
+#include "VisibleVariableSymbol.h"
+#include "boundexprs/BoundExpr.h"
+
+class DiagnosticEngine;
+
+/**
+ * Building symbol table:
+ * Phase 1: declareFile, which declares all symbols so they can be accessed
+ * Phase 2: analyseFile, which resolves all symbols, including the ones in method bodies. This step also adds all modifiers
+ * Phase 3: Rest of the semantics (like checking subtyping rules, inheritance rules, trying to use a private method etc.)
+ */
+class SemanticAnalyser {
+public:
+    explicit SemanticAnalyser(Arena& astArena, DiagnosticEngine& diagnosticEngine):
+    astArena(astArena),
+    diagnosticEngine(diagnosticEngine) {
+        SymbolBuilder::setArena(&astArena);
+    }
+
+    TranslationUnit* processFile(KahwaFile* kahwaFile);
+
+    // ===== Phase 1 =====
+    ClassSymbol* declareClass(const ClassDecl* classDecl, Scope* scope, bool topLevel = false);
+
+    template<typename FunctionLikeSymbol>
+    requires std::is_same_v<FunctionLikeSymbol, FunctionSymbol> || std::is_same_v<FunctionLikeSymbol, MethodSymbol>
+    FunctionLikeSymbol* declareFunction(const MethodDecl* methodDecl, Scope* scope, bool topLevel = false);
+
+    template <typename T>
+    requires (std::is_same_v<T, VariableSymbol> || std::is_same_v<T, VisibleVariableSymbol> || std::is_same_v<T, FieldSymbol>)
+    T* declareVariable(const FieldDecl* variableDecl, Scope* scope, bool topLevel = false);
+
+    TranslationUnit* declareFile(const KahwaFile* kahwaFile);
+
+    // ===== Phase 1.5 =====
+    void replaceTypedefs(KahwaFile* kahwaFile);
+
+    // ===== Phase 2 =====
+
+    void resolveTypes(TranslationUnit* translationUnit);
+
+    void resolveTypes(ClassSymbol* classSymbol);
+
+    template<typename FunctionLikeSymbol>
+    requires std::is_same_v<FunctionLikeSymbol, FunctionSymbol> || std::is_same_v<FunctionLikeSymbol, MethodSymbol>
+    void resolveTypes(FunctionLikeSymbol* functionSymbol);
+
+    template <typename T>
+    requires (std::is_same_v<T, VariableSymbol> || std::is_same_v<T, VisibleVariableSymbol> || std::is_same_v<T, FieldSymbol>)
+    void resolveTypes(T* variableSymbol);
+
+    std::unordered_map<Symbol*, ASTNode*> symbolToASTNode;
+    std::unordered_map<ASTNode*, Symbol*> nodeToSymbol;
+
+    Type* resolveType(const TypeRef* typeRef, Scope* scope);
+
+    // ===== Phase 3 =====
+
+    // Resolve method bodies
+
+    void resolveFunctionBodies(TranslationUnit* translationUnit);
+
+    void resolveMethodBodies(ClassSymbol* classSymbol, Scope* scope);
+
+    void resolveTypes(Block* block, Scope* scope);
+
+    void resolveTypes(Stmt* stmt, Scope* scope);
+
+    BoundExpr* resolveTypes(Expr* expr, Scope* scope);
+
+    // ===== Phase 4 =====
+
+    void analyseClass(ClassSymbol* classSymbol);
+
+private:
+    Arena& astArena;
+    DiagnosticEngine& diagnosticEngine;
+
+    [[nodiscard]] Modifier resolveModality(const std::vector<ModifierNode*>& modifiers) const;
+
+    [[nodiscard]] Modifier resolveVisibility(const std::vector<ModifierNode*>& modifiers, bool topLevel) const;
+
+    [[nodiscard]] bool hasModifier(const std::vector<ModifierNode*>& modifiers, Modifier modifier) const;
+
+    template<typename ChildSymbol, typename ParentSymbol, typename DeclLike, typename F1, typename F2>
+    requires std::derived_from<ChildSymbol, Symbol> && requires(ParentSymbol t) {
+        { t.scope } -> std::same_as<Scope&>;  // Ensure scope is a field
+    } && std::invocable<F1, const DeclLike&> &&
+         std::same_as<std::invoke_result_t<F1, const DeclLike&>, std::pair<ChildSymbol*, SourceRange>> &&
+         std::invocable<F2, ChildSymbol*> && std::same_as<std::invoke_result_t<F2, ChildSymbol*>, void>
+    void registerIt(
+        ParentSymbol* symbol,
+        const std::vector<DeclLike>& decls,
+        F1&& declToSymbolAndSourceRange,
+        F2&& registerSymbol,
+        bool duplicatesAllowed = false);
+
+    void modifierNotAllowed(const std::vector<ModifierNode*>& modifiers, Modifier notAllowed) const;
+
+    void modifierNotAllowed(const std::vector<ModifierNode*>& modifiers, std::function<bool(Modifier)> pred) const;
+
+    [[nodiscard]] std::optional<FunctionSymbol*> searchFunction(const std::vector<FunctionSymbol*>& functions, const std::string& methodName, const std::vector<const Type*>& parameterTypes, const SourceRange& sourceRange) const;
+
+    std::optional<MethodSymbol*> searchMethod(const ClassSymbol* classSymbol, const std::string& methodName, const std::vector<const Type*>& parameterTypes, const SourceRange& sourceRange) const;
+
+    std::optional<FieldSymbol*> searchField(const ClassSymbol* classSymbol, const std::string& fieldName) {}
+};
+
+
+
+#endif //SEMANTICANALYSER_H

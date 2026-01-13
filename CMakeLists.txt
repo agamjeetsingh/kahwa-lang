@@ -20,6 +20,13 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(googletest)
 
+FetchContent_Declare(
+        nlohmann_json
+        GIT_REPOSITORY https://github.com/nlohmann/json.git
+        GIT_TAG v3.12.0
+)
+FetchContent_MakeAvailable(nlohmann_json)
+
 add_executable(kahwa_lang main.cpp
         src/tokeniser/Token.cpp
         include/tokeniser/Token.h
@@ -54,12 +61,121 @@ add_executable(kahwa_lang main.cpp
         src/parser/Block.cpp
         include/parser/Block.h
         src/parser/Stmt.cpp
-        include/parser/Stmt.h
+        include/parser/expr/Stmt.h
         src/parser/Decl.cpp
         include/parser/Decl.h
+        src/parser/ASTBuilder.cpp
+        include/parser/ASTBuilder.h
+        src/symbols/FunctionSymbol.cpp
+        include/symbols/FunctionSymbol.h
+        src/symbols/ClassSymbol.cpp
+        include/symbols/ClassSymbol.h
+        src/symbols/TypeParameterSymbol.cpp
+        include/symbols/TypeParameterSymbol.h
+        src/symbols/MethodSymbol.cpp
+        include/symbols/MethodSymbol.h
+        src/symbols/SemanticAnalyser.cpp
+        include/symbols/SemanticAnalyser.h
+        src/symbols/SymbolBuilder.cpp
+        include/symbols/SymbolBuilder.h
+        src/parser/ModifierNode.cpp
+        include/parser/ModifierNode.h
+        src/types/Type.cpp
+        include/types/Type.h
+        include/types/Variance.h
+        include/symbols/TypeSymbol.cpp
+        include/symbols/TypeSymbol.h
+        include/symbols/Symbol.cpp
+        include/symbols/Symbol.h
+        include/symbols/Scope.cpp
+        include/symbols/Scope.h
+        include/symbols/TranslationUnit.cpp
+        include/symbols/TranslationUnit.h
+        include/symbols/VariableSymbol.cpp
+        include/symbols/VariableSymbol.h
+        include/symbols/VisibleVariableSymbol.cpp
+        include/symbols/VisibleVariableSymbol.h
+        include/symbols/FieldSymbol.cpp
+        include/symbols/FieldSymbol.h
+        src/parser/expr/Expr.cpp
+        include/parser/expr/Expr.h
+        src/parser/expr/BinaryExpr.cpp
+        include/parser/expr/BinaryExpr.h
+        include/parser/expr/BinaryOp.h
+        include/parser/expr/UnaryOp.h
+        src/parser/expr/UnaryExpr.cpp
+        include/parser/expr/UnaryExpr.h
+        src/parser/expr/TernaryExpr.cpp
+        include/parser/expr/TernaryExpr.h
+        include/parser/expr/literals/IntegerLiteral.h
+        include/parser/expr/literals/FloatLiteral.h
+        include/parser/expr/literals/BoolLiteral.h
+        include/parser/expr/literals/StringLiteral.h
+        include/parser/expr/literals/NullLiteral.h
+        src/parser/expr/IdentifierRef.cpp
+        include/parser/expr/IdentifierRef.h
+        src/parser/stmt/IfStmt.cpp
+        include/parser/stmt/IfStmt.h
+        src/parser/stmt/WhileLoop.cpp
+        include/parser/stmt/WhileLoop.h
+        src/parser/stmt/ForLoop.cpp
+        include/parser/stmt/ForLoop.h
+        src/parser/stmt/ReturnStmt.cpp
+        include/parser/stmt/ReturnStmt.h
+        src/parser/stmt/BreakStmt.cpp
+        include/parser/stmt/BreakStmt.h
+        src/parser/stmt/ContinueStmt.cpp
+        include/parser/stmt/ContinueStmt.h
+        src/parser/expr/MemberAccessExpr.cpp
+        include/parser/expr/MemberAccessExpr.h
+        src/parser/expr/CallExpr.cpp
+        include/parser/expr/CallExpr.h
+        src/parser/stmt/ExprStmt.cpp
+        include/parser/stmt/ExprStmt.h
+        src/parser/expr/ExprKind.cpp
+        include/parser/expr/ExprKind.h
+        src/parser/stmt/StmtKind.cpp
+        include/parser/stmt/StmtKind.h
+        src/parser/expr/IndexExpr.cpp
+        include/parser/expr/IndexExpr.h
+        include/symbols/boundexprs/BoundExpr.cpp
+        include/symbols/boundexprs/BoundExpr.h
+        include/symbols/boundexprs/BoundTernaryExpr.cpp
+        include/symbols/boundexprs/BoundTernaryExpr.h
+        include/symbols/boundexprs/BoundExprKind.cpp
+        include/symbols/boundexprs/BoundExprKind.h
+        include/symbols/boundexprs/BoundFieldAccessExpr.cpp
+        include/symbols/boundexprs/BoundFieldAccessExpr.h
+        include/symbols/boundexprs/BoundCallExpr.cpp
+        include/symbols/boundexprs/BoundCallExpr.h
+        include/symbols/boundexprs/BoundMethodCallExpr.cpp
+        include/symbols/boundexprs/BoundMethodCallExpr.h
+        include/symbols/boundexprs/BoundVariableExpr.cpp
+        include/symbols/boundexprs/BoundVariableExpr.h
+        include/symbols/PrimitiveTypes.cpp
+        include/symbols/PrimitiveTypes.h
+        src/lsp/LSPConnection.cpp
+        include/lsp/LSPConnection.h
+        src/lsp/LanguageServer.cpp
+        include/lsp/LanguageServer.h
+        include/lsp/LSPTokenType.h
+        src/lsp/LSPTokenModifier.cpp
+        include/lsp/LSPTokenModifier.h
+        src/parser/ASTNode.cpp
+        include/parser/ASTNode.h
+        src/parser/ASTVisitor.cpp
+        include/parser/ASTVisitor.h
+        src/lsp/SyntaxHighlightingVisitor.cpp
+        include/lsp/SyntaxHighlightingVisitor.h
+        src/parser/TypeParameterDecl.cpp
+        include/parser/TypeParameterDecl.h
+        src/parser/stmt/VariableDecl.cpp
+        include/parser/stmt/VariableDecl.h
+        src/parser/RecursiveASTVisitor.cpp
+        include/parser/RecursiveASTVisitor.h
 )
 
-target_link_libraries(kahwa_lang PRIVATE magic_enum::magic_enum)
+target_link_libraries(kahwa_lang PRIVATE magic_enum::magic_enum nlohmann_json::nlohmann_json)
 
 enable_testing()
 
@@ -68,7 +184,7 @@ add_executable(
         tests/tokeniser/TokenTest.cpp
         tests/tokeniser/TokeniserTest.cpp
         tests/diagnostics/DiagnosticEngineTest.cpp
-        tests/parser/ParserTest.cpp
+        tests/parser/FunctionTest.cpp
         src/tokeniser/Token.cpp
         include/tokeniser/Token.h
         include/tokeniser/TokenType.h
@@ -99,12 +215,141 @@ add_executable(
         include/parser/KahwaFile.h
         src/source/SourceLocation.cpp
         src/source/SourceRange.cpp
+        src/parser/ASTBuilder.cpp
+        include/parser/ASTBuilder.h
+        src/symbols/FunctionSymbol.cpp
+        include/symbols/FunctionSymbol.h
+        src/symbols/ClassSymbol.cpp
+        include/symbols/ClassSymbol.h
+        src/symbols/TypeParameterSymbol.cpp
+        include/symbols/TypeParameterSymbol.h
+        src/symbols/MethodSymbol.cpp
+        include/symbols/MethodSymbol.h
+        src/symbols/SemanticAnalyser.cpp
+        include/symbols/SemanticAnalyser.h
+        src/symbols/SymbolBuilder.cpp
+        include/symbols/SymbolBuilder.h
+        src/parser/ModifierNode.cpp
+        include/parser/ModifierNode.h
+        src/types/Type.cpp
+        include/types/Type.h
+        include/types/Variance.h
+        include/symbols/TypeSymbol.cpp
+        include/symbols/TypeSymbol.h
+        include/symbols/Symbol.cpp
+        include/symbols/Symbol.h
+        tests/semantic_analysis/SemanticAnalyserTest.cpp
+        tests/DiagnosticTesting.h
+        tests/DiagnosticTesting.cpp
+        tests/semantic_analysis/TypeTest.cpp
+        include/symbols/Scope.cpp
+        include/symbols/Scope.h
+        include/symbols/TranslationUnit.cpp
+        include/symbols/TranslationUnit.h
+        include/symbols/VariableSymbol.cpp
+        include/symbols/VariableSymbol.h
+        include/symbols/VisibleVariableSymbol.cpp
+        include/symbols/VisibleVariableSymbol.h
+        include/symbols/FieldSymbol.cpp
+        include/symbols/FieldSymbol.h
+        src/parser/Block.cpp
+        include/parser/Block.h
+        src/parser/Stmt.cpp
+        include/parser/expr/Stmt.h
+        src/parser/Decl.cpp
+        include/parser/Decl.h
+        src/parser/expr/Expr.cpp
+        include/parser/expr/Expr.h
+        src/parser/expr/BinaryExpr.cpp
+        include/parser/expr/BinaryExpr.h
+        include/parser/expr/BinaryOp.h
+        include/parser/expr/UnaryOp.h
+        src/parser/expr/UnaryExpr.cpp
+        include/parser/expr/UnaryExpr.h
+        src/parser/expr/TernaryExpr.cpp
+        include/parser/expr/TernaryExpr.h
+        include/parser/expr/literals/IntegerLiteral.h
+        include/parser/expr/literals/FloatLiteral.h
+        include/parser/expr/literals/BoolLiteral.h
+        include/parser/expr/literals/StringLiteral.h
+        include/parser/expr/literals/NullLiteral.h
+        src/parser/expr/IdentifierRef.cpp
+        include/parser/expr/IdentifierRef.h
+        src/parser/stmt/IfStmt.cpp
+        include/parser/stmt/IfStmt.h
+        src/parser/stmt/WhileLoop.cpp
+        include/parser/stmt/WhileLoop.h
+        src/parser/stmt/ForLoop.cpp
+        include/parser/stmt/ForLoop.h
+        src/parser/stmt/ReturnStmt.cpp
+        include/parser/stmt/ReturnStmt.h
+        src/parser/stmt/BreakStmt.cpp
+        include/parser/stmt/BreakStmt.h
+        src/parser/stmt/ContinueStmt.cpp
+        include/parser/stmt/ContinueStmt.h
+        src/parser/expr/MemberAccessExpr.cpp
+        include/parser/expr/MemberAccessExpr.h
+        src/parser/expr/CallExpr.cpp
+        include/parser/expr/CallExpr.h
+        src/parser/stmt/ExprStmt.cpp
+        include/parser/stmt/ExprStmt.h
+        src/parser/expr/ExprKind.cpp
+        include/parser/expr/ExprKind.h
+        tests/parser/ParserTestBase.cpp
+        tests/parser/ExprTest.cpp
+        tests/parser/StmtTest.cpp
+        tests/parser/TypedefTest.cpp
+        tests/parser/ClassTest.cpp
+        tests/parser/StmtTestFixture.h
+        tests/parser/ExprTestFixture.h
+        tests/source/SourceFileTest.cpp
+        tests/lsp/semanticTokens/SyntaxHighlightingTest.cpp
+        src/parser/stmt/StmtKind.cpp
+        include/parser/stmt/StmtKind.h
+        src/parser/expr/IndexExpr.cpp
+        include/parser/expr/IndexExpr.h
+        include/symbols/boundexprs/BoundExpr.cpp
+        include/symbols/boundexprs/BoundExpr.h
+        include/symbols/boundexprs/BoundTernaryExpr.cpp
+        include/symbols/boundexprs/BoundTernaryExpr.h
+        include/symbols/boundexprs/BoundExprKind.cpp
+        include/symbols/boundexprs/BoundExprKind.h
+        include/symbols/boundexprs/BoundFieldAccessExpr.cpp
+        include/symbols/boundexprs/BoundFieldAccessExpr.h
+        include/symbols/boundexprs/BoundCallExpr.cpp
+        include/symbols/boundexprs/BoundCallExpr.h
+        include/symbols/boundexprs/BoundMethodCallExpr.cpp
+        include/symbols/boundexprs/BoundMethodCallExpr.h
+        include/symbols/boundexprs/BoundVariableExpr.cpp
+        include/symbols/boundexprs/BoundVariableExpr.h
+        include/symbols/PrimitiveTypes.cpp
+        include/symbols/PrimitiveTypes.h
+        src/lsp/LSPConnection.cpp
+        include/lsp/LSPConnection.h
+        src/lsp/LanguageServer.cpp
+        include/lsp/LanguageServer.h
+        include/lsp/LSPTokenType.h
+        src/lsp/LSPTokenModifier.cpp
+        include/lsp/LSPTokenModifier.h
+        src/parser/ASTNode.cpp
+        include/parser/ASTNode.h
+        src/parser/ASTVisitor.cpp
+        include/parser/ASTVisitor.h
+        src/lsp/SyntaxHighlightingVisitor.cpp
+        include/lsp/SyntaxHighlightingVisitor.h
+        src/parser/TypeParameterDecl.cpp
+        include/parser/TypeParameterDecl.h
+        src/parser/stmt/VariableDecl.cpp
+        include/parser/stmt/VariableDecl.h
+        src/parser/RecursiveASTVisitor.cpp
+        include/parser/RecursiveASTVisitor.h
 )
 
 target_link_libraries(
     tests
     gtest_main
     magic_enum::magic_enum
+    nlohmann_json::nlohmann_json
 )
 
 include(GoogleTest)

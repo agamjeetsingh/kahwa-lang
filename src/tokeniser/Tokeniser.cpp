@@ -184,7 +184,7 @@ std::vector<Token> Tokeniser::TokeniserWorker::tokenise() {
                 if (auto maybeToken = tokeniseString(curr_idx)) {
                     tokens.push_back(maybeToken.value());
                 } else {
-                    diagnostic_engine.reportProblem(DiagnosticSeverity::ERROR, DiagnosticKind::UNTERMINATED_STRING_LITERAL, SourceLocation{file_id, curr_idx}, toMsg(DiagnosticKind::UNTERMINATED_STRING_LITERAL));
+                    diagnostic_engine.reportProblem(DiagnosticSeverity::ERROR, DiagnosticKind::UNTERMINATED_STRING_LITERAL, SourceLocation{file_id, curr_idx});
                     return tokens;
                 }
                 break;
@@ -222,13 +222,47 @@ std::vector<Token> Tokeniser::TokeniserWorker::tokenise() {
                     }
                 } else {
                     tokens.emplace_back(TokenType::BAD, std::to_string(c), SourceRange{file_id, curr_idx});
-                    diagnostic_engine.reportProblem(DiagnosticSeverity::ERROR, DiagnosticKind::UNRECOGNISED_TOKEN, SourceRange{file_id, curr_idx}, toMsg(DiagnosticKind::UNRECOGNISED_TOKEN));
+                    diagnostic_engine.reportProblem(DiagnosticSeverity::ERROR, DiagnosticKind::UNRECOGNISED_TOKEN, SourceRange{file_id, curr_idx});
                 }
         }
     }
 
     return tokens;
 }
+
+std::vector<SourceRange> Tokeniser::TokeniserWorker::getComments() {
+    std::vector<SourceRange> res;
+
+    while (idx < str.length()) {
+        const std::size_t curr_idx = idx;
+        char c = str[idx++];
+        if (c != '/') continue;
+
+        std::size_t length = 2;
+        if (next_is("/")) {
+            idx++;
+            while (idx < str.length() && !next_is("\n")) { idx++; length++; }
+
+            res.emplace_back(file_id, curr_idx, length);
+        } else if (next_is("*")) {
+            idx++;
+            while (idx < str.length()) {
+                if (next_is("*/")) {
+                    idx += 2;
+                    length += 2;
+                    break;
+                }
+                idx++;
+                length++;
+            }
+
+            res.emplace_back(file_id, curr_idx, length);
+        }
+    }
+
+    return res;
+}
+
 
 
 std::optional<Token> Tokeniser::TokeniserWorker::tokeniseString(std::size_t curr_idx) {
@@ -296,6 +330,9 @@ const std::unordered_map<std::string, TokenType> Tokeniser::TokeniserWorker::TOK
             {"abstract", TokenType::ABSTRACT},
             {"interface", TokenType::INTERFACE},
             {"typedef", TokenType::TYPEDEF},
+            {"in", TokenType::IN},
+            {"out", TokenType::OUT},
+            {"override", TokenType::OVERRIDE},
             {"return", TokenType::RETURN},
             {"if", TokenType::IF},
             {"else", TokenType::ELSE},

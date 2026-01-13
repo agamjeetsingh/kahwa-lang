@@ -7,37 +7,57 @@
 
 #include <utility>
 
+#include "ASTBuilder.h"
 #include "Decl.h"
 #include "FieldDecl.h"
 #include "MethodDecl.h"
 #include "Modifier.h"
+#include "TypeParameterDecl.h"
 #include "TypeRef.h"
 #include "../tokeniser/Token.h"
+#include "../types/Variance.h"
+
+enum class Variance;
 
 struct ClassDecl : Decl {
     ClassDecl(std::string name,
         const SourceRange &classSourceRange,
         const SourceRange &nameSourceRange,
         const SourceRange &bodyRange,
-        const std::vector<Modifier> &modifiers = {},
+        const std::vector<ModifierNode*> &modifiers = {},
         const std::vector<TypeRef*>& superClasses = {},
         const std::vector<FieldDecl*> &fields = {},
         const std::vector<MethodDecl*> &methods = {},
-        const std::vector<ClassDecl*> &nestedClasses = {}
-        ):
+        const std::vector<ClassDecl*> &nestedClasses = {},
+        const std::vector<TypeParameterDecl*>& typeParameters = {}):
     Decl(std::move(name), modifiers, nameSourceRange, bodyRange),
     superClasses(superClasses),
     fields(fields),
     methods(methods),
     nestedClasses(nestedClasses),
+    typeParameters(typeParameters),
     classSourceRange(classSourceRange) {}
 
-    const std::vector<TypeRef*> superClasses;
+    std::vector<TypeRef*> superClasses;
     const std::vector<FieldDecl*> fields;
     const std::vector<MethodDecl*> methods;
     const std::vector<ClassDecl*> nestedClasses;
+    const std::vector<TypeParameterDecl*> typeParameters;
 
     const SourceRange classSourceRange;
+
+    void accept(ASTVisitor &v) override {
+        v.visit(this);
+    }
+
+    void visitChildren(ASTVisitor &v) override {
+        std::ranges::for_each(superClasses, [&v](TypeRef* superClass) { superClass->accept(v); });
+        std::ranges::for_each(fields, [&v](FieldDecl* fieldDecl) { fieldDecl->accept(v); });
+        std::ranges::for_each(methods, [&v](MethodDecl* methodDecl) { methodDecl->accept(v); });
+        std::ranges::for_each(nestedClasses, [&v](ClassDecl* nestedClass) { nestedClass->accept(v); });
+        std::ranges::for_each(typeParameters, [&v](TypeParameterDecl* typeParameterDecl) { typeParameterDecl->accept(v); });
+        std::ranges::for_each(modifiers, [&v](ModifierNode* modifierNode) { modifierNode->accept(v); });
+    }
 
     bool operator==(const ClassDecl &other) const {
         if (!Decl::operator==(other)) return false;
@@ -76,6 +96,141 @@ struct ClassDecl : Decl {
         return classSourceRange == other.classSourceRange;
     }
 };
+
+class ClassDeclBuilder : public ASTBuilder {
+    public:
+        explicit ClassDeclBuilder(std::string  name): name(std::move(name)) {}
+
+        [[nodiscard]] ClassDecl* build() const {
+            return arena->make<ClassDecl>(
+                name,
+                classSourceRange.has_value() ? classSourceRange.value() : dummy_source,
+                nameSourceRange.has_value() ? nameSourceRange.value() : dummy_source,
+                bodyRange.has_value() ? bodyRange.value() : dummy_source,
+                modifiers,
+                superClasses,
+                fields,
+                methods,
+                nestedClasses,
+                typeParameters);
+        }
+
+        ClassDeclBuilder& with(const std::vector<Modifier> &modifiers) {
+            return with(modifiers, std::vector(modifiers.size(), dummy_source));
+        }
+
+        ClassDeclBuilder& with(Modifier modifier, const SourceRange &sourceRange = dummy_source) {
+            modifiers.push_back(arena->make<ModifierNode>(modifier, sourceRange));
+            return *this;
+        }
+
+        ClassDeclBuilder& with(const std::vector<Modifier> &modifiers, const std::vector<SourceRange>& sourceRanges) {
+            assert(modifiers.size() == sourceRanges.size());
+            for (int i = 0; i < modifiers.size(); i++) {
+                this->modifiers.push_back(arena->make<ModifierNode>(modifiers[i], sourceRanges[i]));
+            }
+            return *this;
+        }
+
+        ClassDeclBuilder& with(const std::vector<ModifierNode*>& modifiers) {
+            this->modifiers.insert(this->modifiers.end(), modifiers.begin(), modifiers.end());
+            return *this;
+        }
+
+        ClassDeclBuilder& withSuperClass(TypeRef* superClass) {
+            superClasses.push_back(superClass);
+            return *this;
+        }
+
+        ClassDeclBuilder& withSuperClasses(std::vector<TypeRef*> superClasses) {
+            this->superClasses.insert(this->superClasses.end(), superClasses.begin(), superClasses.end());
+            return *this;
+        }
+
+        ClassDeclBuilder& with(FieldDecl* field) {
+            fields.push_back(field);
+            return *this;
+        }
+
+        ClassDeclBuilder& with(std::vector<FieldDecl*> fields) {
+            this->fields.insert(this->fields.end(), fields.begin(), fields.end());
+            return *this;
+        }
+
+        ClassDeclBuilder& with(MethodDecl* method) {
+            methods.push_back(method);
+            return *this;
+        }
+
+        ClassDeclBuilder& with(std::vector<MethodDecl*> methods) {
+            this->methods.insert(this->methods.end(), methods.begin(), methods.end());
+            return *this;
+        }
+
+        ClassDeclBuilder& with(ClassDecl* nestedClass) {
+            nestedClasses.push_back(nestedClass);
+            return *this;
+        }
+
+        ClassDeclBuilder& with(std::vector<ClassDecl*> nestedClasses) {
+            this->nestedClasses.insert(this->nestedClasses.end(), nestedClasses.begin(), nestedClasses.end());
+            return *this;
+        }
+
+        ClassDeclBuilder& withClassSourceRange(const SourceRange& classSourceRange) {
+            this->classSourceRange.emplace(classSourceRange);
+            return *this;
+        }
+
+        ClassDeclBuilder& withNameSourceRange(const SourceRange& nameSourceRange) {
+            this->nameSourceRange.emplace(nameSourceRange);
+            return *this;
+        }
+
+        ClassDeclBuilder& withBodyRange(const SourceRange& bodyRange) {
+            this->bodyRange.emplace(bodyRange);
+            return *this;
+        }
+
+        ClassDeclBuilder& withTypeParameter(TypeParameterDecl* typeParameter) {
+            typeParameters.push_back(typeParameter);
+            return *this;
+        }
+
+        ClassDeclBuilder& withTypeParameter(const std::string &typeParameterName, Variance variance = Variance::INVARIANT) {
+            typeParameters.push_back(arena->make<TypeParameterDecl>(dummy_source, typeParameterName, variance));
+            return *this;
+        }
+
+        ClassDeclBuilder& withTypeParameters(const std::vector<TypeParameterDecl*>& typeParameters) {
+            this->typeParameters.insert(this->typeParameters.end(), typeParameters.begin(), typeParameters.end());
+            return *this;
+        }
+
+        ClassDeclBuilder& withTypeParameters(const std::vector<std::string>& typeParameterNames) {
+            return withTypeParameters(typeParameterNames, std::vector(typeParameterNames.size(), Variance::INVARIANT));
+        }
+
+        ClassDeclBuilder& withTypeParameters(const std::vector<std::string>& typeParameterNames, const std::vector<Variance>& variances) {
+            assert(typeParameterNames.size() == variances.size());
+            for (int i = 0; i < typeParameterNames.size(); i++) {
+                typeParameters.push_back(arena->make<TypeParameterDecl>(dummy_source, typeParameterNames[i], variances[i]));
+            }
+            return *this;
+        }
+
+    private:
+        std::string name;
+        std::vector<ModifierNode*> modifiers;
+        std::vector<TypeRef*> superClasses;
+        std::vector<FieldDecl*> fields;
+        std::vector<MethodDecl*> methods;
+        std::vector<ClassDecl*> nestedClasses;
+        std::vector<TypeParameterDecl*> typeParameters;
+        std::optional<SourceRange> classSourceRange;
+        std::optional<SourceRange> nameSourceRange;
+        std::optional<SourceRange> bodyRange;
+    };
 
 
 
