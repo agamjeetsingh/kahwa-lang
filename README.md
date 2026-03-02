@@ -1,220 +1,23 @@
-# Kahwa Lang
+# Kahwa (v1)
 
-A Java-like programming language with support for classes, generics, and modern type system features.
+**A Java-like compiled language — implemented in C++20.**
 
-> **Note:** This project is currently in active development. The compiler frontend (tokeniser, parser, and semantic analysis) is functional but incomplete, and backend code generation and runtime are not yet implemented.
+> This is the original C++ implementation of Kahwa. The project has since migrated to
+> Scala 3: see [kahwa-lang-v2](https://github.com/agamjeetsingh/kahwa-lang-v2).
 
-## Features
+---
 
-- **Object-oriented design** - Classes with inheritance, fields, and methods
-- **Generic types** - Type parameters with variance support (covariant, contravariant, invariant)
-- **Modern syntax** - Clean, expressive Java-like syntax
-- **Strong type system** - Static type checking with subtype relationships
-- **Language Server Protocol** - Editor integration with syntax highlighting (work in progress)
+## What is Kahwa?
 
-## Quick Start
+Kahwa is a compiled, statically-typed language with Java-like syntax. The tokeniser and
+parser are complete. Semantic analysis is multi-phase and partially implemented: name
+declaration, typedef replacement, and type resolution are done; expression type checking
+is a work in progress. The project also includes a working Language Server Protocol
+implementation providing live diagnostics and syntax highlighting.
 
-### Building
+---
 
-```bash
-mkdir build && cd build
-cmake ..
-make
-```
-
-### Requirements
-
-- CMake 3.31+
-- C++20 compatible compiler
-- Dependencies (fetched automatically):
-  - Google Test (for testing)
-  - nlohmann/json (for LSP)
-  - magic_enum (for enum reflection)
-
-### Running the LSP Server
-
-```bash
-./kahwa_lang
-```
-
-The language server can be integrated with editors supporting LSP for syntax highlighting and other features.
-
-## Language Overview
-
-Kahwa supports classes, methods, fields, generics, and standard control flow constructs.
-
-### Example: Generic Box Class
-
-```java
-public class Box<T> {
-    private T value;
-
-    public void set(T newValue) {
-        this.value = newValue;
-    }
-
-    public T get() {
-        return this.value;
-    }
-
-    public boolean isEmpty() {
-        return this.value == null;
-    }
-}
-```
-
-### Supported Language Features
-
-**Declarations:**
-- Classes with modifiers (`public`, `private`, `abstract`, `open`, `final`)
-- Generic type parameters with variance annotations
-- Methods and fields (static and instance)
-- Type aliases (typedefs)
-- Nested classes
-
-**Type System:**
-- Generic types with type parameters
-- Type variance (covariance, contravariance, invariance)
-- Subtype checking and inheritance
-- Type aliases
-
-> **Note:** Primitive types like `String`, `Boolean`, `Integer`, and `Double` are referenced in the syntax but not yet fully implemented in the runtime.
-
-## Architecture
-
-The compiler follows a multi-stage pipeline:
-
-```
-Source Code
-    ↓
-Tokeniser → Tokens
-    ↓
-Parser → Abstract Syntax Tree (AST)
-    ↓
-Semantic Analyser (Phase 1) → Symbol Table
-    ↓
-Semantic Analyser (Phase 2) → Type Resolution
-    ↓
-Semantic Analyser (Phase 3) → Expression and Statement Type Checking
-    ↓
-Language Server → Editor Integration
-```
-
-### Semantic Analysis Phases
-
-The semantic analyser uses a **4-phase approach**:
-
-1. **Phase 1: Symbol Declaration** - Builds the symbol table with proper scoping for all classes, methods, fields, and variables
-2. **Phase 1.5: Typedef Replacement** - Replaces type alias references with actual types
-3. **Phase 2: Type Resolution** - Resolves all type references to concrete type symbols, handles generic type arguments
-4. **Phase 3: Expression Type Checking** - Type-checks expressions and statements, produces bound (type-checked) AST nodes *(in progress)*
-5. **Phase 4: Semantic Validation** - Validates inheritance rules, access modifiers, abstract method implementations etc. *(not yet started)*
-
-### Design Patterns
-
-- **Visitor Pattern** - For traversing both AST and semantic trees
-- **Builder Pattern** - Fluent APIs for constructing AST nodes and symbols
-- **Multi-Phase Resolution** - Enables forward references and handles circular dependencies
-
-## Project Structure
-
-```
-kahwa-lang/
-├── include/
-│   ├── tokeniser/        # Lexical analysis
-│   ├── parser/           # Syntax analysis and AST
-│   ├── symbols/          # Semantic analysis and symbol table
-│   ├── types/            # Type system
-│   ├── lsp/              # Language Server Protocol
-│   ├── diagnostics/      # Error and warning reporting
-│   └── source/           # Source file management
-├── src/                  # Implementation files
-├── tests/                # Test suite
-└── main.cpp              # Entry point
-```
-
-## Current Status
-
-### Complete
-- Tokeniser (lexical analysis)
-- Parser (AST generation)
-- Symbol table construction
-- Type resolution
-- Diagnostic engine
-- Source location tracking
-- Generic type system with variance
-
-### In Progress
-- Expression type checking (Phase 3)
-- Language Server Protocol implementation
-  - Syntax highlighting (work in progress)
-  - Other LSP features planned
-
-### Planned
-- Semantic validation (Phase 4)
-- Lowering and Backend code generation
-- Runtime and execution
-- Standard library
-
-## LSP Integration
-
-Kahwa includes a Language Server Protocol implementation for editor integration.
-
-**Current LSP Features:**
-- Syntax highlighting (work in progress)
-- Diagnostics (work in progress)
-- File management and change tracking
-
-**Planned Features:**
-- Go to definition
-- Find references
-- Hover information
-- Auto-completion
-
-## Development
-
-### Running Tests
-
-```bash
-cd build
-make tests
-./tests
-```
-
-The test suite includes:
-- Tokeniser tests
-- Parser tests (expressions, statements, declarations)
-- Semantic analysis tests
-- Type system tests
-- LSP tests
-
-### Testing Infrastructure
-
-Tests use Google Test with custom utilities:
-- `ParserTestBase` - Helper functions for parsing and AST comparison
-- Builder pattern test fixtures - Readable test construction
-- Diagnostic testing utilities - Error validation
-
-## Examples
-
-### Class Declaration
-
-```java
-public class Person {
-    private String name;
-    private int age;
-
-    public String getName() {
-        return this.name;
-    }
-
-    public boolean isAdult() {
-        return this.age >= 18;
-    }
-}
-```
-
-### Generic Type with Variance
+## Language at a Glance
 
 ```java
 public class Container<out T> {
@@ -224,28 +27,137 @@ public class Container<out T> {
         return this.item;
     }
 }
-```
 
-### Type Aliases
-
-```java
 typedef List<String> StringList;
-typedef Map<Integer, String> IntToString;
 ```
 
-## Technical Details
+Key features:
 
-### Parser Implementation
+- **Classes** with modifiers (`public`, `private`, `abstract`, `open`, `final`),
+  inheritance, and nested classes
+- **Generics** with variance annotations (`out` covariant, `in` contravariant, invariant)
+- **Type aliases** (`typedef`)
+- Methods, fields, and standard control flow (`if`, `while`, `for`, `return`,
+  `break`, `continue`)
+- Static type system with subtype checking and generic substitution
 
-The parser uses:
-- **Pratt parsing** (operator precedence) for expressions
-- **Recursive descent** for declarations and statements
-- Integrated error recovery with diagnostic reporting
+---
 
-### Type System
+## Implementation Highlights
 
-The type system supports:
-- Generic type parameters with bounds
-- Variance annotations (`out` for covariance, `in` for contravariance)
-- Subtype checking with generic substitution
-- Type inference for method calls
+### Hand-Written Recursive Descent + Pratt Parser
+
+Declarations and statements use recursive
+descent parsing and expressions use a Pratt parser with explicit binding powers across 13 precedence
+levels, covering left/right associativity, prefix, postfix, infix, member access, calls,
+and indexing.
+
+One non-trivial detail: closing nested generic arguments like `Container<Box<T>>` produces
+a `>>` token, which is lexically identical to the right-shift operator, a classic problem
+in C++-style generics (the angle bracket problem). Rather than complicating the lexer or requiring spaces, the parser
+recognises and resolves the ambiguity by splitting `>>` into two `>` tokens in place when in a type context.
+
+The parser is fast: a 10,000-line file tokenises and parses in ~7 ms on average (100 runs,
+file I/O and semantic analysis excluded). Throughput scales linearly: 100K lines in
+~71 ms, 1M lines in ~735 ms.
+
+### Working LSP Implementation
+
+A Language Server Protocol server implemented from scratch in C++ over stdio using
+nlohmann/json:
+
+- **Semantic token-based syntax highlighting** — class and method declarations, type
+  references, type parameters, modifiers, and literals
+- **Live diagnostics** — tokeniser and parser errors pushed to the editor on every file
+  change
+- File lifecycle management (`didOpen`, `didChange`, `didClose`) and full protocol
+  lifecycle (`initialize`, `shutdown`, `exit`)
+
+### Comprehensive Parser Test Suite
+
+GTest-based tests with a `ParserTestBase` helper and builder-pattern fixtures for readable,
+composable test construction. Expression tests are exhaustive:
+
+- Precedence correctness across all 13 levels — tested as a cross-product of all operator
+  pairs
+- Left- and right-associativity for every operator at the same precedence level
+- Prefix/postfix binding power relative to infix
+- Literals, calls, indexing, member access, ternary, and unary expressions
+
+---
+
+## Architecture
+
+```
+Source Code
+    ↓
+Tokeniser  →  Tokens
+    ↓
+Parser  →  AST
+    ↓
+Semantic Analyser
+   Phase 1:    Symbol Declaration       (done)
+   Phase 1.5:  Typedef Replacement      (done)
+   Phase 2:    Type Resolution          (done)
+   Phase 3:    Expression Type Checking (partial)
+   Phase 4:    Other Semantic Analysis  (partial)
+    ↓
+Language Server  →  Editor Integration
+```
+
+---
+
+## Current Progress
+
+| Component                               | Status  |
+|-----------------------------------------|---------|
+| Tokenisation                            | Done    |
+| Parsing (recursive descent + Pratt)     | Done    |
+| Symbol Declaration                      | Done    |
+| Typedef Replacement                     | Done    |
+| Type Resolution                         | Done    |
+| Expression Type Checking                | Partial |
+| Other Semantic Analysis                 | Planned |
+| LSP (diagnostics + syntax highlighting) | Done    |
+| Code Generation                         | Planned |
+
+---
+
+## About the Migration
+
+After the type system grew complex enough, C++ became significant friction: no pattern
+matching, no algebraic data types, and the lack of a type system that could mirror the
+compiler's own abstractions made each new feature harder to add. The project migrated to
+Scala 3 as a deliberate engineering choice. Scala's case classes, exhaustive pattern
+matching, and expressive type system map naturally to compiler internals. The language
+design and semantics carry forward in
+[kahwa-lang-v2](https://github.com/agamjeetsingh/kahwa-lang-v2).
+
+---
+
+## Building & Running
+
+**Prerequisites**: CMake 3.31+, a C++20 compiler. Dependencies (Google Test,
+nlohmann/json, magic_enum) are fetched automatically via CMake FetchContent.
+
+```bash
+mkdir build && cd build
+cmake ..
+make
+```
+
+**Run the LSP server:**
+
+```bash
+./kahwa_lang
+```
+
+The server communicates over stdio and integrates with any LSP-compatible editor.
+
+**Run tests:**
+
+```bash
+cd build
+make tests
+./tests
+```

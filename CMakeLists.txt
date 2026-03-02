@@ -173,6 +173,7 @@ add_executable(kahwa_lang main.cpp
         include/parser/stmt/VariableDecl.h
         src/parser/RecursiveASTVisitor.cpp
         include/parser/RecursiveASTVisitor.h
+        src/parser/Parser.cpp
 )
 
 target_link_libraries(kahwa_lang PRIVATE magic_enum::magic_enum nlohmann_json::nlohmann_json)
@@ -238,7 +239,6 @@ add_executable(
         include/symbols/TypeSymbol.h
         include/symbols/Symbol.cpp
         include/symbols/Symbol.h
-        tests/semantic_analysis/SemanticAnalyserTest.cpp
         tests/DiagnosticTesting.h
         tests/DiagnosticTesting.cpp
         tests/semantic_analysis/TypeTest.cpp
@@ -303,7 +303,6 @@ add_executable(
         tests/parser/StmtTestFixture.h
         tests/parser/ExprTestFixture.h
         tests/source/SourceFileTest.cpp
-        tests/lsp/semanticTokens/SyntaxHighlightingTest.cpp
         src/parser/stmt/StmtKind.cpp
         include/parser/stmt/StmtKind.h
         src/parser/expr/IndexExpr.cpp
